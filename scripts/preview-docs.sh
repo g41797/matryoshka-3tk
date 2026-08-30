@@ -16,7 +16,7 @@
 
 set -u
 
-ROOT=$(cd "$(dirname "$0")" && pwd) || exit 2
+ROOT=$(cd "$(dirname "$0")/.." && pwd) || exit 2
 C3C=${C3C:-c3c}
 OPEN=1
 [ "${1:-}" = "--no-open" ] && OPEN=0

@@ -26,7 +26,7 @@ set -u
 # there is no `set -e`, so without it a failed cd would run the build in
 # whatever directory the caller happened to be in.
 ROOT=${1:-}
-[ -n "$ROOT" ] || ROOT=$(dirname "$0")
+[ -n "$ROOT" ] || ROOT=$(dirname "$0")/..
 cd "$ROOT" || { echo "no such directory: $ROOT" >&2; exit 2; }
 
 C3C=${C3C:-c3c}
