@@ -1,7 +1,7 @@
 <*
  The wrappers for `examples/`, catalog sections "Slot and transfer idioms",
  "Crossing the border", "Dispatch", "The infrastructure is an outer too",
- "Mailbox patterns" and "Topology patterns".
+ "Mailbox patterns", "Topology patterns" and "Pool patterns".
 
  Every example is called by one `@test` here, and `always_assert` appears in
  this file and nowhere in `examples/`.
@@ -42,6 +42,12 @@ import exm::request_response;
 import exm::pipeline;
 import exm::fan_in;
 import exm::fan_out;
+import exm::available_or_new;
+import exm::new_only;
+import exm::available_only;
+import exm::seeding_a_fixed_size_pool;
+import exm::the_hook_object_is_the_context;
+import exm::a_pool_of_several_identities;
 
 fn void test_example_empty_slot() @test
 {
@@ -228,4 +234,34 @@ fn void test_example_fan_out() @test
 {
     Mailbox* mb = mtk::mailbox::create(mem)!!;
     if (catch f = exm::fan_out::each_outer_goes_to_exactly_one_worker(mem, mb)) always_assert(false, "fan_out example failed");
+}
+
+fn void test_example_available_or_new() @test
+{
+    if (catch f = exm::available_or_new::reuse_before_create(mem)) always_assert(false, "available_or_new example failed");
+}
+
+fn void test_example_new_only() @test
+{
+    if (catch f = exm::new_only::new_ignores_what_is_kept(mem)) always_assert(false, "new_only example failed");
+}
+
+fn void test_example_available_only() @test
+{
+    if (catch f = exm::available_only::drain_stops_at_not_available(mem)) always_assert(false, "available_only example failed");
+}
+
+fn void test_example_seeding_a_fixed_size_pool() @test
+{
+    if (catch f = exm::seeding_a_fixed_size_pool::seed_caps_the_pool(mem)) always_assert(false, "seeding_a_fixed_size_pool example failed");
+}
+
+fn void test_example_the_hook_object_is_the_context() @test
+{
+    if (catch f = exm::the_hook_object_is_the_context::no_cast_needed(mem)) always_assert(false, "the_hook_object_is_the_context example failed");
+}
+
+fn void test_example_a_pool_of_several_identities() @test
+{
+    if (catch f = exm::a_pool_of_several_identities::one_policy_three_identities(mem)) always_assert(false, "a_pool_of_several_identities example failed");
 }
