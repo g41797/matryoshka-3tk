@@ -9,6 +9,9 @@ on:
       - 'examples/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   docgen:
     runs-on: ubuntu-latest
@@ -25,7 +28,31 @@ jobs:
       - name: c3c docgen
         run: c3c docgen --emit-stdlib=no src examples
 
-      - uses: actions/upload-artifact@v4
+      # c3c docgen writes one self-contained docs.html into the current
+      # directory (preview-docs.sh's own comment says so) — not a directory.
+      # Pages needs a directory with index.html at its root.
+      - name: Prepare Pages site
+        run: |
+          mkdir site
+          cp docs.html site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: 3tk-docs
-          path: docs.html
+          path: site
+
+  deploy:
+    needs: docgen
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
