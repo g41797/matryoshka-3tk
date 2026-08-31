@@ -7,11 +7,12 @@ must do.
 status row and no log entry of its own. The named stage that follows it writes
 those.
 
-**Version 002, superseding
-[3tk-example-rules-001.md](https://github.com/g41797/matryoshka-tk/blob/main/design/secondary/lang/c3/backup/3tk-example-rules-001.md)
-(now in `matryoshka-tk`'s `backup/`).** The only change from `001`: an explicit
-MUST that an outer is never created on the stack, in the "Allocation" section
-below. Nothing else changed. **This version, and every later one, lives in
+**Version 003, superseding
+[3tk-example-rules-002.md](https://github.com/g41797/matryoshka-tk/blob/main/design/secondary/lang/c3/backup/3tk-example-rules-002.md)
+(now in `matryoshka-tk`'s `backup/`).** The only change from `002`: "The
+wrapper in `test/`" section now spells out what *no logic of its own* means,
+after 3TK-50 step 5 found two wrappers already written that violated it.
+Nothing else changed. **This version, and every later one, lives in
 `matryoshka-3tk/design/`, not in `matryoshka-tk`'s `ref/`.**
 
 **Written by 3TK-48**, from `3tk-staging-plan-019.md`, from the owner's
@@ -239,6 +240,26 @@ its own line. Unfenced box drawing collapses.
   example's name.
 - The wrappers are the reason the examples are compiled and run at all. An
   example nothing calls is not verified.
+
+**What "no logic of its own" means, made explicit after 3TK-50 step 5 found
+two wrappers already breaking it:**
+
+> A wrapper creates and tears down the shared infrastructure the example
+> needs, calls the one example function, and `always_assert`s on failure. It
+> never receives, dispatches, inspects a result, or releases an outer itself
+> — that bookkeeping belongs inside the example function, which is the thing
+> actually being demonstrated and documented.
+
+- **Creating and closing a `Mailbox*` or `Pool*` the example takes as a
+  parameter is infrastructure, not logic.** The example does not own the
+  handle it was handed, so someone above it must.
+- **Anything that touches a `Slot`, a `Handle`, or an `InnerQueue` is logic.**
+  A wrapper that pops a queue, receives off a mailbox, or releases an outer
+  to clean up after the example is demonstrating the pattern a second time,
+  in the one file the catalog and any doc tool never reads.
+- **The test — not the doc reader — is the only audience for that split.** If
+  the wrapper's own body would teach a reader something about the pattern,
+  it is in the wrong file.
 
 ## An index routes and never copies
 
