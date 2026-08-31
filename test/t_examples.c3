@@ -1,18 +1,15 @@
 <*
  The wrappers for `examples/`, catalog sections "Slot and transfer idioms",
- "Crossing the border", "Dispatch", "The infrastructure is an outer too" and
- "Mailbox patterns".
+ "Crossing the border", "Dispatch", "The infrastructure is an outer too",
+ "Mailbox patterns" and "Topology patterns".
 
  Every example is called by one `@test` here, and `always_assert` appears in
  this file and nowhere in `examples/`.
 *>
 module mtk_test;
 import mtk;
-import mtk::managed;
 import mtk::mailbox;
 import std::core::mem::alloc;
-import std::time;
-import exm::outers;
 import exm::empty_slot;
 import exm::transfer_empties_slot;
 import exm::insert_from_slot;
@@ -41,6 +38,10 @@ import exm::out_of_band;
 import exm::close_recovery;
 import exm::release_a_refused_transfer;
 import exm::wake_without_a_message;
+import exm::request_response;
+import exm::pipeline;
+import exm::fan_in;
+import exm::fan_out;
 
 fn void test_example_empty_slot() @test
 {
@@ -54,14 +55,7 @@ fn void test_example_transfer_empties_slot() @test
 
 fn void test_example_insert_from_slot() @test
 {
-    InnerQueue q;
-    if (catch f = exm::insert_from_slot::insert_from_a_slot(mem, &q)) always_assert(false, "insert_from_slot example failed");
-    while (Handle h = q.pop_front())
-    {
-        Slot s;
-        s.fill(h);
-        mtk::managed::release(exm::outers::Holder, &s);
-    }
+    if (catch f = exm::insert_from_slot::insert_from_a_slot(mem)) always_assert(false, "insert_from_slot example failed");
 }
 
 fn void test_example_null_safe_cleanup() @test
@@ -119,9 +113,6 @@ fn void test_example_reach_into_a_full_slot() @test
     Mailbox* mb = mtk::mailbox::create(mem)!!;
     defer { InnerQueue left; mb.close(&left); mb.release(); }
     if (catch f = exm::reach_into_a_full_slot::reach_in_then_send(mem, mb)) always_assert(false, "reach_into_a_full_slot example failed");
-    Slot s;
-    if (catch f = mb.receive(&s, time::ms(100))) return;
-    mtk::managed::release(exm::outers::Holder, &s);
 }
 
 fn void test_example_dispatch_outer_first() @test
@@ -206,4 +197,35 @@ fn void test_example_wake_without_a_message() @test
     Mailbox* mb = mtk::mailbox::create(mem)!!;
     defer { InnerQueue left; mb.close(&left); mb.release(); }
     if (catch f = exm::wake_without_a_message::wake_reaches_a_blocked_receiver(mb)) always_assert(false, "wake_without_a_message example failed");
+}
+
+fn void test_example_request_response() @test
+{
+    Mailbox* req_mbx = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; req_mbx.close(&left); req_mbx.release(); }
+    Mailbox* resp_mbx = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; resp_mbx.close(&left); resp_mbx.release(); }
+    if (catch f = exm::request_response::one_request_one_response(mem, req_mbx, resp_mbx)) always_assert(false, "request_response example failed");
+}
+
+fn void test_example_pipeline() @test
+{
+    Mailbox* in_mbx = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; in_mbx.close(&left); in_mbx.release(); }
+    Mailbox* out_mbx = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; out_mbx.close(&left); out_mbx.release(); }
+    if (catch f = exm::pipeline::values_cross_one_stage_doubled(mem, in_mbx, out_mbx)) always_assert(false, "pipeline example failed");
+}
+
+fn void test_example_fan_in() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::fan_in::three_senders_one_mailbox(mem, mb)) always_assert(false, "fan_in example failed");
+}
+
+fn void test_example_fan_out() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    if (catch f = exm::fan_out::each_outer_goes_to_exactly_one_worker(mem, mb)) always_assert(false, "fan_out example failed");
 }
