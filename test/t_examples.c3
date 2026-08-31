@@ -1,6 +1,6 @@
 <*
- The wrappers for `examples/`, catalog sections "Slot and transfer idioms" and
- "Crossing the border".
+ The wrappers for `examples/`, catalog sections "Slot and transfer idioms",
+ "Crossing the border" and "Dispatch".
 
  Every example is called by one `@test` here, and `always_assert` appears in
  this file and nowhere in `examples/`.
@@ -26,6 +26,10 @@ import exm::type_crossing;
 import exm::recovering_the_type;
 import exm::walk_a_batch;
 import exm::reach_into_a_full_slot;
+import exm::dispatch_outer_first;
+import exm::dispatch_identity_first;
+import exm::dispatch_switch;
+import exm::dispatch_table;
 
 fn void test_example_empty_slot() @test
 {
@@ -107,4 +111,24 @@ fn void test_example_reach_into_a_full_slot() @test
     Slot s;
     if (catch f = mb.receive(&s, time::ms(100))) return;
     mtk::managed::release(exm::outers::Holder, &s);
+}
+
+fn void test_example_dispatch_outer_first() @test
+{
+    if (catch f = exm::dispatch_outer_first::dispatch_releases_every_identity(mem)) always_assert(false, "dispatch_outer_first example failed");
+}
+
+fn void test_example_dispatch_identity_first() @test
+{
+    if (catch f = exm::dispatch_identity_first::get_one_of_each_then_close(mem)) always_assert(false, "dispatch_identity_first example failed");
+}
+
+fn void test_example_dispatch_switch() @test
+{
+    if (catch f = exm::dispatch_switch::dispatch_by_switch(mem)) always_assert(false, "dispatch_switch example failed");
+}
+
+fn void test_example_dispatch_table() @test
+{
+    if (catch f = exm::dispatch_table::dispatch_same_identity_two_ways(mem)) always_assert(false, "dispatch_table example failed");
 }
