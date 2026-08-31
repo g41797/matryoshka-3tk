@@ -1,6 +1,6 @@
 <*
  The wrappers for `examples/`, catalog sections "Slot and transfer idioms",
- "Crossing the border" and "Dispatch".
+ "Crossing the border", "Dispatch" and "The infrastructure is an outer too".
 
  Every example is called by one `@test` here, and `always_assert` appears in
  this file and nowhere in `examples/`.
@@ -30,6 +30,10 @@ import exm::dispatch_outer_first;
 import exm::dispatch_identity_first;
 import exm::dispatch_switch;
 import exm::dispatch_table;
+import exm::infrastructure_wrapper;
+import exm::mailbox_as_message;
+import exm::worker_finish_signal;
+import exm::pool_as_message;
 
 fn void test_example_empty_slot() @test
 {
@@ -131,4 +135,28 @@ fn void test_example_dispatch_switch() @test
 fn void test_example_dispatch_table() @test
 {
     if (catch f = exm::dispatch_table::dispatch_same_identity_two_ways(mem)) always_assert(false, "dispatch_table example failed");
+}
+
+fn void test_example_infrastructure_wrapper() @test
+{
+    Mailbox* to = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; to.close(&left); to.release(); }
+    Mailbox* inbox = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; inbox.close(&left); inbox.release(); }
+    if (catch f = exm::infrastructure_wrapper::wrapper_carries_the_job_id(mem, to, inbox)) always_assert(false, "infrastructure_wrapper example failed");
+}
+
+fn void test_example_mailbox_as_message() @test
+{
+    if (catch f = exm::mailbox_as_message::a_travelling_mailbox_stays_open(mem)) always_assert(false, "mailbox_as_message example failed");
+}
+
+fn void test_example_worker_finish_signal() @test
+{
+    if (catch f = exm::worker_finish_signal::finish_signal_is_a_real_pointer_check(mem)) always_assert(false, "worker_finish_signal example failed");
+}
+
+fn void test_example_pool_as_message() @test
+{
+    if (catch f = exm::pool_as_message::a_travelling_pool_carries_its_policy(mem)) always_assert(false, "pool_as_message example failed");
 }
