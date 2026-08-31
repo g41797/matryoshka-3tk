@@ -1,7 +1,8 @@
 <*
  The wrappers for `examples/`, catalog sections "Slot and transfer idioms",
  "Crossing the border", "Dispatch", "The infrastructure is an outer too",
- "Mailbox patterns", "Topology patterns", "Pool patterns" and "Shutdown".
+ "Mailbox patterns", "Topology patterns", "Pool patterns", "Shutdown",
+ "Coordinator patterns" and "New, and 3tk-only".
 
  Every example is called by one `@test` here, and `always_assert` appears in
  this file and nowhere in `examples/`.
@@ -9,6 +10,8 @@
 module mtk_test;
 import mtk;
 import mtk::mailbox;
+import mtk::pool;
+import exm::outers;
 import std::core::mem::alloc;
 import exm::empty_slot;
 import exm::transfer_empties_slot;
@@ -49,6 +52,12 @@ import exm::seeding_a_fixed_size_pool;
 import exm::the_hook_object_is_the_context;
 import exm::a_pool_of_several_identities;
 import exm::reading_the_fault_on_a_receive;
+import exm::the_coordinator;
+import exm::the_allocator_in_the_outer;
+import exm::identity_costs_nothing;
+import exm::the_optional_declaration_walk;
+import exm::guarding_an_expensive_check;
+import exm::composite_outer_gives_back;
 
 fn void test_example_empty_slot() @test
 {
@@ -280,4 +289,43 @@ fn void test_example_reading_the_fault_on_a_receive() @test
     Mailbox* closed_mbx = mtk::mailbox::create(mem)!!;
     defer closed_mbx.release();
     if (catch f = exm::reading_the_fault_on_a_receive::closed_is_not_woken_or_timeout(closed_mbx)) always_assert(false, "reading_the_fault_on_a_receive (closed) example failed");
+}
+
+fn void test_example_the_coordinator() @test
+{
+    exm::the_coordinator::CoordinatorHooks hooks;
+    hooks.alloc = mem;
+    typeid[1] tags = { exm::outers::Holder::typeid };
+    Pool* p = mtk::pool::create(mem, &tags, &hooks)!!;
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+
+    exm::the_coordinator::Master master = { .alloc = mem, .mbx = mb, .pool = p };
+    if (catch f = master.run()) always_assert(false, "the_coordinator example failed");
+}
+
+fn void test_example_the_allocator_in_the_outer() @test
+{
+    if (catch f = exm::the_allocator_in_the_outer::release_takes_no_allocator(mem)) always_assert(false, "the_allocator_in_the_outer example failed");
+}
+
+fn void test_example_an_identity_costs_no_registration() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::identity_costs_nothing::a_new_type_costs_nothing(mem, mb)) always_assert(false, "an_identity_costs_no_registration example failed");
+}
+
+fn void test_example_the_optional_declaration_walk() @test
+{
+    if (catch f = exm::the_optional_declaration_walk::the_declaration_is_the_condition(mem)) always_assert(false, "the_optional_declaration_walk example failed");
+}
+
+fn void test_example_guarding_an_expensive_check() @test
+{
+    if (catch f = exm::guarding_an_expensive_check::the_guard_costs_nothing_in_a_fast_build(mem)) always_assert(false, "guarding_an_expensive_check example failed");
+}
+
+fn void test_example_a_composite_outer_gives_back_its_parts() @test
+{
+    if (catch f = exm::composite_outer_gives_back::extra_is_taken_the_same_way_as_the_slot(mem)) always_assert(false, "a_composite_outer_gives_back_its_parts example failed");
 }
