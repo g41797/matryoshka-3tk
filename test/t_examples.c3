@@ -1,7 +1,7 @@
 <*
  The wrappers for `examples/`, catalog sections "Slot and transfer idioms",
  "Crossing the border", "Dispatch", "The infrastructure is an outer too",
- "Mailbox patterns", "Topology patterns" and "Pool patterns".
+ "Mailbox patterns", "Topology patterns", "Pool patterns" and "Shutdown".
 
  Every example is called by one `@test` here, and `always_assert` appears in
  this file and nowhere in `examples/`.
@@ -48,6 +48,7 @@ import exm::available_only;
 import exm::seeding_a_fixed_size_pool;
 import exm::the_hook_object_is_the_context;
 import exm::a_pool_of_several_identities;
+import exm::reading_the_fault_on_a_receive;
 
 fn void test_example_empty_slot() @test
 {
@@ -264,4 +265,19 @@ fn void test_example_the_hook_object_is_the_context() @test
 fn void test_example_a_pool_of_several_identities() @test
 {
     if (catch f = exm::a_pool_of_several_identities::one_policy_three_identities(mem)) always_assert(false, "a_pool_of_several_identities example failed");
+}
+
+fn void test_example_reading_the_fault_on_a_receive() @test
+{
+    Mailbox* timeout_mbx = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; timeout_mbx.close(&left); timeout_mbx.release(); }
+    if (catch f = exm::reading_the_fault_on_a_receive::timeout_is_not_closed_or_woken(timeout_mbx)) always_assert(false, "reading_the_fault_on_a_receive (timeout) example failed");
+
+    Mailbox* woken_mbx = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; woken_mbx.close(&left); woken_mbx.release(); }
+    if (catch f = exm::reading_the_fault_on_a_receive::woken_is_not_closed_or_timeout(woken_mbx)) always_assert(false, "reading_the_fault_on_a_receive (woken) example failed");
+
+    Mailbox* closed_mbx = mtk::mailbox::create(mem)!!;
+    defer closed_mbx.release();
+    if (catch f = exm::reading_the_fault_on_a_receive::closed_is_not_woken_or_timeout(closed_mbx)) always_assert(false, "reading_the_fault_on_a_receive (closed) example failed");
 }
