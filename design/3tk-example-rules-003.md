@@ -71,7 +71,7 @@ port. **`../common/` is not one of those places.**
 | `src/` | `mtk`, `mtk::…` | the toolkit. Eight files, eight modules |
 | `test/` | `mtk_test` | correctness. Ten files, 87 tests |
 | `negative/` | `neg` | the compile-failure and abort cases |
-| `examples/` | `exm`, `exm::…` | one pattern per file, shown to a reader |
+| `examples/` | `shc`, `shc::…` | one pattern per file, shown to a reader |
 
 **An example is not a test and a test is not an example.** A test probes the
 implementation. An example demonstrates it, and is shown in documentation. A
@@ -83,11 +83,11 @@ file carrying `@test` and `always_assert` cannot be shown.
 one-file modules. **`examples/` does not re-incur it.**
 
 **The demo outers are one file.** Zig's file-as-struct makes `Event.zig` a type;
-C3 has no equivalent, so `exm::outers` is one `outers.c3` and not four files.
+C3 has no equivalent, so `shc::outers` is one `outers.c3` and not four files.
 
 ## The file name
 
-**`NNN-name.c3`, declaring `module exm::name;`.**
+**`NNN-name.c3`, declaring `module shc::name;`.**
 
 - `NNN` is a three-digit number, and it is what correlates a file with a
   numbered row in the catalog.
@@ -103,10 +103,10 @@ C3 has no equivalent, so `exm::outers` is one `outers.c3` and not four files.
 
 - **No `@test`.** An example is a plain function.
 - **No `always_assert`, and no `assert`.** A check goes through
-  `exm::helpers::expect`.
+  `shc::helpers::expect`.
 - **Nothing from `mtk_test`.** Not the module, not its outers, not
   `test/common.c3`.
-- **The outers are `exm::outers`'.** Shared, declared once, and reused by every
+- **The outers are `shc::outers`'.** Shared, declared once, and reused by every
   example.
 - **Diagnostic output is the standard library's.** No testing logger.
 
@@ -156,7 +156,7 @@ demonstration is exempt.
   example that allocates on the stack teaches a bug that surfaces somewhere
   else, later.**
 
-**A check is `exm::helpers::expect`.**
+**A check is `shc::helpers::expect`.**
 
 - It takes the fault to return, the condition, and the message.
 - **It survives all four builds**, which `assert` does not — a fast build makes
