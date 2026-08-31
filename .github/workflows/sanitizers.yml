@@ -1,0 +1,38 @@
+name: Sanitizers
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sanitize:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: thread safe-O0
+            sanitize: thread
+            flags: --safe=yes -O0
+          - label: thread fast-O3
+            sanitize: thread
+            flags: --safe=no -O3
+          - label: address safe-O0
+            sanitize: address
+            flags: --safe=yes -O0
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+
+      - name: Install c3c
+        run: |
+          curl -sL https://github.com/c3lang/c3c/releases/download/v0.8.3/c3-linux.tar.gz -o c3.tar.gz
+          tar xzf c3.tar.gz
+          echo "$PWD/c3" >> "$GITHUB_PATH"
+
+      - name: Test (${{ matrix.label }})
+        run: c3c test ${{ matrix.flags }} --sanitize=${{ matrix.sanitize }} --cc clang

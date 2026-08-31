@@ -1,0 +1,31 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'examples/**'
+  workflow_dispatch:
+
+jobs:
+  docgen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install c3c
+        run: |
+          curl -sL https://github.com/c3lang/c3c/releases/download/v0.8.3/c3-linux.tar.gz -o c3.tar.gz
+          tar xzf c3.tar.gz
+          echo "$PWD/c3" >> "$GITHUB_PATH"
+
+      - name: c3c docgen
+        run: c3c docgen --emit-stdlib=no src examples
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 3tk-docs
+          path: docs.html

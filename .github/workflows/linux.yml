@@ -1,0 +1,28 @@
+name: Linux
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    name: Build and test (${{ matrix.safe }}, ${{ matrix.opt }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        safe: [yes, no]
+        opt: [O0, O3]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install c3c
+        run: |
+          curl -sL https://github.com/c3lang/c3c/releases/download/v0.8.3/c3-linux.tar.gz -o c3.tar.gz
+          tar xzf c3.tar.gz
+          echo "$PWD/c3" >> "$GITHUB_PATH"
+
+      - name: Build
+        run: c3c build mtk --safe=${{ matrix.safe }} -${{ matrix.opt }}
+
+      - name: Test
+        run: c3c test --safe=${{ matrix.safe }} -${{ matrix.opt }}
