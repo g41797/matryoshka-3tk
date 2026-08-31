@@ -1,6 +1,7 @@
 <*
  The wrappers for `examples/`, catalog sections "Slot and transfer idioms",
- "Crossing the border", "Dispatch" and "The infrastructure is an outer too".
+ "Crossing the border", "Dispatch", "The infrastructure is an outer too" and
+ "Mailbox patterns".
 
  Every example is called by one `@test` here, and `always_assert` appears in
  this file and nowhere in `examples/`.
@@ -34,6 +35,12 @@ import exm::infrastructure_wrapper;
 import exm::mailbox_as_message;
 import exm::worker_finish_signal;
 import exm::pool_as_message;
+import exm::poll;
+import exm::receive_all;
+import exm::out_of_band;
+import exm::close_recovery;
+import exm::release_a_refused_transfer;
+import exm::wake_without_a_message;
 
 fn void test_example_empty_slot() @test
 {
@@ -159,4 +166,44 @@ fn void test_example_worker_finish_signal() @test
 fn void test_example_pool_as_message() @test
 {
     if (catch f = exm::pool_as_message::a_travelling_pool_carries_its_policy(mem)) always_assert(false, "pool_as_message example failed");
+}
+
+fn void test_example_poll() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::poll::poll_then_send_then_poll(mem, mb)) always_assert(false, "poll example failed");
+}
+
+fn void test_example_receive_all() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::receive_all::receive_all_at_once(mem, mb)) always_assert(false, "receive_all example failed");
+}
+
+fn void test_example_out_of_band() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::out_of_band::oob_arrives_first(mem, mb)) always_assert(false, "out_of_band example failed");
+}
+
+fn void test_example_close_recovery() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    if (catch f = exm::close_recovery::close_recovers_what_is_left(mem, mb)) always_assert(false, "close_recovery example failed");
+}
+
+fn void test_example_release_a_refused_transfer() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    if (catch f = exm::release_a_refused_transfer::refused_send_is_released_by_the_caller(mem, mb)) always_assert(false, "release_a_refused_transfer example failed");
+}
+
+fn void test_example_wake_without_a_message() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::wake_without_a_message::wake_reaches_a_blocked_receiver(mb)) always_assert(false, "wake_without_a_message example failed");
 }
