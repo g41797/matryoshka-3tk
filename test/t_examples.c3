@@ -53,6 +53,10 @@ import exm::the_hook_object_is_the_context;
 import exm::a_pool_of_several_identities;
 import exm::reading_the_fault_on_a_receive;
 import exm::the_coordinator;
+import exm::the_step;
+import exm::acquiring_the_resources;
+import exm::releasing_the_resources;
+import exm::the_thread_is_given_one_pointer;
 import exm::the_allocator_in_the_outer;
 import exm::identity_costs_nothing;
 import exm::the_optional_declaration_walk;
@@ -301,6 +305,30 @@ fn void test_example_the_coordinator() @test
 
     exm::the_coordinator::Master master = { .alloc = mem, .mbx = mb, .pool = p };
     if (catch f = master.run()) always_assert(false, "the_coordinator example failed");
+}
+
+fn void test_example_the_step() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::the_step::one_step_one_name(mem, mb)) always_assert(false, "the_step example failed");
+}
+
+fn void test_example_acquiring_the_resources() @test
+{
+    if (catch f = exm::acquiring_the_resources::resources_are_plain_pointers(mem)) always_assert(false, "acquiring_the_resources example failed");
+}
+
+fn void test_example_releasing_the_resources() @test
+{
+    if (catch f = exm::releasing_the_resources::reverse_acquisition_order(mem)) always_assert(false, "releasing_the_resources example failed");
+}
+
+fn void test_example_the_thread_is_given_one_pointer() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = exm::the_thread_is_given_one_pointer::one_pointer_is_the_whole_context(mem, mb)) always_assert(false, "the_thread_is_given_one_pointer example failed");
 }
 
 fn void test_example_the_allocator_in_the_outer() @test
