@@ -28,6 +28,32 @@ jobs:
       - name: c3c docgen
         run: c3c docgen --emit-stdlib=no src examples
 
+      # docgen's "Defined in" link only special-cases c3lang's own repo
+      # (checks window.location.href for c3-lang.org/c3lang.org); every
+      # other host, including this one, falls through to a bare relative
+      # href — which 404s once served from Pages, since the browser
+      # resolves it against the current page instead of GitHub. Patch the
+      # one unique line responsible (`href = filePath;`) to build a real
+      # GitHub blob URL instead. Fails loudly if the line is gone, so a
+      # future c3c version that reshapes this function is caught here
+      # rather than silently leaving dead links live.
+      - name: Patch "Defined in" links for GitHub
+        run: |
+          python3 - <<'EOF'
+          import sys
+          path = "docs.html"
+          old = "href = filePath;"
+          new = (
+              "href = 'https://github.com/g41797/matryoshka-3tk/blob/main/' + filePath;"
+              " if (lineStr) href += '#L' + lineStr;"
+          )
+          text = open(path).read()
+          count = text.count(old)
+          if count != 1:
+              sys.exit(f"expected exactly one match for {old!r} in {path}, found {count}")
+          open(path, "w").write(text.replace(old, new, 1))
+          EOF
+
       # c3c docgen writes one self-contained docs.html into the current
       # directory (preview-docs.sh's own comment says so) — not a directory.
       # Pages needs a directory with index.html at its root.

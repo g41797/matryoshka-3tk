@@ -222,6 +222,15 @@ here because an example stage will not have read that file.
 - **No tables.** A `|` row renders as itself.
 - **No nested bullets.** An indented sub-bullet renders at the parent's level.
 - Rationale only where it is short and non-obvious. No argument.
+- **A backticked `Module::symbol` auto-links, if it resolves.** Measured
+  2026-08-31 in `docs.html`'s `highlightC3`: a token containing `::` links to
+  the matching declaration's page with no `[text](url)` needed, the way
+  `examples/shc.c3`'s own module description links `` `shc::outers` `` and
+  `` `shc::helpers` `` for free. A bare capitalized word or `@attribute` links
+  the same way if it matches a known symbol; a bare lowercase word never does,
+  even when a function of that name exists. Prefer the qualified form when a
+  descriptor names another module or struct, since only the qualified and
+  capitalized forms are guaranteed to link.
 
 **Every diagram is fenced.** ` ``` ` on its own line, the diagram, ` ``` ` on
 its own line. Unfenced box drawing collapses.
