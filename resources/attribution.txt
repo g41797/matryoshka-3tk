@@ -1,0 +1,5 @@
+Based on
+    https://c3-lang.org/assets/logo.svg
+Original license:
+    https://github.com/c3lang/c3-web/blob/main/LICENSE
+
