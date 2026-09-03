@@ -137,26 +137,6 @@ struct PoolBucket
 // [3tk: V6, Part 11.1, Part 11.2, Part 11.7]
 typedef Pool = void;
 
-// The real fields, behind the opaque handle above. Every public method casts
-// its first line and works on this from there. Internal, so not a `<* *>`
-// block: see 3TK-42.
-// [3tk: V6, Part 11.1, Part 11.2, Part 11.7]
-struct _Pool @private
-{
-    Inner node;
-
-    Mutex             _mu;
-    ConditionVariable _cv;
-
-    Allocator         _alloc;
-
-    bool         _closed;
-    Atomic{bool} _closed_fast;
-    usz          _active;
-
-    PoolBucket[] _buckets;
-    PoolHooks    _hooks;
-}
 
 <*
  The identity of a `Pool` as an item.
@@ -286,7 +266,7 @@ macro bool _Pool.@closed_fast(&self) => self._closed_fast.load(ACQUIRE);
 // The bucket for an identity, or null. Called under the lock.
 // Internal, so not a `<* *>` block: see 3TK-42.
 // [3tk: A3, P2, Part 11.7, Part 19.3]
-fn PoolBucket* _Pool.bucket_for(&self, typeid t) @private
+fn PoolBucket* _Pool.bucket_for(&self, typeid t)
 {
     foreach (&b : self._buckets) if (b.tag == t) return b;
     return null;
@@ -529,13 +509,13 @@ fn void Pool.put(&pool, Slot* slot)
 }
 
 // Stores one item the hook decided to keep. Called under the lock.
-fn void _Pool.take_back(&self, Slot* s) @private
+fn void _Pool.take_back(&self, Slot* s)
 {
     if (s.is_empty()) return;
     self.take_back_handle(s.take());
 }
 
-fn void _Pool.take_back_handle(&self, Handle h) @private
+fn void _Pool.take_back_handle(&self, Handle h)
 {
     PoolBucket* b = self.bucket_for(h.link.type);
     mtk::@check(b != null, "the put hook returned an identity the pool was not created with");
@@ -599,7 +579,7 @@ fn void Pool.close(&pool)
 // so the check comes first and nothing else runs when it fails.
 // Internal, so not a `<* *>` block: see 3TK-42.
 // [3tk: R12, Part 11.12, Part 15.4]
-fn void _Pool._close(&self, InnerQueue* out) @private
+fn void _Pool._close(&self, InnerQueue* out)
 {
     if (self._closed) return;
 
@@ -650,6 +630,28 @@ fn usz Pool.count_of(&pool, typeid t)
     PoolBucket* b = self.bucket_for(t);
     return b ? b.free.len() : 0;
 }
+
+// The real fields, behind the opaque handle above. Every public method casts
+// its first line and works on this from there. Internal, so not a `<* *>`
+// block: see 3TK-42.
+// [3tk: V6, Part 11.1, Part 11.2, Part 11.7]
+struct _Pool @private
+{
+    Inner node;
+
+    Mutex             _mu;
+    ConditionVariable _cv;
+
+    Allocator         _alloc;
+
+    bool         _closed;
+    Atomic{bool} _closed_fast;
+    usz          _active;
+
+    PoolBucket[] _buckets;
+    PoolHooks    _hooks;
+}
+
 
 //----------------------
 // Little-endian imports
