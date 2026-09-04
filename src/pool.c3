@@ -27,7 +27,7 @@
  There is no `put_all`. A caller giving a batch back writes the loop.
 
  ```c3
- while (Handle h = batch.pop_front())
+ while (Inner* h = batch.pop_front())
  {
      Slot s;
      s.fill(h);
@@ -145,14 +145,14 @@ typedef Pool = void;
 const typeid TYPE = _Pool::typeid;
 
 <*
- From a `Pool*` to a `Handle`. Cannot fail.
+ From a `Pool*` to its handle, an `Inner*`. Cannot fail.
 *>
-macro Handle to_handle(Pool* p) => mtk::helper::to_handle((_Pool*)p);
+macro Inner* to_handle(Pool* p) => mtk::helper::to_handle((_Pool*)p);
 
 <*
  The checking crossing back. Null when the handle names another type.
 *>
-macro Pool* of(Handle h) => (Pool*)mtk::helper::from_handle(h, _Pool);
+macro Pool* of(Inner* h) => (Pool*)mtk::helper::from_handle(h, _Pool);
 
 <*
  Allocates a pool and returns it.
@@ -315,7 +315,7 @@ fn void? Pool.get(&pool, typeid want, GetMode mode, Slot* slot)
 
     if (mode != NEW_ONLY)
     {
-        Handle h = b.free.pop();
+        Inner* h = b.free.pop();
         if (h)
         {
             self._active--;
@@ -407,7 +407,7 @@ fn void? Pool.get_wait(&pool, typeid want, Slot* slot, Duration timeout)
         if (self._closed) return mtk::CLOSED~;
 
         // [3tk: A3]
-        Handle h = b.free.pop();
+        Inner* h = b.free.pop();
         if (h) { slot.fill(h); return; }
 
         if (catch f = self._cv.wait_until(&self._mu, deadline))
@@ -457,7 +457,7 @@ fn void Pool.put(&pool, Slot* slot)
     // [3tk: Part 11.12]
     self._active++;
 
-    Handle h = slot.peek();
+    Inner* h = slot.peek();
     PoolBucket* b = self.bucket_for(h.link.type);
     mtk::@check(b != null, "Pool.put of an identity the pool was not created with");
     if (!b) { self._active--; self._mu.unlock(); return; }
@@ -501,7 +501,7 @@ fn void Pool.put(&pool, Slot* slot)
     self.take_back(&mine);
 
     // [3tk: Part 12.5]
-    while (Handle e = extra.pop_front()) self.take_back_handle(e);
+    while (Inner* e = extra.pop_front()) self.take_back_handle(e);
 
     self._cv.broadcast();
     self._active--;
@@ -515,7 +515,7 @@ fn void _Pool.take_back(&self, Slot* s)
     self.take_back_handle(s.take());
 }
 
-fn void _Pool.take_back_handle(&self, Handle h)
+fn void _Pool.take_back_handle(&self, Inner* h)
 {
     PoolBucket* b = self.bucket_for(h.link.type);
     mtk::@check(b != null, "the put hook returned an identity the pool was not created with");
@@ -588,7 +588,7 @@ fn void _Pool._close(&self, InnerQueue* out)
 
     foreach (&b : self._buckets)
     {
-        while (Handle h = b.free.pop()) out.push_back(h);
+        while (Inner* h = b.free.pop()) out.push_back(h);
     }
 
     self._cv.broadcast();
