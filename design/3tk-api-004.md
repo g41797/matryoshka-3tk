@@ -26,7 +26,7 @@ that changed the source.
 `design/secondary/lang/c3/backup/`.
 
 **It does not argue.** No ruling markers, no history, no alternatives that were
-refused. Those live in [3tk-decisions-006.md](3tk-decisions-006.md).
+refused. Those live in [3tk-decisions-007.md](3tk-decisions-007.md).
 
 **Every contract and every check below is copied from `3tk/src`**, with its
 `file:line`. None is inferred from what a declaration ought to check.
