@@ -178,23 +178,28 @@ The toolkit never asks you to name the field's offset.
 It reads the offset out of your type at compile time.
 
 ```c3
-macro usz inner_offset($Type)
-macro usz required_alloc_offset($Type)
+macro usz inner_offset($Type) @private
+macro usz required_alloc_offset($Type) @local
 ```
 
 - It walks `$Type::members` and looks for the one of type `Inner`.
 - A type with no `Inner` field does not compile.
 - A type with two `Inner` fields does not compile.
 - The message names your type.
+- `@private`, and it can be: it is a macro and not a method, and every caller
+  shares this module.
 
 `required_alloc_offset` is the same idea for the allocator, and `mtk::managed`
-is its only caller.
+is its only caller. **3TK-63 moved it into `managed.c3` and made it `@local`**,
+so the allocator-field concept is confined to the one file `3TK-64` deletes.
 
 - `required_alloc_offset` — finds the `Allocator` field at compile time.
   - A type with no `Allocator` field does not compile.
-  - The message tells you to take the plain helper instead.
+  - The message tells you to allocate the outer yourself instead.
   - A type with two `Allocator` fields does not compile.
   - The message names your type.
+  - `@local` since 3TK-63, and it moved here from `inner.c3` in the same pass.
+  - The allocator-field concept belongs to `mtk::managed` and to nothing else.
 
 That is why there is no helper type to declare and no registration step.
 
@@ -333,7 +338,6 @@ Three steps. Define a type, transport it, recover it.
 
 ```c3
 import mtk;
-import mtk::helper;
 import mtk::managed;
 import std::core::mem::alloc;
 
@@ -413,15 +417,32 @@ while (Inner* inner = q.pop_front())
 The identity is written once and never computed.
 
 ```c3
-macro void init(outer)
+macro void stamp(outer)
 macro bool is_mine(Inner* inner, $Type)
+fn typeid Inner.outer_tid(&self)
 ```
 
-- `init` — writes the identity into the embedded `Inner`. Call it once, before
-  first use.
+**RENAMED by 3TK-64, 2026-09-07.** `init` is now the name of the user's own
+hook, so the macro that writes the identity is `stamp`. `OuterHelper.stamp` and
+`OuterHelper.inner` are the forms a user calls, and this is the macro they reach.
+
+- `stamp` — writes the identity into the embedded `Inner`.
+  - Call it any number of times.
+  - A second call writes what the first one wrote, and it is safe on a linked outer as well as an unlinked one.
+  - An outer that was never stamped carries no identity.
+  - The line below rebuilds the whole `any`, because `.type` is not assignable on its own.
+  - It preserves `link.ptr`, and that is what makes the stamp safe on a linked inner.
+  - The natural maintenance edit is `any_make(null, ...)`, which silently unlinks a linked outer.
+  - The correct line differs from the destructive one by a single sub-expression.
+  - It was called `init` until 3TK-64, when `init` became the name of the user's own hook.
 - `is_mine` — true when the inner names `$Type`.
   - False for a null inner.
-  - False for an outer whose `init` was never called.
+  - False for an outer that was never stamped.
+- `outer_tid` — the identity of the outer this inner is embedded in.
+  - Null for an inner that was never stamped.
+  - It exists so that no user ever writes `inner.link.type`.
+  - Public because C3 cannot hide a method — `@private` is ignored on method declarations.
+  - It is part of the user surface: a dispatch switch reads it.
 
 The identity answers one question: **is this a `$Type`?**
 
@@ -529,6 +550,32 @@ fn void   reset(Inner* inner)
 Every chain ends at an inner pointing at itself, never at null. That is what
 makes `is_linked` exact.
 
+#### Public, and why — the four on this page and the two guards
+
+**Written by 3TK-63.** These are public because the language leaves them no
+other state, not because a user is invited to call them. Each carries the
+sentence in its own descriptor, in one wording, so it reads as a rule rather
+than as an apology per declaration.
+
+- `repoint_to`, `points_to`, `InnerQueue.@guard_insert` and
+  `InnerStack.@guard_insert` are **methods**, and C3 ignores `@private` on a
+  method declaration: a method is found through its receiver type, not through
+  a module path, so there is no module boundary at the call site to check
+  against. Public because C3 cannot hide a method — `@private` is ignored on
+  method declarations. It is not part of the user surface. The containers call
+  it; nothing else should.
+- `reset` and `is_linked` are free functions and could be hidden, but are not.
+  Public because `InnerStack` calls it from `mtk::pool`, and a submodule cannot
+  see this module's `@private` declarations. It is not part of the user
+  surface.
+- `inner_offset` is the one that could be hidden and is. `@private`, and it can
+  be: it is a macro and not a method, and every caller shares this module.
+
+Converting the methods to free functions would buy an enforcement the language
+only partly grants anyway, since `Inner.link` is itself public and writable.
+The door cannot be closed; it is left plainly open, with a sign saying who is
+allowed through.
+
 ### The API — the queue
 
 The intrusive queue. First-in first-out. Nothing here allocates, and every
@@ -631,34 +678,117 @@ macro InnerStack.@guard_insert(&self, Inner* inner)
 - A null inner is a defect.
 - An outer already on any chain is a defect.
 - Both are gone from a fast build.
+- Public, and why: see *Public, and why* under *The API — the link*.
 
-### The API — allocating an outer for you
+### The API — the helper
 
-One helper allocates and frees, and only if your struct carries the allocator
-itself.
+**Written by 3TK-64, 2026-09-07.** It replaced *The API — allocating an outer
+for you*, and `mtk::managed` with it. The rest of this book still shows the
+macros directly; 3TK-66 makes every part lead with the helper.
+
+`OuterHelper` is the one thing a user binds, one line per outer type.
 
 ```c3
-macro void? create($Type, Allocator a, Slot* slot)
-macro void  release($Type, Slot* slot)
+alias MSG = mtk::OF{Msg};
 ```
 
-- `create` — allocates the outer, initializes it, and fills the Slot.
-  - The outer keeps the allocator for life.
-  - On an allocation failure the Slot is untouched and the fault is returned.
-- `release` — frees the outer with the allocator it kept.
-  - It takes no allocator.
-  - A no-op on an empty Slot, so a `defer` registered before the acquisition is
-    safe.
+`alias MSG = mtk::OF{Msg};` — and that is the whole ceremony. Uppercase, because
+it is a `const`, and C3 enforces the pairing in both directions. An uppercase
+alias must alias a constant, so `alias MSG = mtk::OF{Msg};` is the only
+spelling. The helper for `Outer`, ready to alias.
 
-No type declares itself managed. The choice is made at the call site.
+The carrier holds nothing. Its only job is to give C3's method syntax a
+receiver, so that `MSG.create(mem, &s)` is a line you can write. Every member
+takes `self` and no member reads it: `Outer` arrives from the module
+instantiation, and every member compares against `Outer::typeid`, the
+compile-time constant that instantiation supplies. C3 has no static-method
+facility, and no way to alias a module instantiation as a namespace, so a
+zero-state type is how a generic module offers its members under one bound name.
+It is a `typedef` over `uptr` because c3c refuses a struct with no members, and
+because the standard library spells its own zero-state carriers that way —
+`LibcAllocator` and `NullAllocator` are both this shape. The value is never
+read, as a number or as anything else.
+
+#### The four crossings
 
 ```c3
-Slot s;
-managed::create(Msg, a, &s)!;
-defer managed::release(Msg, &s);
+macro Outer* OuterHelper.look(self, from)
+macro Outer* OuterHelper.must_look(self, from)
+macro Outer* OuterHelper.take(self, Slot* slot)
+macro Outer* OuterHelper.must_take(self, Slot* slot)
+```
 
-Msg* m = s.must(Msg);
-m.id = 1;
+Two independent axes, so the names are derivable rather than memorised. `must_`
+aborts on a mismatch and plain returns null; `take` empties the Slot and `look`
+leaves it alone.
+
+- `look` — from a Slot or an inner back to `Outer*`, without disturbing the Slot.
+  - Null on an identity mismatch.
+  - A mismatch is an answer, not a failure.
+- `must_look` — same as `look`, and it aborts on a mismatch.
+  - Use it where a mismatch would be your own defect.
+  - The abort names your line.
+  - Under `--safe=no` the check is gone.
+- `take` — from a Slot back to `Outer*`, emptying the Slot on success.
+  - Null on an identity mismatch, and then the Slot is unchanged.
+  - There is no `Inner*` form: an inner has no Slot to empty.
+- `must_take` — same as `take`, and it aborts on a mismatch.
+  - The Slot is empty afterwards.
+  - This form did not exist before 3TK-64: the old `move_from_slot` had no abort form.
+
+#### The other three
+
+```c3
+macro Inner* OuterHelper.inner(self, Outer* outer)
+macro void   OuterHelper.stamp(self, Outer* outer)
+macro bool   OuterHelper.linked(self, Outer* outer)
+```
+
+- `inner` — from your pointer to the `Inner*`, stamping the identity on the way.
+  - The stamp may be written any number of times and is safe on a linked outer, so this costs nothing to call twice.
+  - It is what makes the identity impossible to forget.
+- `stamp` — writes the identity into the embedded `Inner`, and nothing else.
+  - For an outer you allocated by hand.
+  - An outer made by `create` is stamped already.
+  - It is called `stamp` and not `init` because `init` is the name of your own hook.
+- `linked` — true when the outer is on some chain.
+  - Exact, and O(1).
+
+#### Allocating and freeing
+
+```c3
+macro void? OuterHelper.create(self, Allocator a, Slot* slot)
+macro void  OuterHelper.release(self, Allocator a, Slot* slot)
+```
+
+`create` allocates the outer, initializes it, stamps it, and fills the Slot.
+
+- Four steps in this order: allocate zeroed, call your `init(a)` hook if you declared one, stamp the inner, fill the Slot.
+- Stamping after the hook is deliberate: if `init` fails the outer was never stamped, so a pointer that escaped a failed creation can never be mistaken for a live outer.
+- On a hook failure the allocation is freed and the fault is propagated unchanged.
+- On an allocation failure the Slot is untouched and the fault is returned.
+- It returns `void?` because its caller has a real decision to make.
+- The toolkit reads and writes no field of your outer except the `Inner`.
+- An outer that wants to keep its allocator stores this argument in its own field, under any name, in its own `init`.
+
+`release` calls your `destroy(a)` hook if you declared one, empties the Slot, and frees the outer.
+
+- A no-op on an empty Slot, so a `defer` registered before the acquisition is safe.
+- It returns `void`, and that is not symmetry-breaking for its own sake: `release` is what you write in a `defer`, and C3 refuses a bare failable call there.
+- The narrower reason is that a teardown fault has no recipient — `release` runs on a path that is usually already unwinding, nobody can act on "freeing failed", and the resource is gone either way.
+- A `destroy` fault therefore aborts in a safe build and is dropped in a fast one.
+- A failing destructor is a defect, not an outcome.
+
+Both hooks are optional, and both receive the allocator from the caller.
+
+```c3
+alias MSG = mtk::OF{Msg};
+
+Slot s;
+defer MSG.release(a, &s);
+MSG.create(a, &s)!;
+
+MSG.must_look(&s).id = 1;
 ```
 
 ### The API — the version
@@ -672,13 +802,12 @@ const String VERSION
 ### Where to go deeper
 
 - `3tk/src/inner.c3` — `Inner`, `Slot`, the link, `@check`.
-- `3tk/src/helper.c3` — every crossing.
-- `3tk/src/managed.c3` — `create` and `release`.
-- `3tk/src/queue.c3` and `3tk/src/stack.c3` — the two containers.
+- `3tk/src/helper.c3` — `OuterHelper`: the crossings, `create` and `release`.
+- `3tk/src/queue.c3` — the queue; `InnerStack` is the last section of `pool.c3`.
 - `3tk/test/t_identity.c3` — identity across types.
 - `3tk/test/t_slot.c3` — the Slot's states.
-- `3tk/test/t_queue.c3` and `3tk/test/t_stack.c3` — the containers.
-- `3tk/test/t_managed.c3` — create and release.
+- `3tk/test/t_queue.c3` — the queue.
+- `3tk/test/t_helper.c3` — the helper, the hooks, `create` and `release`.
 
 ---
 
@@ -1500,18 +1629,30 @@ One import gives the toolkit.
 import mtk;
 ```
 
-`module mtk` is declared by one file, and the rest are submodules of it.
+`module mtk` is declared by three files, and the mailbox and the pool are
+submodules of it.
 
 | module | file | what is in it |
 |---|---|---|
 | `mtk` | `mtk.c3` | `VERSION`, the faults, `@check`, `CHECKED` |
-| `mtk::inner` | `inner.c3` | `Inner`, `Slot`, and the link |
-| `mtk::queue` | `queue.c3` | `InnerQueue` and `InnerQueueIterator` |
-| `mtk::helper` | `helper.c3` | every crossing between a typed pointer and an `Inner*` |
+| `mtk` | `inner.c3` | `Inner`, `Slot`, the link, and every crossing between a typed pointer and an `Inner*` |
+| `mtk` | `queue.c3` | `InnerQueue` and `InnerQueueIterator` |
+| `mtk` | `helper.c3` | emptied by 3TK-63; 3TK-64 refills it as the generic section `module mtk <Outer>;` |
 | `mtk::managed` | `managed.c3` | `create` and `release`, for an outer that carries an allocator |
 | `mtk::mailbox` | `mailbox.c3` | `Mailbox` |
 | `mtk::pool` | `pool.c3` | `Pool` and `PoolHooks` |
 
+- **REVISED by 3TK-63, 2026-09-07:** seven files, four modules — and after
+  3TK-64 deletes `managed.c3`, four names for six files. `mtk::inner`,
+  `mtk::helper` and `mtk::queue` are gone as names: `inner.c3` absorbed the
+  crossing macros and `queue.c3` kept its content, and all three files declare
+  `module mtk;`. One file is one section, and the module is the sum of them.
+  **The reason is `@private`**, which in C3 reaches the module and nothing else
+  — not a submodule and not the parent. The symbols worth hiding are the chain
+  internals, and the only code entitled to them is the crossings and the two
+  containers, so those must share a module. `inner_offset` is `@private` as a
+  result; `reset` and `is_linked` are not, because `InnerStack` calls them from
+  `mtk::pool`, a submodule.
 - **REVISED by 3TK-62, 2026-09-07:** seven files, seven modules. `stack.c3` is
   deleted and `InnerStack` moved to the end of `pool.c3`, inside
   `module mtk::pool` — a comment banner marks the section, not a second module
@@ -1535,7 +1676,16 @@ core + mailbox + pool           transfer + outer reuse
 
 ### The modules, one by one
 
-**Eight modules, eight labelled blocks. Written by 3TK-46.**
+**Four modules, four labelled blocks. Written by 3TK-46; narrowed to four by
+3TK-63, which merged `mtk::inner`, `mtk::helper` and `mtk::queue` into `mtk`,
+and by 3TK-62, which merged `mtk::stack` into `mtk::pool`.**
+
+**A module has one description however many sections it is written in.**
+`module mtk;` is now declared by `mtk.c3`, `inner.c3` and `queue.c3`. `mtk.c3`
+carries the block; the other two carry a `//` banner saying they are sections
+and that the description lives in `mtk.c3`. `check-doc-loop.sh` reports such a
+file as *section only, no block*, and separately asserts that every labelled
+block here is carried by exactly one file.
 
 Each block below is one module's description. It is delimited by an HTML
 comment carrying the module's name, which is invisible in the rendered page and
@@ -1558,7 +1708,7 @@ sentence per line, never wrapped, every identifier in backticks, no trailing
 `\`, no numbered list, no table, no bold. The three restrictions are
 [3tk-doc-loop-003.md](3tk-doc-loop-003.md)'s, and the no-bold is the register's.
 
-**These eight are the only labelled blocks in this file.** A declaration's
+**These four are the only labelled blocks in this file.** A declaration's
 descriptor is not labelled and is not copied — it is judged, and checked as a
 subset. That is the other kind of move.
 
@@ -1593,18 +1743,9 @@ Not a coordinator.
 There is no `Master` type.
 
 One import gives the toolkit.
-`module mtk` is declared by one file, and the rest are submodules of it.
+`module mtk` is declared by three files, and the mailbox and the pool are submodules of it.
 This module holds `VERSION`, the faults, `@check` and `CHECKED`.
-<!-- /3tk:module -->
-
-#### `mtk::inner`
-
-From Part 3's *What this is*, *Participants*, *The API — the Slot* and *The API
-— the link*. Part 3's *Usual flow* is the core's, not this module's, and it is
-a numbered list with nested bullets: **left out.**
-
-<!-- 3tk:module mtk::inner -->
-The inner, the Slot, and the link.
+It holds the inner, the Slot, the link, the crossings and the queue.
 
 You send and receive your own struct.
 The struct is the outer, and it is yours.
@@ -1628,36 +1769,6 @@ The chain link is the other half of `Inner`.
 `reset` clears the chain link and not the identity.
 Every chain ends at an inner pointing at itself, never at null.
 That is what makes `is_linked` exact.
-<!-- /3tk:module -->
-
-#### `mtk::queue`
-
-From Part 3's *The API — the queue*. No *Usual flow* of its own: **none to
-decide about.**
-
-<!-- 3tk:module mtk::queue -->
-The intrusive queue. First-in first-out.
-
-The transfer container.
-Nothing here allocates, and every operation is O(1).
-The count is kept, so `len` is O(1).
-`push_back` adds at the back.
-There is no front insert.
-`pop_front` takes the outer at the front, and null on an empty queue is an answer and not a fault.
-`append_queue` moves every outer of another queue onto the back of this one, in O(1).
-`iter` and `next` are a walker, taken from the queue.
-Removing the current outer during a walk is not supported.
-Every chain ends at an inner pointing at itself, never at null.
-Nothing in the queue can fail.
-<!-- /3tk:module -->
-
-#### `mtk::helper`
-
-From Part 3's *The API — crossing*. No *Usual flow* of its own: **none to
-decide about.**
-
-<!-- 3tk:module mtk::helper -->
-Every crossing between a typed pointer and an `Inner*` lives in one file.
 
 You send and receive your own struct.
 You give the infrastructure one thing, an `Inner` embedded in it.
@@ -1678,29 +1789,29 @@ The same three take the outer from a Slot, and five of them appear again as meth
 None of these moves an outer.
 Reading an identity and casting a pointer leave every container alone.
 No alias to declare, no instantiation, no registration.
+
+The intrusive queue. First-in first-out.
+The transfer container.
+Nothing here allocates, and every operation is O(1).
+The count is kept, so `len` is O(1).
+`push_back` adds at the back.
+There is no front insert.
+`pop_front` takes the outer at the front, and null on an empty queue is an answer and not a fault.
+`append_queue` moves every outer of another queue onto the back of this one, in O(1).
+`iter` and `next` are a walker, taken from the queue.
+Removing the current outer during a walk is not supported.
+Every chain ends at an inner pointing at itself, never at null.
+Nothing in the queue can fail.
 <!-- /3tk:module -->
 
-#### `mtk::managed`
 
-From Part 3's *The API — allocating an outer for you*. No *Usual flow* of its
-own: **none to decide about.** Its worked example is a ```c3 fence, which does
-survive the crossing, and it is left in the reference because it belongs to a
-group of declarations rather than to the module.
 
-<!-- 3tk:module mtk::managed -->
-Optional convenience API, not Matryoshka core.
 
-One helper allocates and frees, and only if your struct carries the allocator itself.
+#### `mtk::managed` — gone
 
-`create` allocates the outer, initializes it, and fills the Slot.
-The outer keeps the allocator for life.
-On an allocation failure the Slot is untouched and the fault is returned.
-`release` frees the outer with the allocator it kept.
-It takes no allocator.
-It is a no-op on an empty Slot, so a `defer` registered before the acquisition is safe.
-No type declares itself managed.
-The choice is made at the call site.
-<!-- /3tk:module -->
+**Deleted by 3TK-64, 2026-09-07.** The module does not exist, so it has no
+description to carry. `create` and `release` are members of `OuterHelper` in
+`module mtk`, and their sentences are inside `mtk`'s block above.
 
 #### `mtk::mailbox`
 
@@ -1747,7 +1858,8 @@ stays in the reference.
 
 **One divergence found and resolved toward the reference.** The fence in
 `pool.c3`'s module block once opened `while (mtk::Inner* inner = ...)`, a spelling
-that named nothing: the alias was declared in `mtk::inner`, never in `mtk`.
+that named nothing: the alias was declared in `mtk::inner`, never in `mtk`
+(a distinction 3TK-63 dissolved, by making the two the same module).
 **3TK-47's move corrected it by copying.** 3TK-59 has since removed the alias
 outright, and source and reference both write the inner as `Inner*`.
 

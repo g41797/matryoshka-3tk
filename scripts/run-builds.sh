@@ -84,11 +84,17 @@ TIER1_NEGATIVES=(release_open_mailbox release_while_receiving
                  release_with_straggler_put)
 
 # A compile-time negative never compiles, in any mode, and its message must name the type.
+#
+# 3TK-64 RETIRED TWO OF THESE, and the retirement is the stage, not a loss of
+# coverage. `nocompile_managed_no_allocator` and `nocompile_managed_two_allocators`
+# asserted that an outer without exactly one `Allocator` field does not compile.
+# There is no allocator-field concept any more — the allocator is passed to
+# `create` and `release` — so both of those outers must now compile AND RUN.
+# The proof moved to `test/t_helper.c3`, where it is a positive test:
+# `an_outer_needs_no_allocator_field` and `two_allocator_fields_are_the_outers_business`.
 declare -A NOCOMPILE_EXPECT=(
   [nocompile_no_inner]="NotAnItem"
   [nocompile_two_inners]="TwoInners"
-  [nocompile_managed_no_allocator]="mtk::helper"
-  [nocompile_managed_two_allocators]="TwoAllocators"
 )
 
 echo "== c3c =="

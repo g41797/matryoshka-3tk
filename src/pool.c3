@@ -147,12 +147,19 @@ const typeid TYPE = _Pool::typeid;
 <*
  From a `Pool*` to its `Inner*`. Cannot fail.
 *>
-macro Inner* to_inner(Pool* p) => mtk::helper::to_inner((_Pool*)p);
+// Part 4.6: `_Pool` is an Outer, and the pool is an ordinary client of the
+// helper — one `@private` alias, exactly as an application writes one.
+// `to_inner` keeps the read-only macro for the reason `mailbox.c3` gives at the
+// same site: the helper's `inner()` stamps, and this direction is crossed
+// concurrently.
+alias POOL @private = mtk::OF{_Pool};
+
+macro Inner* to_inner(Pool* p) => mtk::to_inner((_Pool*)p);
 
 <*
  The checking crossing back. Null when the inner names another type.
 *>
-macro Pool* of(Inner* inner) => (Pool*)mtk::helper::from_inner(inner, _Pool);
+macro Pool* of(Inner* inner) => (Pool*)POOL.look(inner);
 
 <*
  Allocates a pool and returns it.
@@ -190,7 +197,7 @@ fn Pool*? create(Allocator a, typeid[] tags, PoolHooks hooks)
     _Pool* p = alloc::new_try(a, _Pool)!;
     defer catch alloc::free(a, p);
 
-    mtk::helper::init(p);
+    POOL.stamp(p);
     p._alloc = a;
     p._hooks = hooks;
 
@@ -678,7 +685,7 @@ struct _Pool @private
 *>
 // [3tk: P6, R2, R11, R13, R14, V2, Part 8, Part 8.1, Part 8.4, Part 11.7, Part 11.10, Part 19.4]
 // [3tk: R12, Part 8.1, Part 12.4]
-struct InnerStack @local
+struct InnerStack  @local
 {
     Inner* top;
     usz    count;
@@ -690,13 +697,17 @@ struct InnerStack @local
  A null inner is a defect.
  An outer already on any chain is a defect.
  Both are gone from a fast build.
+
+ Public because C3 cannot hide a method — `@private` is ignored on method declarations.
+ It is not part of the user surface.
+ The containers call it; nothing else should.
 *>
-// [3tk: R6b, Part 8.6]
+// [3tk: R6b, Part 4.4, Part 8.6]
 macro InnerStack.@guard_insert(&self, Inner* inner)
 {
     mtk::@check(inner != null, "insert of a null inner");
     // [3tk: Part 8.7]
-    mtk::@check(!mtk::inner::is_linked(inner), "the outer is already on a chain");
+    mtk::@check(!mtk::is_linked(inner), "the outer is already on a chain");
 }
 
 // --- Questions ----------------------------------------------------------------
@@ -744,7 +755,7 @@ fn Inner* InnerStack.pop(&self)
     if (!inner) return null;
     self.top = (inner.points_to() == inner) ? null : inner.points_to();
     self.count--;
-    mtk::inner::reset(inner);
+    mtk::reset(inner);
     return inner;
 }
 
@@ -753,8 +764,6 @@ fn Inner* InnerStack.pop(&self)
 // Little-endian imports
 //----------------------
 import mtk;
-import mtk::inner;
-import mtk::helper;
 import std::thread;
 import std::time;
 import std::core::mem::alloc;
