@@ -226,7 +226,38 @@ done
 # get around `repoint_to`. 3TK-18 hit this same line and its log row says what
 # happens when the spelling moves and the grep does not — the check goes on
 # printing ok for ever.
-if grep -nE '(@guard_insert|\.repoint_to|any_make|\.link[[:space:]]*=)' src/mailbox.c3 src/pool.c3 >/dev/null 2>&1; then
+#
+# 3TK-62 NARROWED IT, and the narrowing is the design, not a suppression.
+# `stack.c3` was deleted and `InnerStack` moved to the end of `pool.c3`, inside
+# `module mtk::pool`. The stack IS the surface, so it uses `@guard_insert` and
+# `.repoint_to` by right. This grep works on `pool.c3` as a FILE, so it would
+# report the surface as a container reaching around itself and go red on a
+# correct change.
+#
+# So `pool.c3` is cut at the stack's banner and only the container half — every
+# line above it, which is all of `_Pool` — is grepped. The banner's presence is
+# asserted first: if it is ever renamed, this check must NOT quietly fall back
+# to grepping the whole file or nothing at all. Part 4.5 of the boundaries
+# document records that this grep is the only enforcement there is, because
+# `@private` is ignored on method declarations, so it must stay one.
+STACK_BANNER='^// The intrusive stack — private to the pool'
+if ! grep -qE "$STACK_BANNER" src/pool.c3; then
+    bad "src/pool.c3 has no stack banner — the layering grep cannot be narrowed correctly"
+else
+    ok "src/pool.c3 carries the stack banner the layering grep cuts at"
+fi
+# awk, not sed: the banner contains `//`, which collides with sed's own address
+# delimiter — the expression errors out, the half comes out EMPTY, and the grep
+# prints ok for ever. That is the exact failure the paragraph above warns about,
+# and it happened once during 3TK-62 before this line was rewritten.
+CONTAINER_HALF=$(awk -v b="$STACK_BANNER" '$0 ~ b {exit} {print}' src/pool.c3)
+if [ "$(printf '%s\n' "$CONTAINER_HALF" | wc -l)" -lt 100 ]; then
+    bad "the container half of src/pool.c3 came out empty — the layering grep is checking nothing"
+else
+    ok "the container half of src/pool.c3 is what the layering grep sees"
+fi
+if printf '%s\n' "$CONTAINER_HALF" | grep -nE '(@guard_insert|\.repoint_to|any_make|\.link[[:space:]]*=)' >/dev/null 2>&1 \
+   || grep -nE '(@guard_insert|\.repoint_to|any_make|\.link[[:space:]]*=)' src/mailbox.c3 >/dev/null 2>&1; then
     bad "a container reaches around the InnerQueue/InnerStack surface"
 else
     ok "no container reaches around the InnerQueue/InnerStack surface"

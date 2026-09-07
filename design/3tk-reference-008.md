@@ -96,7 +96,8 @@ That gives a concurrent program with no lock around application data.
 Plain scope limits.
 
 - Not a container library. The queue and the stack exist because the mailbox
-  and the pool need them, and a caller may use either one directly.
+  and the pool need them, and a caller may use the queue directly. The stack is
+  private to the pool.
 - Not an allocator. Every outer is allocated and freed by your code, or by your
   hooks.
 - Not a garbage collector. The toolkit never frees an outer you gave it, except
@@ -608,8 +609,15 @@ The stack is the storage container. Outers rest in it until they are wanted
 again, and the newest is the one that comes back first.
 
 The pool keeps one per identity, and it is the only stack 3tk owns. No 3tk
-signature passes one: the four that take a container take an `InnerQueue*`. A
-caller who wants a stack declares one.
+signature passes one: the four that take a container take an `InnerQueue*`.
+It lives inside `mtk::pool` and is not a name a user can reach.
+
+**REVISED by 3TK-62, 2026-09-07.** `004` said *"a caller who wants a stack
+declares one."* That is withdrawn. `stack.c3` is deleted as a file and
+`InnerStack` is the last section of `pool.c3`, inside `module mtk::pool`, so a
+caller cannot name it at all. This reverses 3TK-45. The API above is documented
+because the pool is built on it and the book explains the pool — not because it
+is yours to call.
 
 ### The API — the insert guards
 
@@ -1499,12 +1507,15 @@ import mtk;
 | `mtk` | `mtk.c3` | `VERSION`, the faults, `@check`, `CHECKED` |
 | `mtk::inner` | `inner.c3` | `Inner`, `Slot`, and the link |
 | `mtk::queue` | `queue.c3` | `InnerQueue` and `InnerQueueIterator` |
-| `mtk::stack` | `stack.c3` | `InnerStack` |
 | `mtk::helper` | `helper.c3` | every crossing between a typed pointer and an `Inner*` |
 | `mtk::managed` | `managed.c3` | `create` and `release`, for an outer that carries an allocator |
 | `mtk::mailbox` | `mailbox.c3` | `Mailbox` |
 | `mtk::pool` | `pool.c3` | `Pool` and `PoolHooks` |
 
+- **REVISED by 3TK-62, 2026-09-07:** seven files, seven modules. `stack.c3` is
+  deleted and `InnerStack` moved to the end of `pool.c3`, inside
+  `module mtk::pool` — a comment banner marks the section, not a second module
+  line. `mtk::stack` is gone as a name.
 - Eight files, eight modules, one module per file. **REVISED by 3TK-46.** `001`
   said the core was one module spread over `mtk.c3`, `inner.c3`, `queue.c3` and
   `stack.c3`, and that `module mtk` was declared by four files. 3TK-44 split it,
@@ -1572,7 +1583,8 @@ One place has the outer at a time.
 That gives a concurrent program with no lock around application data.
 
 Not a container library.
-The queue and the stack exist because the mailbox and the pool need them, and a caller may use either one directly.
+The queue and the stack exist because the mailbox and the pool need them, and a caller may use the queue directly.
+The stack is private to the pool.
 Not an allocator.
 Every outer is allocated and freed by your code, or by your hooks.
 Not a garbage collector.
@@ -1637,28 +1649,6 @@ There is no front insert.
 Removing the current outer during a walk is not supported.
 Every chain ends at an inner pointing at itself, never at null.
 Nothing in the queue can fail.
-<!-- /3tk:module -->
-
-#### `mtk::stack`
-
-From Part 3's *The API — the stack*, as 3TK-45 rewrote it. No *Usual flow* of
-its own: **none to decide about.**
-
-<!-- 3tk:module mtk::stack -->
-The intrusive stack. Last-in first-out.
-
-The storage container.
-Where the queue carries outers across, the stack holds them still.
-The pool keeps one per identity, and it is the only stack 3tk owns.
-No 3tk signature passes one: the four that take a container take an `InnerQueue*`.
-A caller who wants a stack declares one.
-Four operations: no walker, and no splice.
-The order is not promised.
-No caller is entitled to which outer comes back.
-Every chain ends at an inner pointing at itself, never at null.
-Nothing in the stack can fail.
-The count is kept, so `len` is O(1).
-There is no tail, so flattening the stack is O(n).
 <!-- /3tk:module -->
 
 #### `mtk::helper`

@@ -17,7 +17,8 @@
  That gives a concurrent program with no lock around application data.
 
  Not a container library.
- The queue and the stack exist because the mailbox and the pool need them, and a caller may use either one directly.
+ The queue and the stack exist because the mailbox and the pool need them, and a caller may use the queue directly.
+ The stack is private to the pool.
  Not an allocator.
  Every outer is allocated and freed by your code, or by your hooks.
  Not a garbage collector.

@@ -46,8 +46,17 @@ below, with real `file:line`, **and deletes them from here.** When this section
 is empty the rethinking is built, and the section goes with it.
 
 **The reasoning is not repeated here.** It is in
-[3tk-rethinking-001.md](3tk-rethinking-001.md), cited by id. This file says what
+[3tk-boundaries-001.md](3tk-boundaries-001.md), cited by id — `RT-n` a ruling,
+`HR-n` a helper requirement, `PL-n` the parking lot, `MS-n` a measurement, and
+its Appendix B is the map this section is corrected from. This file says what
 stands.
+
+**3TK-62 corrected this section on 2026-09-07** where 3TK-61's first sitting was
+later overruled by its second. Four entries said something that is no longer
+true — `xtn`, the allocator field, `create`/`release` outside the core, and the
+stutter left open — and a reader of this file was getting the pre-ruling design.
+They are marked **SUPERSEDED** below rather than deleted, because a port reading
+this file may have read them already.
 
 ### The governing rule
 
@@ -60,21 +69,26 @@ stands.
 
 ### Files and modules — 3TK-62, 3TK-63
 
-- **The stack is private, and the pool is what cares.** `stack.c3` moves to the
-  end of `pool.c3`; module `mtk::stack` and `test/t_stack.c3` go away. `RT-4`.
-  **This reverses 3TK-45** ("stack is public", 2026-08-26), whose entry in the
-  `stack.c3` section below stands until 3TK-62 rewrites it. Measured
-  2026-09-06: `pool.c3` is the only user in `src/`, and nothing in `examples/`
-  or `negative/` touches it. The pool already tests the stack's one observable
-  promise black-box (`../3tk/test/t_pool.c3:545-593`, `R11`).
+**BUILT by 3TK-62, 2026-09-07.** `RT-4` — the stack is private and the pool is
+what cares — is no longer ahead of the source. Its entry is now in the body,
+under *The stack, at the end of `pool.c3`*, with real `file:line`.
+
 - **`inner.c3` absorbs the old `helper.c3` content** — `Inner`, `Slot`, the link
-  and Slot operations and the crossing macros in one file, module `mtk::inner`.
-  `RT-2`. The split was a seam the user should not have to see, and the two
+  and Slot operations and the crossing macros in one file. `RT-2`.
+  **SUPERSEDED in its module name:** the file declares **`module mtk;`**, not
+  `mtk::inner` — the second sitting merged eight module names into four
+  (Boundaries `Part 4.2`). The split was a seam the user should not have to see, and the two
   module blocks stated the same paragraph twice.
 - **`helper.c3` survives and is refilled by `OuterHelper`.** `RT-3`.
-- **`managed.c3` leaves the core** into module **`xtn`** under
-  `../3tk/extensions/`, top level so it sorts after `mtk` in the documentation.
-  **The word *managed* survives in no name.** `RT-5`.
+  **SUPERSEDED in its module name:** the file declares **`module mtk <Outer>;`**
+  — the same name in its generic form, which C3 permits (Boundaries `A.6`), not
+  `mtk::helper`.
+- **SUPERSEDED ENTIRELY — `xtn` never exists.** `RT-5` had `managed.c3` leave
+  the core into a module `xtn` under `../3tk/extensions/`. The second sitting
+  ruled that away: **`managed.c3` is deleted**, and its content dissolves into
+  `OuterHelper.create` and `.release` **in the core**. `../3tk/extensions/` has
+  no tenant. **The word *managed* survives in no name, and neither does `xtn`.**
+  Boundaries `Part 4.1`. 3TK-64 builds it.
 
 ### The allocator — 3TK-64
 
@@ -82,12 +96,14 @@ stands.
   `RT-12`. This undoes a port deviation: ztk never stores it
   (`matryoshka-tk/src/polynode.zig:201,223`), and 3tk stored it only to reach a
   `release` with no argument.
-- **An Outer's `Allocator` field is optional, and it is for the Outer's own
-  allocations.** `create` writes it when the type has one and does not when it
-  has none; **no type is refused for lacking it.** `RT-13`.
-  `required_alloc_offset` becomes an optional discovery — "not found" is an
-  answer, "found twice" is still an error — and moves to `xtn`.
-  **This inverts `run-builds.sh`'s `nocompile_managed_no_allocator` check.**
+- **SUPERSEDED ENTIRELY — there is no allocator-field concept.** `RT-13` made
+  an Outer's `Allocator` field optional and turned `required_alloc_offset` into
+  an optional discovery. The second sitting deleted the concept instead:
+  **`required_alloc_offset` is deleted outright** (3TK-63), and with it the
+  negative program that asserted an Outer without an `Allocator` field fails to
+  compile. **The allocator is passed per call.** `HR-7` is deleted with it.
+  Boundaries `Part 4.1`. **`run-builds.sh`'s `nocompile_managed_no_allocator`
+  check is still inverted by 3TK-64** — that much of the entry stands.
 - **`create` establishes defaults only, and accepts an optional initializer.**
   `RT-14`. Measured on c3c 0.8.3, 2026-09-06: **C3 has no struct default field
   initializers**, but `alloc::new`/`new_try` allocate with `calloc` when given
@@ -142,13 +158,17 @@ stands.
 
 ### Still the owner's, and no stage may assume them
 
-- **Where `create`/`release` live**, given that the core is meant to allocate
-  nothing. The recommendation on record is ztk's own split: `mtk::helper` the
-  base helper, `xtn` the allocating variant. `HR-10`.
+- **RULED, not open — where `create`/`release` live.** `HR-10` recorded ztk's
+  split, base helper plus an allocating variant, as a recommendation. The second
+  sitting ruled **both live in the core**, as members of `OuterHelper` in
+  `helper.c3`. There is no second helper and no `xtn`. Boundaries `Part 3.4`.
 - **How `init` stops being forgettable** for an outer the helper did not create.
   The candidate is `to_inner` stamping the identity idempotently, safe because
   its argument is a typed `Outer*`. `HR-5`.
-- **The `inner::to_inner` stutter** the merge creates. `PL-6`.
+- **RULED, not open — the stutter.** `PL-6` asked what to do about
+  `inner::to_inner`. The merge of the module names answers it: the crossing is
+  spelled **`mtk::to_inner`**, because `mtk::inner` is not a module name any
+  more. Boundaries `Part 4.2`.
 - **The helper's member list.** `MS-1` proposes; the owner rules. `RT-10`.
 
 ---
@@ -599,49 +619,63 @@ operations.
 
 ---
 
-## `stack.c3`
+## The stack, at the end of `pool.c3`
 
 **What it is.** The intrusive stack, last-in first-out. `Part 8`. Four
-operations.
+operations. **Since 3TK-62, 2026-09-07, it is not a file and not a module**: it
+is the last section of `pool.c3`, inside `module mtk::pool`, marked by a comment
+banner and not by a second module line. `../3tk/src/pool.c3:657`.
 
+- **It is private to the pool, and that reverses 3TK-45.** The 2026-08-26
+  ruling — *"it is available to a caller like the queue"* — is **withdrawn**.
+  `InnerStack` is no longer a name a user can reach: `mtk::stack` is gone,
+  `test/t_stack.c3` is deleted, and `pool.c3` is its only user, as it always
+  was in practice. `RT-4`. `../3tk/src/pool.c3:669-670`.
+  - **What made the reversal available** is that `@private` reaches the module
+    and nothing else, so *"who may call this"* has one answer: do we share a
+    module. Boundaries `Part 4.2`, `Part 4.3`.
+  - **What it cost** is that `mtk::pool` is a submodule and cannot see `mtk`'s
+    privates, so `mtk::inner::reset` and `mtk::inner::is_linked` — which the
+    stack calls — **cannot become `@private`**. Boundaries `Part 4.3`, and
+    3TK-63 writes them the *"public because"* line.
+  - **What it did not cost** is the layering check. `run-builds.sh`'s grep for
+    a container reaching around the container surface works on `pool.c3` as a
+    file, and the stack *is* the surface. It was **narrowed** in the same pass
+    to the container half of the file, cut at the banner, with the emptiness of
+    that half asserted — because Boundaries `Part 4.5` records it as the only
+    enforcement there is. `../3tk/run-builds.sh:229-263`.
 - **`Part 8.1` permits it in the plural since 003.** `V2`.
-  `../3tk/src/stack.c3:10`.
+  `../3tk/src/pool.c3:668`.
 - **The pool keeps one per identity, and it is the only `InnerStack` in the
   port.** It is on no signature 3tk publishes — the four container-typed ones
-  take an `InnerQueue*` — and **it is available to a caller like the queue.**
-  The owner's ruling, 2026-08-26; `R13`'s middle clause was revised to match it,
-  and `002` of this file is that revision. `R2`, `R11`, `R13`.
-  `../3tk/src/stack.c3:4`.
+  take an `InnerQueue*`. `R2`, `R11`, `R13`. `../3tk/src/pool.c3:668-669`.
 - **No walker** — nothing walks a free list and `Part 8.4` is a SHOULD — **and
-  no splice**, because a stack keeps no tail. `../3tk/src/stack.c3:5`.
+  no splice**, because a stack keeps no tail. `../3tk/src/pool.c3:671`.
 - **There is no Slot-shaped insert.** `push_slot`'s only caller was `put_all`,
   which `R15` dropped; with that gone it had none, and it was deleted
-  2026-08-24 on the owner's instruction. **The 2026-08-26 ruling does not
-  reopen it** — `R15` is the ground that stands, and the ruling only retires a
-  second one that said no application could reach a stack. `R15`, `R13`, `P6`.
-  `../3tk/src/stack.c3:59`.
+  2026-08-24 on the owner's instruction. `R15`, `R13`, `P6`.
+  `../3tk/src/pool.c3:721`.
 - **The stack is the storage container, where the queue is the transfer
   container.** Outers rest in it until they are wanted again. That is the
   stack's own reason, and it does not depend on the pool. `R2`.
-  `../3tk/src/stack.c3:8`.
+  `../3tk/src/pool.c3:666-667`.
 - **The pool reuses last-in first-out for DEFECT SURFACING, not for
   performance.** The outer just given back is on top, so a stale writer and a new
   holder collide immediately instead of much later. It is the owner's reason, and
   this entry is the only place it is written down. `R11`.
-  `../3tk/src/stack.c3:2`.
+  `../3tk/src/pool.c3:118`.
 - **No caller is entitled to the order, and that is what keeps the property
   useful.** `Part 11.7` stays silent on order; `Part 11.10` MUST already
-  promises nothing. `R11`, `R14`. `../3tk/src/stack.c3:6`.
+  promises nothing. `R11`, `R14`. `../3tk/src/pool.c3:672-673`.
 - **There is no `tail`.** That is what makes `Pool.close`'s flatten O(n) rather
-  than a splice, and `R12` accepted the cost.
-  `../3tk/src/stack.c3:17`.
+  than a splice, and `R12` accepted the cost. `../3tk/src/pool.c3:677`.
 - **`top` and a kept count, so `len` is O(1)**, and `Part 12.4`'s hint is read
-  from it under the lock. `../3tk/src/stack.c3:16`.
+  from it under the lock. `../3tk/src/pool.c3:676`.
 - **The insert guard is the same one the queue carries, for the same reason.**
-  `R6b`. `../3tk/src/stack.c3:29`.
+  `R6b`. `../3tk/src/pool.c3:688`.
 - **The bottom outer points at itself, and `pop` recognises the sole outer by
-  `h.points_to() == h`.** `../3tk/src/stack.c3:7`.
-- **Nothing here can fail.** `Part 19.4`. `../3tk/src/stack.c3:8`.
+  `h.points_to() == h`.** `../3tk/src/pool.c3:674`.
+- **Nothing here can fail.** `Part 19.4`. `../3tk/src/pool.c3:675`.
 
 ---
 

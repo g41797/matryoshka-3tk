@@ -306,13 +306,13 @@ asymmetry is why the checks in 5.2 are load-bearing rather than decorative.
 | `inner.c3` | `Inner`, `Slot`, the link and Slot operations, **and the crossing macros** — the old `helper.c3` content moves in |
 | `helper.c3` | emptied, then **refilled** with `OuterHelper` as the generic section |
 | `queue.c3` | unchanged in content; its **module line** changes |
-| `stack.c3` | **deleted as a file** — the content moves to the very end of `pool.c3`. `test/t_stack.c3` is deleted. This reverses 3TK-45 |
+| `stack.c3` | **deleted as a file** — the content moves to the very end of `pool.c3`, *inside `module mtk::pool;`*. `test/t_stack.c3` is deleted. This reverses 3TK-45 |
 | `managed.c3` | **deleted.** Its content dissolves into `OuterHelper.create` / `.release` |
 | `3tk/extensions/` | **has no tenant.** A module `xtn` was designed and then ruled away |
 
 **The word *managed* survives in no name**, and neither does `xtn`.
 
-## 4.2 The modules — four names, five sections
+## 4.2 The modules — four names, one section per file
 
 | file | declares |
 |---|---|
@@ -320,24 +320,34 @@ asymmetry is why the checks in 5.2 are load-bearing rather than decorative.
 | `inner.c3` | `module mtk;` |
 | `queue.c3` | `module mtk;` |
 | `helper.c3` | `module mtk <Outer>;` — the generic section |
-| `pool.c3`, the stack section at the end | `module mtk;` |
-| `pool.c3`, the rest | `module mtk::pool;` |
+| `pool.c3` | `module mtk::pool;` — **all of it, the stack section included** |
 | `mailbox.c3` | `module mtk::mailbox;` |
 
 Eight module names become **four**: `mtk`, `mtk <Outer>`, `mtk::mailbox`,
 `mtk::pool`. `mtk::inner`, `mtk::helper`, `mtk::queue`, `mtk::stack` and
 `mtk::managed` are gone.
 
-**Two C3 facts make this arrangement possible, and both were measured**
-(Appendix A.6, A.7): a module name may be **both plain and generic**, so
-`mtk::to_inner(…)` and `mtk::OF{Msg}` resolve against one namespace; and **a
-file may hold several module sections**, so the stack sits physically at the end
-of `pool.c3` — where it belongs, out of the module list and out of the reference
-— while keeping the core's private access.
+**One C3 fact makes this arrangement possible, and it was measured**
+(Appendix A.6): a module name may be **both plain and generic**, so
+`mtk::to_inner(…)` and `mtk::OF{Msg}` resolve against one namespace.
 
-**`InnerQueue` and `InnerStack` remain public types.** Only their namespaces
-went. Users still declare them; they write `mtk::InnerQueue` where they wrote
-`mtk::queue::InnerQueue`.
+**The stack goes all the way into `mtk::pool`, not into `mtk`.** An earlier
+draft gave it its own `module mtk;` section at the end of `pool.c3`, on the
+reasoning that core code should keep the core's private access. Two
+measurements dissolved that: **`InnerStack` has no user outside `pool.c3`** —
+the only references are `pool.c3:116` and `pool.c3:126`, everything else being
+`test/t_stack.c3`, which is deleted — and **`mtk` declares nothing `@private`
+at all**, so there is no private access to keep. The stack needs only `Inner`,
+`Slot`, `repoint_to`, `reset` and `mtk::@check`, every one of them public and
+reachable from a submodule.
+
+So one file declares one module, and `InnerStack` becomes **invisible outside
+`pool.c3`** rather than merely undocumented in `mtk`. That is what `RT-4` asked
+for, and it is the simpler arrangement besides.
+
+**`InnerQueue` remains a public type of `mtk`.** Only its namespace went: users
+write `mtk::InnerQueue` where they wrote `mtk::queue::InnerQueue`. **`InnerStack`
+does not** — it stops being a name a user can reach.
 
 **`mailbox.c3` and `pool.c3` stay submodules on purpose.** A submodule cannot
 see its parent's `@private` declarations, so the claim *"both are built on the
@@ -358,6 +368,19 @@ The symbols worth hiding are the chain internals — `inner_offset`, `reset`,
 may touch a chain**, and C3 can express that sentence only as a module. The
 merge is not housekeeping; it is the mechanism.
 
+**With one exception, and the stack ruling is what creates it.** `InnerStack`
+now lives in `mtk::pool`, a submodule, which cannot see `mtk`'s privates. It
+calls `mtk::inner::is_linked` (`stack.c3:59`) and `mtk::inner::reset`
+(`stack.c3:107`), so **`is_linked` and `reset` cannot be `@private`** once the
+move lands. They stay public and carry the same doc line the unhideable methods
+carry. `inner_offset` is unaffected: neither the stack nor either container
+calls it, and it can be hidden.
+
+That is the price of the arrangement, and it is small — two free functions join
+a list of methods that were never hideable anyway, and the sentence *"those
+three and no others"* remains true of the code even where the compiler stops
+short of enforcing it.
+
 ## 4.4 What is hidden, and what cannot be
 
 **`@private` is ignored on method declarations** (Appendix A.2). A method is
@@ -370,9 +393,10 @@ So the split is **by form, not by importance**:
 | hideable — free functions and macros | not hideable — methods |
 |---|---|
 | `inner_offset` | `Inner.repoint_to` |
-| `reset` | `Inner.points_to` |
-| `is_linked` | every `Slot.*` — `fill`, `peek`, `take`, `is_empty`, `is_full` |
+| | `Inner.points_to` |
+| | every `Slot.*` — `fill`, `peek`, `take`, `is_empty`, `is_full` |
 | | `InnerQueue.@guard_insert`, `InnerStack.@guard_insert` |
+| | `reset` and `is_linked` — free functions, but **called by the stack from `mtk::pool`** (Part 4.3) |
 
 **`repoint_to` and `points_to` stay methods and stay public**, and each carries
 a doc line saying *why*:
@@ -419,10 +443,12 @@ redundant with the compiler; it is the substitute for what the compiler will
 not do.
 
 **One trap, and it is a stage's to avoid:** `stack.c3` currently contains
-`@guard_insert` and `.repoint_to`. When the stack moves into the end of
-`pool.c3`, that grep starts reporting *"a container reaches around the
-InnerQueue/InnerStack surface"* and the build goes red on a correct change. The
-check must be narrowed to the container code in the same pass.
+`@guard_insert` and `.repoint_to`. The grep works on `pool.c3` as a *file*, so
+it fires however the module lines fall: the moment the stack lands there, it
+reports *"a container reaches around the InnerQueue/InnerStack surface"* and
+the build goes red on a correct change. The check must be narrowed to the
+container code in the same pass — it is looking for `_Pool` and `_Mbox`
+reaching around the surface, not for the surface itself.
 
 ## 4.6 The containers are ordinary clients
 
@@ -483,9 +509,9 @@ So in a safe build, `inner.outer_tid() != null` is asserted **twice**:
 
 Both are `$if env::COMPILER_SAFE_MODE`-gated; fast builds carry nothing.
 
-**`@guard_insert` exists in two places** — `queue.c3` and the stack section —
-and the stack's copy moves into `pool.c3` first. The check goes in **after** the
-move.
+**`@guard_insert` exists in two places** — `queue.c3` and the stack — and the
+stack's copy moves into `pool.c3` first. The check goes in **after** the move,
+so it is written once per site and never moved afterwards.
 
 ## 5.3 The chain conventions
 
@@ -627,10 +653,12 @@ being generic is therefore no obstacle to living in `mtk`.
 
 ## A.7 One file may hold several module sections
 
-Measured alongside A.6. **File layout and module membership are independent**,
-which is what lets `InnerStack` sit at the end of `pool.c3` — invisible in the
-module list and in the reference — while remaining core code with the core's
-private access.
+Measured alongside A.6. **File layout and module membership are independent.**
+
+**This fact is recorded and not used.** It was measured to support giving the
+stack its own `module mtk;` section at the end of `pool.c3`; Part 4.2 explains
+why that turned out to be unnecessary, and `pool.c3` declares one module. The
+fact is kept because it was paid for and because a later stage may want it.
 
 ## Spent measurements
 
@@ -663,7 +691,7 @@ gets the pre-ruling design. **This table is what `007` is corrected from.**
 | RT-1 | stands — Part 1 |
 | RT-2 | stands — 4.1 |
 | RT-3 | stands; the module is `mtk`, not `mtk::helper` — 4.2 |
-| RT-4 | stands — 4.1, and 4.2 explains how it survives the merge |
+| RT-4 | stands, and goes further — the stack lands in `mtk::pool`, invisible outside `pool.c3` — 4.1, 4.2 |
 | RT-5 | **superseded** — `managed.c3` dissolves into the helper; `xtn` never exists |
 | RT-6 | stands |
 | RT-7 | stands, field renamed `outer_tid` |
