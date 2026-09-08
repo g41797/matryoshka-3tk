@@ -453,6 +453,26 @@ The identity answers one question: **is this a `$Type`?**
 An identity comparison reads the `typeid` already in the outer. Nothing is
 computed and nothing is allocated.
 
+#### What of `module mtk` is yours
+
+**Ruled by the owner, 2026-09-07, and it is what `inner.c3` is now ordered by.**
+
+- A small part of this module is yours to call directly: the Slot's five operations, the identity, and the five crossings written as methods.
+- Everything else goes through the helper, and says so with `// For internal usage.` in place of a description.
+
+The test is whether the helper can do it for you. It cannot embed the field, it
+cannot read the Slot, and it cannot read an identity before the type is known —
+so `Inner`, `Slot`, `Slot.is_empty`, `.is_full`, `.peek`, `.take`, `.fill`,
+`Inner.outer_tid` and the five crossing methods are the first part of
+`inner.c3`. It can do every other crossing, so `to_inner`, `from_inner`,
+`must_from_inner`, `from_slot`, `must_from_slot`, `move_from_slot`, `is_mine`
+and `stamp` are the second part, together with the chain primitives
+`repoint_to`, `points_to`, `is_linked` and `reset`, which are nobody's but the
+queue's and the stack's.
+
+**The helper cannot do this one for you: a dispatch switch reads the identity
+before it knows the type.** That is why `outer_tid` is in the first part.
+
 ### The API — crossing
 
 Every crossing between a typed pointer and an `Inner*` lives in one file.
@@ -501,6 +521,18 @@ macro Slot.move(&self, $Type)
 
 Each is the same crossing, as a method on the inner or as a method on the
 Slot.
+
+**These five are the user surface and the free forms above are not**, ruled by
+the owner 2026-09-07 on the measurement: across `examples/` the five methods are
+called 51 times and the free `mtk::` crossings twice. So the five carry
+descriptions of their own, which repeat the free forms' sentences rather than
+pointing at them:
+
+- `Inner.to` — from an `Inner*` back to `$Type*`.
+- `Inner.as` — from an `Inner*` back to `$Type*`, and it aborts on a mismatch.
+- `Slot.to` — from the Slot back to `$Type*`. It looks, and the Slot is unchanged.
+- `Slot.must` — from the Slot back to `$Type*`, and it aborts on a mismatch. The Slot is unchanged.
+- `Slot.move` — from the Slot back to `$Type*`, and it takes.
 
 None of these moves an outer. Reading an identity and casting a pointer leave
 every container alone.
@@ -552,29 +584,52 @@ makes `is_linked` exact.
 
 #### Public, and why — the four on this page and the two guards
 
-**Written by 3TK-63.** These are public because the language leaves them no
-other state, not because a user is invited to call them. Each carries the
-sentence in its own descriptor, in one wording, so it reads as a rule rather
-than as an apology per declaration.
+**Written by 3TK-63. REWRITTEN by 3TK-pre-65, 2026-09-07.** These are public
+because the language leaves them no other state, not because a user is invited
+to call them. **The per-declaration paragraph that used to say so is withdrawn
+at all seven places it was written**, and what replaces it is one line in the
+source and this subsection here.
+
+> **A declaration that is not the user surface gets `//` line comments and no
+> `<* *>` block, whether or not the compiler can hide it. The marker is one
+> line: `// For internal usage.`**
+
+That is the only visibility signal that reaches a reader. `c3c docgen` ignores
+visibility entirely — it publishes a `@private` macro and a `@local` struct as
+public — and carries exactly two signals: which module a declaration lives in,
+and whether it has a doc block. So the block is the marker. One lever, three
+artifacts: the source loses the paragraph, this reference never receives the
+declaration, and the docs site shows a bare signature.
+
+**It sorts by audience, not by hideability.** `Inner.outer_tid` and every
+`Slot.*` are unhideable and are the user surface, so they keep their blocks.
+`Inner.repoint_to` is unhideable and is not, so it loses its.
+
+Why each one is public, stated here once and never again per declaration:
 
 - `repoint_to`, `points_to`, `InnerQueue.@guard_insert` and
   `InnerStack.@guard_insert` are **methods**, and C3 ignores `@private` on a
   method declaration: a method is found through its receiver type, not through
   a module path, so there is no module boundary at the call site to check
-  against. Public because C3 cannot hide a method — `@private` is ignored on
-  method declarations. It is not part of the user surface. The containers call
-  it; nothing else should.
-- `reset` and `is_linked` are free functions and could be hidden, but are not.
-  Public because `InnerStack` calls it from `mtk::pool`, and a submodule cannot
-  see this module's `@private` declarations. It is not part of the user
-  surface.
-- `inner_offset` is the one that could be hidden and is. `@private`, and it can
-  be: it is a macro and not a method, and every caller shares this module.
+  against. Measured 2026-09-07: `@local` is ignored on a method too, and the
+  compiler warns and then accepts the call from another module.
+- `reset` and `is_linked` are free functions and could be hidden, but are not:
+  `InnerStack` calls them from `mtk::pool`, and a submodule cannot see this
+  module's `@private` declarations.
+- `inner_offset` is the one that is hidden. It sits in `inner.c3`'s third
+  section, `module mtk @private;`, so it takes the section's default and names
+  no attribute of its own. **`@local` does not work here and was measured:**
+  with `@local` the file's own macros fail to resolve it.
 
 Converting the methods to free functions would buy an enforcement the language
 only partly grants anyway, since `Inner.link` is itself public and writable.
 The door cannot be closed; it is left plainly open, with a sign saying who is
 allowed through.
+
+**The accepted gap.** `_Mbox`, `_Pool` and `InnerStack` still appear on the
+docs site as types, undescribed, and so do the internal methods. Docgen has no
+visibility filter and no exclude flag. Undescribed, not absent — and no stage
+goes looking for a way around it.
 
 ### The API — the queue
 
@@ -689,12 +744,12 @@ macros directly; 3TK-66 makes every part lead with the helper.
 `OuterHelper` is the one thing a user binds, one line per outer type.
 
 ```c3
-alias MSG = mtk::OF{Msg};
+alias MSG = helper::OF{Msg};
 ```
 
-`alias MSG = mtk::OF{Msg};` — and that is the whole ceremony. Uppercase, because
+`alias MSG = helper::OF{Msg};` — and that is the whole ceremony. Uppercase, because
 it is a `const`, and C3 enforces the pairing in both directions. An uppercase
-alias must alias a constant, so `alias MSG = mtk::OF{Msg};` is the only
+alias must alias a constant, so `alias MSG = helper::OF{Msg};` is the only
 spelling. The helper for `Outer`, ready to alias.
 
 The carrier holds nothing. Its only job is to give C3's method syntax a
@@ -774,6 +829,7 @@ macro void  OuterHelper.release(self, Allocator a, Slot* slot)
 `release` calls your `destroy(a)` hook if you declared one, empties the Slot, and frees the outer.
 
 - A no-op on an empty Slot, so a `defer` registered before the acquisition is safe.
+- It returns `void`, so it needs no `!` in a `defer`.
 - It returns `void`, and that is not symmetry-breaking for its own sake: `release` is what you write in a `defer`, and C3 refuses a bare failable call there.
 - The narrower reason is that a teardown fault has no recipient — `release` runs on a path that is usually already unwinding, nobody can act on "freeing failed", and the resource is gone either way.
 - A `destroy` fault therefore aborts in a safe build and is dropped in a fast one.
@@ -782,7 +838,7 @@ macro void  OuterHelper.release(self, Allocator a, Slot* slot)
 Both hooks are optional, and both receive the allocator from the caller.
 
 ```c3
-alias MSG = mtk::OF{Msg};
+alias MSG = helper::OF{Msg};
 
 Slot s;
 defer MSG.release(a, &s);
@@ -1629,19 +1685,33 @@ One import gives the toolkit.
 import mtk;
 ```
 
-`module mtk` is declared by three files, and the mailbox and the pool are
-submodules of it.
+`module mtk` is declared by two files. The helper, the queue, the mailbox and
+the pool are submodules of it, so one import still gives the whole toolkit.
 
 | module | file | what is in it |
 |---|---|---|
 | `mtk` | `mtk.c3` | `VERSION`, the faults, `@check`, `CHECKED` |
 | `mtk` | `inner.c3` | `Inner`, `Slot`, the link, and every crossing between a typed pointer and an `Inner*` |
-| `mtk` | `queue.c3` | `InnerQueue` and `InnerQueueIterator` |
-| `mtk` | `helper.c3` | emptied by 3TK-63; 3TK-64 refills it as the generic section `module mtk <Outer>;` |
-| `mtk::managed` | `managed.c3` | `create` and `release`, for an outer that carries an allocator |
+| `mtk::queue` | `queue.c3` | `InnerQueue` and `InnerQueueIterator` |
+| `mtk::helper <Outer>` | `helper.c3` | `OuterHelper` and `OF` |
 | `mtk::mailbox` | `mailbox.c3` | `Mailbox` |
 | `mtk::pool` | `pool.c3` | `Pool` and `PoolHooks` |
 
+- **REVISED by 3TK-pre-65, 2026-09-07: six files, six module names, and one
+  page each.** `helper.c3` and `queue.c3` went back to modules of their own,
+  reversing 3TK-63's merge. The merge was built to hide `inner_offset`, and a
+  probe showed a separate module hides it just as well — a macro body resolves
+  against its defining module, which is the mechanism `mtk::pool` and
+  `mtk::mailbox` already rely on. What the merge did do was merge the generated
+  documentation: `c3c docgen` groups by module and by nothing else, so `mtk`
+  became one flat page of 59 declarations, and the one generic section made the
+  whole page read as parameterized by `Outer` — `Inner`, `Slot` and
+  `InnerQueue` with it. `mtk` is now 36 declarations, and that is the page a
+  newcomer lands on.
+  - **Nothing at a call site grew.** C3 imports a module's submodules with it,
+    so `import mtk;` still gives `InnerQueue` unqualified, and C3 accepts the
+    last segment of a module path, so the binding line is
+    `alias MSG = helper::OF{Msg};` — the same length it was.
 - **REVISED by 3TK-63, 2026-09-07:** seven files, four modules — and after
   3TK-64 deletes `managed.c3`, four names for six files. `mtk::inner`,
   `mtk::helper` and `mtk::queue` are gone as names: `inner.c3` absorbed the
@@ -1676,16 +1746,21 @@ core + mailbox + pool           transfer + outer reuse
 
 ### The modules, one by one
 
-**Four modules, four labelled blocks. Written by 3TK-46; narrowed to four by
-3TK-63, which merged `mtk::inner`, `mtk::helper` and `mtk::queue` into `mtk`,
-and by 3TK-62, which merged `mtk::stack` into `mtk::pool`.**
+**Six module names, four labelled blocks. Written by 3TK-46; narrowed to four
+by 3TK-63 and 3TK-62; re-split by 3TK-pre-65, which gave `mtk::queue` a block
+of its own.** `mtk::helper` has a description in its source and no labelled
+block here: the doc-loop parser matches `module X;` and a generic module line
+is not that shape, so the helper's description is carried as ordinary prose
+below and checked sentence by sentence like any other descriptor.
 
 **A module has one description however many sections it is written in.**
-`module mtk;` is now declared by `mtk.c3`, `inner.c3` and `queue.c3`. `mtk.c3`
-carries the block; the other two carry a `//` banner saying they are sections
-and that the description lives in `mtk.c3`. `check-doc-loop.sh` reports such a
-file as *section only, no block*, and separately asserts that every labelled
-block here is carried by exactly one file.
+`module mtk;` is declared by `mtk.c3` and by `inner.c3`, which is written in
+three sections — the user surface, then what is public and is not the user
+surface, then `module mtk @private;`. `mtk.c3` carries the block; `inner.c3`
+carries a `//` banner saying it is a section and where the description lives.
+`check-doc-loop.sh` reports such a file as *section only, no block*, and
+separately asserts that every labelled block here is carried by exactly one
+file.
 
 Each block below is one module's description. It is delimited by an HTML
 comment carrying the module's name, which is invisible in the rendered page and
@@ -1743,9 +1818,9 @@ Not a coordinator.
 There is no `Master` type.
 
 One import gives the toolkit.
-`module mtk` is declared by three files, and the mailbox and the pool are submodules of it.
+`module mtk` is declared by two files, and the helper, the queue, the mailbox and the pool are submodules of it.
 This module holds `VERSION`, the faults, `@check` and `CHECKED`.
-It holds the inner, the Slot, the link, the crossings and the queue.
+It holds the inner, the Slot, the link and the crossings.
 
 You send and receive your own struct.
 The struct is the outer, and it is yours.
@@ -1812,6 +1887,33 @@ Nothing in the queue can fail.
 **Deleted by 3TK-64, 2026-09-07.** The module does not exist, so it has no
 description to carry. `create` and `release` are members of `OuterHelper` in
 `module mtk`, and their sentences are inside `mtk`'s block above.
+
+#### `mtk::queue`
+
+**Added by 3TK-pre-65, 2026-09-07**, when `queue.c3` went back to a module of
+its own and so earned a page of its own. Short by intent: the queue's own
+description is on `InnerQueue` a few sections up, and a module block that
+repeated it would say the same thing twice on the same page.
+
+<!-- 3tk:module mtk::queue -->
+The intrusive queue and its walker.
+
+One type to carry outers from one place to another, and one to walk what it holds.
+It is a module of its own so that it is a page of its own.
+A user reaches it through `import mtk;` and writes `InnerQueue` unqualified, as before.
+<!-- /3tk:module -->
+
+#### `mtk::helper <Outer>`
+
+**Added by 3TK-pre-65, 2026-09-07.** Not a labelled block: the doc-loop parser
+finds a module by matching `module X;`, and a generic module line is not that
+shape, so this description is checked as ordinary prose. The source block above
+`module mtk::helper <Outer>;` says:
+
+- The helper, bound once per outer type.
+- `alias MSG = helper::OF{Msg};` — and that is the whole ceremony.
+- Nine members: four crossings, `inner`, `stamp`, `linked`, `create` and `release`.
+- It is a module of its own so that it is a page of its own, and so that nothing else in the core reads as parameterized by `Outer`.
 
 #### `mtk::mailbox`
 

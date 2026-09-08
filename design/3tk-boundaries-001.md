@@ -312,16 +312,102 @@ asymmetry is why the checks in 5.2 are load-bearing rather than decorative.
 
 **The word *managed* survives in no name**, and neither does `xtn`.
 
-## 4.2 The modules — four names, one section per file
+## 4.2 The modules — six names, one per file
+
+> **REOPENED AND RE-RULED by the owner, 2026-09-07**, after `3TK-63` built the
+> merge and the generated docs site was read for the first time. **`helper.c3`
+> and `queue.c3` go back to modules of their own.** The paragraphs below the
+> table are the original ruling, kept because the reasoning is what was
+> overturned and a later reader needs to see what it was. **What replaces it is
+> `4.2a`.**
 
 | file | declares |
 |---|---|
 | `mtk.c3` | `module mtk;` |
 | `inner.c3` | `module mtk;` |
-| `queue.c3` | `module mtk;` |
-| `helper.c3` | `module mtk <Outer>;` — the generic section |
+| `queue.c3` | **`module mtk::queue;`** |
+| `helper.c3` | **`module mtk::helper <Outer>;`** |
 | `pool.c3` | `module mtk::pool;` — **all of it, the stack section included** |
 | `mailbox.c3` | `module mtk::mailbox;` |
+
+**Six names**, and only `mtk.c3` and `inner.c3` share one. `mtk::stack` and
+`mtk::managed` remain gone; `mtk::inner` remains gone as a name, its content
+being the whole of `mtk`.
+
+### 4.2a Why the merge was reversed
+
+**Three probes, 2026-09-07, all in the scratchpad and all recorded here because
+each overturns a sentence of the original ruling.**
+
+**One: `c3c docgen` groups by module and by nothing else.** Its entire option
+list is `--json`, `--append`, `--target`, `--emit-stdlib`. So the merge did not
+merely tidy the source — **it merged the documentation**, and `mtk` became one
+flat page of **59 declarations**: 2 functions, 17 methods, 10 macros, 15 macro
+methods, 12 types, 3 variables. The listing shows `is_empty` twice, `take`
+twice in the methods and a third time in the macro methods, `to` twice and
+`stamp` as both a macro and a macro method, **with nothing to tell them apart**.
+Before the merge they were three pages.
+
+**Two: one generic section makes the whole module generic in the docs.** The
+emitted data reads `"mtk": { "is_generic": true, "generic_parameters":
+["Outer"] }`. Eleven of the 59 declarations are parameterized by `Outer`.
+**`Inner`, `Slot` and `InnerQueue` were being presented to every reader as
+parameterized by a type they have nothing to do with.** This is the worst of
+it, and it arrived with 3TK-64 rather than 3TK-63.
+
+**Three: the merge was never needed to hide what it was built to hide.** A
+probe of the exact shape — `module core;` with `macro usz inner_offset($Type)
+@private`, and a *separate* `module core::helper <Outer>;` calling
+`core::to_inner` and `core::from_slot` — **compiles and runs correctly**, while
+a third module reaching for the private macro directly is still refused:
+
+```
+Error: The macro 'core::inner_offset' is '@private' and not visible from other modules.
+```
+
+That is the same mechanism `mtk::pool` and `mtk::mailbox` already rely on, and
+`3TK-63` had probed it: **a macro body resolves against its defining module.**
+Neither `helper.c3` nor `queue.c3` calls `inner_offset` directly; both reach it
+only through `inner.c3`'s own macro bodies.
+
+**And splitting restores the docs.** The same probe under docgen:
+
+```
+core          is_generic=False  params=None
+core::helper  is_generic=True   params=['Outer']
+```
+
+**What the merge actually hid, measured against 4.3's own list:**
+
+| symbol | hidden by the merge? |
+|---|---|
+| `inner_offset` | yes — **and a separate module hides it just as well** |
+| `reset`, `is_linked` | **no** — 4.3 concedes it: `InnerStack` in `mtk::pool` forces them public |
+| `Inner.repoint_to`, `Inner.points_to` | **no** — methods, see 4.4 |
+| every `Slot.*` | **no** — same |
+
+**One symbol, obtainable without the merge.** Three of the four rows were
+already given away by 4.3 and 4.4 in their own text.
+
+**The short prefix keeps the cost small.** C3 accepts the last module segment,
+which is the rule that made c3c suggest `outers::HOLDER` in 3TK-64. Probed:
+`alias MSG = helper::OF{Msg};` compiles and runs. So the binding line is the
+same length it is today, and `queue::InnerQueue` costs one segment at 47 sites.
+
+**What does not change.** `OuterHelper` keeps its name — owner's ruling,
+2026-09-07. It appears 13 times in `helper.c3` and **in no other `.c3` file**,
+never once qualified, so `mtk::helper::OuterHelper` is a string that would occur
+in zero lines of code; and `Outer` in the name is load-bearing, where `Helper`
+alone would say less and stutter worse. **`InnerStack` stays exactly as it is** —
+private inside `mtk::pool`, per the owner: *"it's private, that's all."*
+
+**`mtk` ends at 36 declarations** — `Inner`, `Slot`, the crossings,
+`is_mine`/`is_linked`/`reset`/`stamp`, `@check`, `VERSION` and the faults. That
+is the page a newcomer lands on.
+
+### 4.2b The original ruling, overturned
+
+*Kept verbatim. Read it for what was believed, not for what is true.*
 
 Eight module names become **four**: `mtk`, `mtk <Outer>`, `mtk::mailbox`,
 `mtk::pool`. `mtk::inner`, `mtk::helper`, `mtk::queue`, `mtk::stack` and
@@ -356,6 +442,14 @@ rather than asserted. That enforcement used to cover what little lived in `mtk`;
 it now covers the entire core.
 
 ## 4.3 Why one module — the reason, not the tidiness
+
+> **SUPERSEDED by 4.2a, 2026-09-07.** The argument below is why the merge was
+> built. Its own two concessions — that `is_linked` and `reset` cannot be
+> private, and that methods were never hideable — leave it holding a single
+> symbol, `inner_offset`, which a separate module hides just as well. **The
+> sentence *"C3 can express that sentence only as a module"* is false**: it can
+> also express it as a private macro that only its own module's macro bodies
+> call, which is what `mtk::pool` has done all along. Kept for the record.
 
 **`@private` reaches the module and nothing else** — not a submodule, not the
 parent (Appendix A.1). C3 has no package visibility and no friend declaration.
@@ -398,12 +492,85 @@ So the split is **by form, not by importance**:
 | | `InnerQueue.@guard_insert`, `InnerStack.@guard_insert` |
 | | `reset` and `is_linked` — free functions, but **called by the stack from `mtk::pool`** (Part 4.3) |
 
-**`repoint_to` and `points_to` stay methods and stay public**, and each carries
-a doc line saying *why*:
+**The claim is now measured, and it is stronger than it was written.** Probed
+2026-09-07: **both `@private` and `@local` are ignored on methods**, and the
+compiler says so rather than failing —
+
+```
+Warning: '@private' modifiers are ignored for method declarations.
+Warning: '@local' modifiers are ignored for method declarations.
+pub=7  hidden=8  filelocal=9
+```
+
+— the calls succeeding from another module. So `@local` is not an escape hatch
+for a method either, and the fourteen internal methods of `_Mbox`, `_Pool` and
+`InnerStack` cannot be hidden by any attribute.
+
+**`repoint_to` and `points_to` stay methods and stay public.** They no longer
+carry a paragraph saying why.
+
+> **RE-RULED by the owner, 2026-09-07.** The doc line quoted below is
+> **withdrawn**, at all seven places it was written. It said *"Public because C3
+> cannot hide a method … It is not part of the user surface"*, and it cost three
+> lines to deliver one bit, in the one place a reader of the docs site never
+> looks. **What replaces it is 4.4a.**
+
+The withdrawn line, for the record:
 
 > **Public because C3 cannot hide a method** — `@private` is ignored on method
 > declarations. It is not part of the user surface. The containers call it;
 > nothing else should.
+
+### 4.4a The doc block is the visibility marker
+
+**Probed 2026-09-07: `c3c docgen` ignores visibility entirely.** `inner_offset`
+is `@private` and is published; `_Mbox` and `_Pool` are `@private` and are
+published **as public types**; `InnerStack` is `@local` and is published as a
+public type — together with `enqueue`, `dequeue`, `has_queued`, `send_at`,
+`_close`, `bucket_for`, `take_back`, `take_back_inner`, `push`, `pop`,
+`@closed_fast` and both `@guard_insert`s. **3TK-58's opaque `Mailbox` and `Pool`
+are undone on the docs site.**
+
+A declaration with no doc block is still listed, with an empty description.
+
+So **C3 has no way to tell the docs site what is not yours to call.** Docgen
+carries exactly two signals: which module a thing lives in, and whether it has a
+doc block. Therefore:
+
+> **A declaration that is not the user surface gets `//` line comments and no
+> `<* *>` block. Whether the compiler can hide it is irrelevant.**
+
+**The marker is one line, identical everywhere, so it reads as a token and not
+as prose:**
+
+```c3
+// For internal usage.
+fn void Inner.repoint_to(&self, Inner* to) @inline
+    => self.link = any_make(to, self.link.type);
+```
+
+**It does not say "inner".** `Inner` is a type and one of the only two terms;
+*"for inner usage"* on `Inner.points_to` would be read as being about `Inner`.
+
+**One lever, three artifacts.** The source loses seven paragraphs; the reference
+book never receives the declaration, because only `<* *>` blocks are descriptors
+and the doc loop harvests nothing else; the docs site shows a bare signature
+with no description, which is the only "not for you" signal available.
+
+**It sorts by audience, not by hideability** — which is what the withdrawn line
+failed at. `Inner.outer_tid` and every `Slot.*` are unhideable **and** user
+surface, so they keep their blocks. `Inner.repoint_to` is unhideable and **not**
+user surface, so it loses its block and the apology with it.
+
+**Where a maintainer still needs the reason it could not be hidden, it is stated
+once per file under the section banner**, never again per declaration.
+
+**Accepted gap, written down as one — owner's ruling, 2026-09-07.** The names
+still appear. `_Mbox`, `_Pool` and `InnerStack` remain listed as types on the
+docs site, undescribed. Docgen has no visibility filter and no exclude flag, and
+feeding it a curated file list does not help because every file mixes surface
+and internals. **Undescribed, not absent**, and no stage is to go looking for a
+way around it.
 
 Converting them to free functions would make them hideable at the cost of a
 worse spelling at their five internal call sites — and would buy an enforcement
@@ -426,9 +593,17 @@ public `link.ptr`.
 
 ## 4.5 The module list is checked
 
-`run-builds.sh` asserts that `src/` declares **exactly** those four module
-names: nothing unexpected present, nothing expected missing. Roughly eight lines
+`run-builds.sh` asserts that `src/` declares **exactly** the module names 4.2
+lists: nothing unexpected present, nothing expected missing. Roughly eight lines
 of shell, no build cost, run once.
+
+> **The list is now six, not four** (4.2, re-ruled 2026-09-07). **The existing
+> check at `run-builds.sh:215` fails on the correct change** — it asserts
+> `^module mtk::$f;` for `mailbox` and `pool` only, and the split adds
+> `mtk::queue` and `mtk::helper`. **This is the same trap this part already
+> warns about for the stack**: the check must move in the same pass as the
+> split, or the build goes red on a right change and a stage spends its time
+> hunting a phantom.
 
 **The module line is the design.** Visibility is decided entirely by which
 module a file declares, so a file drifting out of `mtk` in a way that still
@@ -453,7 +628,8 @@ reaching around the surface, not for the surface itself.
 ## 4.6 The containers are ordinary clients
 
 `_Mbox` and `_Pool` are Outers. Each takes one `@private` alias and uses it for
-its crossings, exactly as an application would.
+its crossings, exactly as an application would — **`alias MBOX @private =
+helper::OF{_Mbox};` once `helper` is a module of its own** (4.2).
 
 They do **not** use `create`/`release`: their construction has four failable
 steps with staged rollback, and `Mailbox.release` is a lifetime contract check,
