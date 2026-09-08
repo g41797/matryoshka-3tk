@@ -25,6 +25,9 @@ jobs:
           tar xzf c3.tar.gz
           echo "$PWD/c3" >> "$GITHUB_PATH"
 
+      - name: Inject source LOC
+        run: scripts/inject_src_loc.sh --write --strict
+
       - name: c3c docgen
         run: c3c docgen --emit-stdlib=no src
 

@@ -523,6 +523,25 @@ The withdrawn line, for the record:
 
 ### 4.4a The doc block is the visibility marker
 
+> **SUPERSEDED BY `3TK-67`, 2026-09-08, and MIGRATED rather than retired.** The
+> rule this Part states — *a declaration that is not the user surface gets `//`
+> line comments and no `<* *>` block* — is withdrawn. Obeying it deletes checks:
+> a `@require` lives INSIDE the block, so stripping the block from
+> `must_from_inner` stripped its type check and `negative/wrong_type_must`
+> stopped aborting in a checking build.
+>
+> **What replaces it is Rules 1, 2 and 3 of
+> [3tk-rules-001.md](3tk-rules-001.md)**, which is where the live rule now lives
+> and where it is changed. In one line: the block stays, opens with the exact
+> marker `For internal usage.`, carries only directives after it, and every such
+> declaration sits below one banner per file with the partition checked both
+> ways.
+>
+> **What this Part MEASURED stands and is carried into that file rather than
+> re-derived** — docgen's blindness to visibility, and the accepted gap it
+> forces. The Part is kept here, unedited below this note, because
+> `3tk-decisions-007.md` cites it and because `3TK-66` spends this document.
+
 **Probed 2026-09-07: `c3c docgen` ignores visibility entirely.** `inner_offset`
 is `@private` and is published; `_Mbox` and `_Pool` are `@private` and are
 published **as public types**; `InnerStack` is `@local` and is published as a
@@ -845,86 +864,3 @@ confirmation that `alloc::new_try` zeroes, the reflection spellings
 `$typeof`; `$defined` for optional hooks), and a generic struct inline-embedding
 another generic struct — which passed, and whose subject was then ruled away.
 **Their conclusions are in Parts 1 to 6. The probes are gone.**
-
----
-
-# Appendix B — Transitional id map
-
-**Delete this appendix when `3tk-decisions-007.md` is corrected.** That is a
-stage's job, not this document's, and it is the only reason the appendix exists.
-
-`3tk-decisions-007.md` cites `RT-n`, `HR-n` and `PL-n` at roughly twenty places,
-and **several of those citations are now false, not merely stale** — it still
-records that `managed` leaves into `xtn`, that no type is refused for lacking an
-`Allocator` field as though that field were still a concept, that `create` and
-`release` live in `xtn`, and that the stutter is open. A reader of `007` today
-gets the pre-ruling design. **This table is what `007` is corrected from.**
-
-## Rulings
-
-| id | fate |
-|---|---|
-| RT-1 | stands — Part 1 |
-| RT-2 | stands — 4.1 |
-| RT-3 | stands; the module is `mtk`, not `mtk::helper` — 4.2 |
-| RT-4 | stands, and goes further — the stack lands in `mtk::pool`, invisible outside `pool.c3` — 4.1, 4.2 |
-| RT-5 | **superseded** — `managed.c3` dissolves into the helper; `xtn` never exists |
-| RT-6 | stands |
-| RT-7 | stands, field renamed `outer_tid` |
-| RT-8 | stands, and the `const` makes it structural — 3.1 |
-| RT-9 | amended — true of the crossings, not of `create`/`release` |
-| RT-10 | stands, fully spent |
-| RT-11 | ruled — the mailbox and the pool use the helper — 4.6 |
-| RT-12 | stands, extended: the hooks receive the allocator too |
-| RT-13 | **superseded entirely** — no allocator-field concept; `required_alloc_offset` deleted |
-| RT-14 | half stands — the zeroing; `#init` is dropped |
-| RT-15 | narrowed — the *defaults* wording is moot; *the user fills the rest* still owed |
-| RT-16 | discharged — the stamp, and six spellings reduced to four |
-| RT-17 | stands, sharpened to a switch on `outer_tid()` — 3.5 |
-| RT-18 | stands — 3.1 |
-
-## Helper requirements
-
-`HR-1`, `HR-2`, `HR-4`, `HR-6`, `HR-8`, `HR-9` **held**. `HR-3` amended with
-`RT-9`. `HR-5` **discharged** by the idempotent stamp plus the safe-build checks
-(5.1, 5.2). `HR-7` **deleted** with `RT-13`. `HR-10` **moot** — `xtn` is gone,
-and its justification (*the core allocates nothing*) was **false**; 4.6 states
-the true rule.
-
-## Proposed shape
-
-`HS-1`, `HS-2`, `HS-9`, `HS-11` **stand**. `HS-5` stands, and the stamp member
-is named `stamp`. `HS-7` stands minus `is_linked`, kept as `linked`. `HS-3`,
-`HS-4`, `HS-6`, `HS-8` **superseded** by the four-name scheme and by
-`create`/`release` living in the core helper. `HS-10` **amended by A.3**.
-
-## Variants
-
-`V-1` ruled — the `const`, uppercase. `V-3` ruled — option C. `V-4` ruled —
-both. `V-5` ruled — `V-5a`. `V-6` ruled — `V-6a`, extended to `mtk` itself.
-`V-7` ruled — `V-7a`. `V-2` **moot**.
-
-## Parking lot
-
-**Still parked:** `PL-1` (ztk asserts no neighbours before an item leaves a
-Slot; 3tk asserts nothing), `PL-2` (the debug-only chain walk), `PL-4`
-(look-only Slot functions take a mutable `Slot*`), `PL-5` (`must_` aborts do not
-say what was expected and what was found), `PL-8` (port defects `P3`, `P4`),
-`PL-9` (the dropped Part 2.5 / D7 coverage).
-
-**Newly parked:** a **container re-entrancy guard** — the pool's declared hooks
-run with the container mid-operation (5.4). Same neighbourhood as `PL-2`.
-
-**Closed:** `PL-3` (measured). `PL-6` **moot** — it was a question about the
-module name `mtk::inner`, and that module no longer exists. `PL-7` ruled — 4.6.
-`PL-10` closes with the merge — the last missing doc-loop sentence.
-
-## Questions
-
-All ten of `004`'s open questions are ruled, and their answers are in the body:
-`Q-1` moot (A.6 removed the module that stuttered), `Q-7` — the `const` and
-uppercase (3.1), `Q-8` — both boundaries (5.2), `Q-10` — `mtk` (4.2), `Q-12` —
-`V-6a` (4.3), `Q-13` — yes (4.5), `Q-15` — by name, others ignored (2.1),
-`Q-16` — `stamp` (3.3), `Q-17` — `void?`, with `release` infallible (3.4),
-`Q-18` — dissolved (5.4). `Q-2` … `Q-6`, `Q-9`, `Q-11`, `Q-14` were answered in
-`004` and are folded into the body here.

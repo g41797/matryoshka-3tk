@@ -14,7 +14,7 @@ two terms: **`Inner`**, a real C3 type and the field you lend, and
 **`Outer`**, a role and the struct you own. The words *handle* and *item* are
 retired — neither named anything the pair does not. `Slot` is untouched: a
 real type naming a container state, not a participant. This supersedes 3TK-59,
-which kept *handle* as an English word. See 3TK-60 and `3tk-terms-001.md`.
+which kept *handle* as an English word. Ruled by 3TK-60, 2026-09-04.
 Nothing else changed; no rule was added, removed or weakened. **This version,
 and every later one, lives in
 `matryoshka-3tk/design/`, not in `matryoshka-tk`'s `ref/`.**
@@ -124,6 +124,29 @@ C3 has no equivalent, so `shc::outers` is one `outers.c3` and not four files.
 - **It reports by returning.** A fault, or a value. It never aborts, and it
   never prints a verdict in place of returning one.
 
+## Every example leads with the helper — MUST
+
+**Ruled by 3TK-66, 2026-09-08, and applied to all 52 files in the same stage.**
+
+- **One alias per outer type the file uses**, written with the file's other
+  little-endian imports at the bottom: `alias HOLDER = helper::OF{Holder};`.
+  Uppercase, because `OF` is a `const` and C3 enforces the pairing both ways.
+- **Every crossing is a member of that alias.** `look`, `must_look`, `take`,
+  `must_take` — never `Slot.to`, `Slot.must`, `Slot.move`, `Inner.to`,
+  `Inner.as`, and never a free `inner::` crossing.
+- **Two files are exempt, and only two.** `012-type_crossing.c3` and
+  `013-recovering_the_type.c3` show the helper member beside the form it
+  forwards to, because the layering is their subject. **They assert the two
+  spellings land on the same pointer**, which is the only reason to show both.
+  A third file doing this is a defect.
+- **The exemption does not reach `test/`.** The tests probe the primitives on
+  purpose, and all five methods keep callers there. That is why an example may
+  drop them without leaving anything unexercised.
+- **Why.** The helper is the surface; the macros are the layer beneath. An
+  example is what a reader copies, and 52 files copying the lower layer taught
+  the wrong one. See *What is deliberately absent* in
+  [3tk-reference-008.md](3tk-reference-008.md).
+
 ## Allocation — every outer is heap-allocated, never stack — MUST
 
 **An outer is never created on the stack.** No exceptions, and no
@@ -138,19 +161,22 @@ demonstration is exempt.
   appear to work and fail later, unpredictably. See
   [3tk-patterns-004.md](3tk-patterns-004.md) entry 14 for the full account and
   the owner's ruling.
-- **The default path is `mtk::managed`.** `mtk::managed::create($Type, a,
-  &slot)` and `mtk::managed::release($Type, &slot)`, for an outer that carries
-  an `Allocator` field.
-- **The other legal path** is a raw heap allocation plus `mtk::helper::init`,
-  for an outer with no `Allocator` field. The caller then owns the release by
-  hand — `mtk::managed` is the default because it is the one that also owns
-  cleanup, not because it is the only way to get a heap outer.
-- **Never a raw allocator call with no `init`.** `a.new(Msg)` alone skips
-  `init`, so the outer carries no identity and every crossing refuses it —
-  that refusal is deliberate, but it is a different mistake from a stack
-  outer, and this rule is about where the memory lives, not about `init`.
-- The outer carries the `Allocator` it was made with, when it has one. That is
-  what makes cleanup-before-acquisition possible at all — see below.
+- **The default path is the helper.** `MSG.create(a, &slot)` and
+  `MSG.release(a, &slot)`, off one `alias MSG = helper::OF{Msg};` per outer
+  type per module. `mtk::managed` is deleted, and there is no allocator-field
+  requirement of any kind.
+- **The other legal path** is a raw heap allocation plus `MSG.stamp(outer)`.
+  The caller then owns the release by hand. **The helper is the default because
+  it also owns cleanup and cannot forget the stamp**, not because it is the
+  only way to get a heap outer.
+- **Never a raw allocator call with no stamp.** `a.new(Msg)` alone leaves the
+  outer with no identity, and a safe build catches that at the next crossing or
+  the next insertion, whichever comes first. That refusal is deliberate, but it
+  is a different mistake from a stack outer, and this rule is about where the
+  memory lives.
+- **An outer keeps an allocator only if it says so**, in an `init(a)` hook of
+  its own. The toolkit reads and writes no field of an outer except the
+  `Inner`, and `release` is told which allocator to use at the call.
 
 **Cleanup is registered before the acquisition — MUST.**
 
@@ -266,7 +292,7 @@ two wrappers already breaking it:**
 
 - **Creating and closing a `Mailbox*` or `Pool*` the example takes as a
   parameter is infrastructure, not logic.** The example does not own the
-  inner it was handed, so someone above it must.
+  pointer it was handed, so someone above it must.
 - **Anything that touches a `Slot`, an `Inner*`, or an `InnerQueue` is logic.**
   A wrapper that pops a queue, receives off a mailbox, or releases an outer
   to clean up after the example is demonstrating the pattern a second time,

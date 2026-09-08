@@ -13,7 +13,7 @@ there and nowhere else.
 and the struct you own. The words *handle* and *item* are retired — neither
 named anything the pair does not. `Slot` is untouched: a real type naming a
 container state, not a participant. This supersedes 3TK-59, which kept
-*handle* as an English word. See 3TK-60 and `3tk-terms-001.md`. Every code
+*handle* as an English word. Ruled by 3TK-60, 2026-09-04. Every code
 shape spells the
 crossing `to_inner` / `from_inner` / `must_from_inner`, names an `Inner*`
 variable `inner`, and names the embedded field `inner` rather than `node`.
@@ -153,10 +153,6 @@ they are chosen the way `test/common.c3`'s four were: to prove something.
 ```c3
 module pat;
 import mtk;
-import mtk::helper;
-import mtk::managed;
-import mtk::mailbox;
-import mtk::pool;
 import std::thread;
 import std::time;
 import std::core::mem::alloc;
@@ -166,16 +162,30 @@ struct Event  { Inner inner; int code; Allocator alloc; }
 struct Sensor { int reading; Inner inner; Allocator alloc; }
 struct Holder { int id; Inner inner; Allocator alloc; }
 
+fn void? Event.init(&self, Allocator a)  { self.alloc = a; return; }
+fn void? Sensor.init(&self, Allocator a) { self.alloc = a; return; }
+fn void? Holder.init(&self, Allocator a) { self.alloc = a; return; }
+
+alias EVENT  = helper::OF{Event};
+alias SENSOR = helper::OF{Sensor};
+alias HOLDER = helper::OF{Holder};
+
 faultdef PATTERN_FAILED;
 ```
 
 - `Event` puts the inner at offset zero, `Sensor` does not. **Both cross**, and
   that is the first thing the pair is here to prove: 3tk computes the offset at
   the crossing, so an outer's layout is the application's business.
-- **All three carry an `Allocator`**, so all three may take `mtk::managed`. That
-  is not decoration. A shared release function is a dispatch chain, and the
-  chain calls `mtk::managed::release` in every branch — so an outer with no
-  `Allocator` field cannot appear in one at all. The build says so by name.
+- **All three keep an `Allocator`, and that is each outer's own choice.** The
+  toolkit reads and writes no field of an outer except the `Inner`; there is no
+  allocator field convention and no error when one is absent. They keep one here
+  because these patterns pass outers between functions that must free them, and
+  a field is the simplest way to carry that. An outer with no such field works
+  exactly the same way — its caller supplies the allocator to `release`.
+- **One alias per outer type, and that is the whole binding.** `EVENT`,
+  `SENSOR`, `HOLDER`. Every pattern below reaches for a member of one of them:
+  `create`, `release`, `look`, `must_look`, `take`, `must_take`, `inner`,
+  `stamp`, `linked`. `import mtk;` brings the helper in with everything else.
 
 ---
 
@@ -232,7 +242,7 @@ fn void? p3_transfer(Mailbox* mb, Pool* p, InnerQueue* q, Slot* a, Slot* b, Slot
 {
     mb.send(a)!;                    // a is empty — the mailbox has it
     p.put(b);                       // b is empty if the pool kept it
-    Event* e = c.move(Event);       // c is empty — you have it
+    Event* e = EVENT.take(c);       // c is empty — you have it
     q.push_back_slot(d);            // d is empty — the queue has it
 }
 ```
@@ -257,9 +267,9 @@ fn void? p3_transfer(Mailbox* mb, Pool* p, InnerQueue* q, Slot* a, Slot* b, Slot
 fn void? p4_insert_from_slot(Allocator a, InnerQueue* q)
 {
     Slot s;
-    defer mtk::managed::release(Holder, &s);
-    mtk::managed::create(Holder, a, &s)!;
-    s.must(Holder).id = 7;
+    defer HOLDER.release(a, &s);
+    HOLDER.create(a, &s)!;
+    HOLDER.must_look(&s).id = 7;
 
     q.push_back_slot(&s);           // s is empty
 }
@@ -288,7 +298,7 @@ stack outer to reach for. Entry 14.
 fn void p5_null_safe(Pool* p, Slot* pooled, Slot* heaped)
 {
     defer p.put(pooled);
-    defer mtk::managed::release(Holder, heaped);
+    defer HOLDER.release(a, heaped);
 }
 ```
 
@@ -313,7 +323,7 @@ fn void? p6_defer_put_early(Pool* p)
     Slot s;
     defer p.put(&s);                                    // nothing to do if the get failed
     p.get(Holder::typeid, AVAILABLE_OR_NEW, &s)!;
-    s.must(Holder).id = 1;
+    HOLDER.must_look(&s).id = 1;
 }
 ```
 
@@ -327,7 +337,7 @@ fn void? p6_defer_put_early(Pool* p)
 
 ### 7 — Defer-release-early
 
-*Changes shape.* ztk's `PolyHelper.destroy` is 3tk's `mtk::managed::release`,
+*Changes shape.* ztk's `PolyHelper.destroy` is 3tk's `HOLDER.release`,
 and it takes no allocator.
 
 **When to use.** Creating an outer on the heap. **The defer goes before the
@@ -339,9 +349,9 @@ create.**
 fn void? p7_defer_release_early(Allocator a, Mailbox* mb)
 {
     Slot s;
-    defer mtk::managed::release(Holder, &s);
-    mtk::managed::create(Holder, a, &s)!;
-    s.must(Holder).id = 42;
+    defer HOLDER.release(a, &s);
+    HOLDER.create(a, &s)!;
+    HOLDER.must_look(&s).id = 42;
     mb.send(&s)!;                                       // on success the defer does nothing
 }
 ```
@@ -393,7 +403,7 @@ back.
 ```c3
 fn void p9_fallback(Pool* p, Slot* s)
 {
-    defer mtk::managed::release(Holder, s);   // fallback: runs only if the pool refused
+    defer HOLDER.release(a, s);   // fallback: runs only if the pool refused
     defer p.put(s);                           // primary: empties the Slot if the pool kept it
 }
 ```
@@ -424,14 +434,14 @@ fn void? p10_no_raw_alloc(Allocator a)
 
     // RIGHT — the allocator goes in, and the identity is written
     Slot s;
-    defer mtk::managed::release(Holder, &s);
-    mtk::managed::create(Holder, a, &s)!;
+    defer HOLDER.release(a, &s);
+    HOLDER.create(a, &s)!;
 }
 ```
 
 **Why.**
 
-- `mtk::managed::create` allocates, writes the allocator into the outer, calls
+- `HOLDER.create` allocates, calls your `init(a)` hook if you declared one, stamps the identity, and calls
   `init` and fills the Slot.
 - A raw `a.new(Holder)` skips `init`, so the outer carries no identity and
   every crossing refuses it.
@@ -475,63 +485,79 @@ struct Command
 ### 12 — The `$Type` crossing
 
 *Changes shape*, and this is the largest shape change in the port. **There is
-no `PolyHelper` and there is nothing to declare.**
+no `PolyHelper`**, and the only thing to declare is one alias.
 
 **When to use.** Every crossing.
 
 **Code shape.**
 
 ```c3
+alias EVENT = helper::OF{Event};      // once, per module that uses Event
+
 fn void p12_type_crossing(Inner* inner)
 {
-    if (Event* e = mtk::helper::from_inner(h, Event)) { e.code++; }
-    if (Event* e = h.to(Event))                        { e.code++; }
+    if (Event* e = EVENT.look(inner))              { e.code++; }   // reach for this
+    if (Event* e = inner::from_inner(inner, Event)) { e.code++; }  // what it forwards to
+    if (Event* e = inner.to(Event))                { e.code++; }   // and the method form
 }
 ```
 
 **Why.**
 
-- `mtk::helper` and `mtk::managed` are macros over `$Type`. **The type is a
-  parameter of the call, not of a generated helper.**
-- So a new outer type costs no setup: no alias, no instantiation, no
-  registration. Declare the struct, embed an `Inner`, cross with it.
-- ztk needed `EventPolyHelper` because the tag had to be a global somewhere.
-  3tk's identity is `Event::typeid`, which the compiler already has.
-- **The method form and the free-function form are the same call.** `h.to(Event)`
-  is `from_inner(h, Event)`. Pick one and stay with it inside a file.
+- The helper's members are macros over `Outer`. **The type is a parameter of
+  the instantiation, not of a generated helper**, and the identity is
+  `Event::typeid`, which the compiler already has. ztk needed
+  `EventPolyHelper` because the tag had to be a global somewhere.
+- So a new outer type costs one line: declare the struct, embed an `Inner`,
+  bind the alias. No instantiation, no registration. Entry 58.
+- **All three spellings are the same call**, because the helper adds no logic of
+  its own. **Reach for the member.** The other two are documented so you can
+  read what it does, and for a dispatch loop holding an `Inner*` with no helper
+  bound for the type it is testing.
+- `examples/012-type_crossing.c3` runs all three against one `Event` and asserts
+  they land on the same pointer. It and entry 13 are the only two places the
+  lower layer is shown.
 
 ### 13 — Recovering the type
 
 *Carries over.*
 
-**When to use.** You hold an inner — an `Inner*` — and want the typed pointer back.
+**When to use.** You hold an inner or a Slot, and want the typed pointer back.
 
 **Code shape.**
 
 ```c3
 fn void p13_recover(Inner* inner, Slot* s)
 {
-    if (Event* e = h.to(Event)) { e.code++; }       // null on a mismatch
-    Event* known = h.as(Event);                     // asserts, and is gone in a fast build
-    Event* peeked = s.to(Event);                    // null on a mismatch, Slot untouched
-    Event* taken  = s.move(Event);                  // null on a mismatch, Slot emptied on a match
+    Event* checked  = EVENT.look(inner);      // null on a mismatch
+    Event* asserted = EVENT.must_look(inner); // aborts, and is gone in a fast build
+    Event* peeked   = EVENT.look(s);          // null on a mismatch, Slot untouched
+    Event* taken    = EVENT.take(s);          // null on a mismatch, Slot emptied on a match
 }
 ```
 
 **Why.**
 
+- **Two independent axes, so the names are derivable rather than memorised.**
+  `must_` aborts on a mismatch and plain returns null; `take` empties the Slot
+  and `look` leaves it alone. `look` and `must_look` accept a `Slot*` or an
+  `Inner*`; `take` and `must_take` accept a `Slot*` only, because an inner has
+  no Slot to empty.
 - **Use the checking form when a mismatch is normal.** Walking a queue that
   carries three identities, you meet the other two, and null is the answer.
 - **Use the asserting form when a mismatch is your bug.** It costs nothing in a
   fast build, because it is not there.
-- `move` is the acquisition idiom: the pointer and the empty Slot in one step,
-  with no window where you hold both.
-- `mtk::helper::is_mine(h, Event)` asks the question without crossing. A null
-  inner is not yours, and an outer that was never initialized is not yours
-  either.
-- **Do not call `to` or `as` on an outer whose static type you already have.**
-  That is a round trip that proves nothing. The crossings are for the way
-  back, where the static type is gone.
+- **`take` is the acquisition idiom**: the pointer and the empty Slot in one
+  step, with no window where you hold both. `must_take` is the same with the
+  abort, and it did not exist before the four-name scheme exposed the gap.
+- **All four check the stamp first.** An outer that was never stamped is a
+  defect, and it is caught here or at the next insertion, whichever comes
+  first — not at a `switch` that looks correct. Null is not the violation: an
+  empty Slot and a null `Inner*` are answers `look` is allowed to give.
+- `inner::is_mine(inner, Event)` asks the question without crossing.
+- **Do not cross an outer whose static type you already have.** That is a round
+  trip that proves nothing. The crossings are for the way back, where the static
+  type is gone.
 
 ### 14 — Stack outers are illegal
 
@@ -559,7 +585,7 @@ a thread — everywhere.
 **What to do instead.** Every outer is heap-allocated before it is crossed,
 every time:
 
-- `mtk::managed::create` for an outer that carries an `Allocator` field —
+- `HOLDER.create` for an outer the toolkit should allocate for you —
   entries 7 and 10.
 - A raw heap allocation plus `mtk::helper::init` for an outer with no
   `Allocator` field, releasing it by hand.
@@ -587,7 +613,7 @@ fn void? p15_walk_batch(Mailbox* mb, Allocator a)
     while (Inner* inner = batch.pop_front())
     {
         Slot s;
-        s.fill(h);
+        s.fill(inner);
         free_outer(&s);
     }
 }
@@ -631,9 +657,9 @@ sent or given back.
 fn void? p16_reach_in(Allocator a, Mailbox* mb)
 {
     Slot s;
-    defer mtk::managed::release(Holder, &s);
-    mtk::managed::create(Holder, a, &s)!;
-    s.must(Holder).id = 42;
+    defer HOLDER.release(a, &s);
+    HOLDER.create(a, &s)!;
+    HOLDER.must_look(&s).id = 42;
     mb.send(&s)!;
 }
 ```
@@ -665,9 +691,9 @@ every branch wants the typed pointer straight away.
 fn void free_outer(Slot* s)
 {
     if (s.is_empty()) return;
-    if (s.to(Event))  { mtk::managed::release(Event, s);  return; }
-    if (s.to(Sensor)) { mtk::managed::release(Sensor, s); return; }
-    if (s.to(Holder)) { mtk::managed::release(Holder, s); return; }
+    if (EVENT.look(s))  { EVENT.release(a, s);  return; }
+    if (SENSOR.look(s)) { SENSOR.release(a, s); return; }
+    if (HOLDER.look(s)) { HOLDER.release(a, s); return; }
     unreachable("free_outer met an identity it was not written for");
 }
 ```
@@ -698,9 +724,9 @@ struct CreateByIdentityHooks (PoolHooks)
 
 fn void CreateByIdentityHooks.on_get(&self, typeid want, usz in_pool, Slot* slot) @dynamic
 {
-    if (want == Event::typeid)  { if (catch mtk::managed::create(Event,  self.alloc, slot)) {} return; }
-    if (want == Sensor::typeid) { if (catch mtk::managed::create(Sensor, self.alloc, slot)) {} return; }
-    if (want == Holder::typeid) { if (catch mtk::managed::create(Holder, self.alloc, slot)) {} return; }
+    if (want == Event::typeid)  { if (catch EVENT.create(self.alloc, slot)) {} return; }
+    if (want == Sensor::typeid) { if (catch SENSOR.create(self.alloc, slot)) {} return; }
+    if (want == Holder::typeid) { if (catch HOLDER.create(self.alloc, slot)) {} return; }
     // an identity the pool was not created with never reaches here
 }
 
@@ -711,7 +737,7 @@ fn void CreateByIdentityHooks.on_close(&self, InnerQueue* remaining) @dynamic
     while (Inner* inner = remaining.pop_front())
     {
         Slot s;
-        s.fill(h);
+        s.fill(inner);
         free_outer(&s);
     }
 }
@@ -746,14 +772,14 @@ decides.
 ```c3
 fn void p19_switch_dispatch(Inner* inner)
 {
-    switch (h.link.type)
+    switch (inner.outer_tid())
     {
         case Event::typeid:
-            h.as(Event).code++;
+            EVENT.must_look(inner).code++;
         case Sensor::typeid:
-            h.as(Sensor).reading++;
+            SENSOR.must_look(inner).reading++;
         case Holder::typeid:
-            h.as(Holder).id++;
+            HOLDER.must_look(inner).id++;
         default:
             unreachable("closed set: every identity is a prong");
     }
@@ -884,7 +910,7 @@ identity
 
 - **An identity answers *what is this*.** Two mailboxes have the same identity;
   they are not the same mailbox.
-- **A pointer comparison answers *which one*.** `mailbox::of(h) == worker_mbx`
+- **A pointer comparison answers *which one*.** `mailbox::of(inner) == worker_mbx`
   is the instance question, and both sides are a real `Mailbox*` — see entry 25.
 - **A field you declare answers *what role*.** `kind`, `role`, `priority` are
   application data. Do not make a second outer type to carry what a field
@@ -921,10 +947,10 @@ struct WorkerInbox
 fn void? p23_wrapper(Allocator a, Mailbox* to, Mailbox* inbox, int job_id)
 {
     Slot s;
-    defer mtk::managed::release(WorkerInbox, &s);
-    mtk::managed::create(WorkerInbox, a, &s)!;
+    defer WORKER_INBOX.release(a, &s);
+    WORKER_INBOX.create(a, &s)!;
 
-    WorkerInbox* w = s.must(WorkerInbox);
+    WorkerInbox* w = WORKER_INBOX.must_look(&s);
     w.mbx = inbox;
     w.job_id = job_id;
 
@@ -993,7 +1019,7 @@ fn void? p25_finish_signal(Mailbox* inbox, Mailbox* worker_mbx)
     while (Inner* inner = left.pop_front())
     {
         Slot each;
-        each.fill(h);
+        each.fill(inner);
         free_outer(&each);
     }
     got.release();
@@ -1083,7 +1109,7 @@ fn void? p28_receive_all(Mailbox* mb)
     while (Inner* inner = batch.pop_front())
     {
         Slot s;
-        s.fill(h);
+        s.fill(inner);
         free_outer(&s);
     }
 }
@@ -1133,7 +1159,7 @@ fn void p30_close_recovery(Mailbox* mb)
     while (Inner* inner = left.pop_front())
     {
         Slot s;
-        s.fill(h);
+        s.fill(inner);
         free_outer(&s);          // release it, or give it back to a pool
     }
     mb.release();
@@ -1322,7 +1348,7 @@ fn void? p37_available_or_new(Pool* p)
     Slot s;
     defer p.put(&s);
     p.get(Holder::typeid, AVAILABLE_OR_NEW, &s)!;
-    s.must(Holder).id = 1;
+    HOLDER.must_look(&s).id = 1;
 }
 ```
 
@@ -1345,7 +1371,7 @@ fn void? p38_new_only(Pool* p)
 {
     Slot s;
     p.get(Holder::typeid, NEW_ONLY, &s)!;
-    s.must(Holder).id = 0;
+    HOLDER.must_look(&s).id = 0;
     p.put(&s);
 }
 ```
@@ -1376,7 +1402,7 @@ fn usz p39_available_only(Pool* p)
             break;
         }
         taken++;
-        mtk::managed::release(Holder, &s);
+        HOLDER.release(a, &s);
     }
     return taken;
 }
@@ -1405,8 +1431,8 @@ fn void? p40_seed(Pool* p, Allocator a, usz n)
     for (usz i = 0; i < n; i++)
     {
         Slot s;
-        defer mtk::managed::release(Holder, &s);
-        mtk::managed::create(Holder, a, &s)!;
+        defer HOLDER.release(a, &s);
+        HOLDER.create(a, &s)!;
         p.put(&s);                           // the defer releases it only if the pool refused
     }
 }
@@ -1468,14 +1494,14 @@ struct CappedHooks (PoolHooks)
 fn void CappedHooks.on_get(&self, typeid want, usz in_pool, Slot* slot) @dynamic
 {
     if (self.live.load(ACQUIRE) >= self.cap) return;      // empty Slot -> NOT_CREATED
-    if (catch mtk::managed::create(Holder, self.alloc, slot)) return;
+    if (catch HOLDER.create(self.alloc, slot)) return;
     self.live.add(1);
 }
 
 fn void CappedHooks.on_put(&self, usz in_pool, Slot* slot, InnerQueue* extra) @dynamic
 {
-    Holder* h = slot.must(Holder);
-    h.id = 0;                                             // cleaned, and kept
+    Holder* held = HOLDER.must_look(slot);
+    held.id = 0;                                             // cleaned, and kept
 }
 
 fn void CappedHooks.on_close(&self, InnerQueue* remaining) @dynamic
@@ -1483,9 +1509,9 @@ fn void CappedHooks.on_close(&self, InnerQueue* remaining) @dynamic
     while (Inner* inner = remaining.pop_front())
     {
         Slot s;
-        s.fill(h);
+        s.fill(inner);
         self.live.sub(1);
-        mtk::managed::release(Holder, &s);
+        HOLDER.release(a, &s);
     }
 }
 ```
@@ -1728,9 +1754,9 @@ fn void? Master.seed_the_work(&self)
     for (int i = 1; i <= 4; i++)
     {
         Slot s;
-        defer mtk::managed::release(Event, &s);
-        mtk::managed::create(Event, self.alloc, &s)!;
-        s.must(Event).code = i;
+        defer EVENT.release(a, &s);
+        EVENT.create(self.alloc, &s)!;
+        EVENT.must_look(&s).code = i;
         self.mbx.send(&s)!;
     }
 }
@@ -1798,7 +1824,7 @@ fn void Master.shut_down(&self)
     while (Inner* inner = left.pop_front())
     {
         Slot s;
-        s.fill(h);
+        s.fill(inner);
         free_outer(&s);
     }
     self.mbx.release();
@@ -1925,7 +1951,8 @@ sits with the pool patterns because that is where it is read.
 
 ### 57 — The allocator in the outer
 
-**When to use.** Any outer with a lifetime, which is nearly all of them.
+**When to use.** An outer that has to reach its own allocator from a place the
+caller's is not in scope.
 
 **Code shape.**
 
@@ -1933,31 +1960,36 @@ sits with the pool patterns because that is where it is read.
 struct Buffer
 {
     Inner     inner;
-    Allocator alloc;
+    Allocator alloc;          // yours, under any name you like
     char[64]  bytes;
 }
+
+fn void? Buffer.init(&self, Allocator a) { self.alloc = a; return; }
 
 fn void? p57_allocator_in_outer(Allocator a)
 {
     Slot s;
-    defer mtk::managed::release(Buffer, &s);
-    mtk::managed::create(Buffer, a, &s)!;
+    defer BUFFER.release(a, &s);
+    BUFFER.create(a, &s)!;
 }
 ```
 
 **Why.**
 
-- **`release` takes no allocator.** The outer kept the one it was made with.
-- That is what makes **cleanup-before-acquisition** possible at all. A release
-  that needed an allocator would need one on the failure path too, where there
-  may be nothing to hand it.
-- **Taking the helper is the choice, and it is made at the call site, per
-  call.** There is no marker to set and no type to declare.
-- **The build refuses it if the field is not there**, and names your type and
-  the helper to use instead. `negative/nocompile_managed_no_allocator.c3` is
-  that refusal.
-- *Managed* means one thing. Nothing collects, traces, or runs in the
-  background.
+- **The toolkit reads and writes no field of your outer except the `Inner`.**
+  There is no allocator field convention, no name rule, no compile-time
+  discovery, and no error when the field is absent. `required_alloc_offset` and
+  `mtk::managed` are both deleted, and so are the two negative programs that
+  asserted the old refusal — **both shapes now compile and run**, which is why
+  the proof is positive and lives in `test/t_helper.c3`.
+- **The field is the outer's, and keeping it is the outer's choice**, made in
+  its own `init(a)` hook. An outer with no use for one declares no hook and
+  carries no field.
+- **`create` and `release` are both told the allocator at the call.** That is
+  what makes **cleanup-before-acquisition** legal: `release` is a no-op on an
+  empty Slot and returns `void`, so the `defer` above the create needs no `!`,
+  no `!!` and no cast.
+- Nothing collects, traces, or runs in the background.
 
 ### 58 — An identity costs no registration
 
@@ -1971,8 +2003,8 @@ struct Ticket { Inner inner; Allocator alloc; int seq; }
 fn void? p58_new_type_costs_nothing(Allocator a, Mailbox* mb)
 {
     Slot s;
-    defer mtk::managed::release(Ticket, &s);
-    mtk::managed::create(Ticket, a, &s)!;
+    defer TICKET.release(a, &s);
+    TICKET.create(a, &s)!;
     s.must(Ticket).seq = 1;
     mb.send(&s)!;
 }
@@ -2010,7 +2042,7 @@ fn usz p59_walk(InnerQueue* q)
   the loop.
 - It is the same shape for `pop_front`, for `InnerQueueIterator.next`, and for
   `InnerStack.pop`. **One loop shape for every take in the toolkit.**
-- The crossings compose with it: `if (Event* e = h.to(Event))` is the same
+- The crossings compose with it: `if (Event* e = EVENT.look(inner))` is the same
   construct one level in, which is what makes entry 17's chain read as a chain.
 
 ### 60 — Guarding an expensive check
@@ -2023,7 +2055,7 @@ cost in a checking build and not worth it in a fast one.
 ```c3
 fn void p60_guarded(InnerQueue* q, Inner* inner)
 {
-    mtk::@check(h != null, "this walk was given an inner");
+    mtk::@check(inner != null, "this walk was given an inner");
 
     if (mtk::CHECKED)
     {
@@ -2057,13 +2089,13 @@ struct PartHooks (PoolHooks) { Allocator alloc; }
 
 fn void PartHooks.on_get(&self, typeid want, usz in_pool, Slot* slot) @dynamic
 {
-    if (catch mtk::managed::create(Holder, self.alloc, slot)) {}
+    if (catch HOLDER.create(self.alloc, slot)) {}
 }
 
 fn void PartHooks.on_put(&self, usz in_pool, Slot* slot, InnerQueue* extra) @dynamic
 {
-    Holder* h = slot.must(Holder);
-    h.id = 0;
+    Holder* held = HOLDER.must_look(slot);
+    held.id = 0;
     // whatever this outer was carrying goes back the same way:
     // extra.push_back(mtk::helper::to_inner(part));
 }
@@ -2073,7 +2105,7 @@ fn void PartHooks.on_close(&self, InnerQueue* remaining) @dynamic
     while (Inner* inner = remaining.pop_front())
     {
         Slot s;
-        s.fill(h);
+        s.fill(inner);
         free_outer(&s);
     }
 }
@@ -2152,7 +2184,7 @@ entry dropped; the thing it was for did not.**
 - **It does not assign a pattern to a file.** The mapping comes after the
   catalog, which is the owner's ruling of 2026-08-26.
 - **It does not restate the reference.** A pattern is an assembly of the
-  surface; `3tk-api-004.md` is the verification table.
+  surface; `3tk-api-005.md` is the verification table.
 - **It does not invent a pattern 3tk cannot support.** Every shape here
   compiles.
 - **It changed nothing in `3tk/src`.**
