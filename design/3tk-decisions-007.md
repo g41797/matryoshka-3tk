@@ -946,7 +946,7 @@ not in the pool; policy is in the hooks. `Part 11.7` to `11.10`, `Part 12`,
   `../3tk/src/pool.c3:126`.
 - **`on_close` takes the queue by value, not by pointer.** *I do not care what
   you did* — the pool passes the outers to the hook and keeps nothing: no
-    pointer, no count, no check. `P6` (`3tk-open-defects.md`), ruled
+    pointer, no count, no check. `P6` — the last row of the port's own defect list, retired 2026-09-09 with nothing open on it — ruled
   2026-08-28, built by
   3TK-56. `InnerQueue.take()` (`../3tk/src/queue.c3`) is the O(1) move both call
   sites use. `../3tk/src/pool.c3:126`.
@@ -1067,7 +1067,7 @@ not in the pool; policy is in the hooks. `Part 11.7` to `11.10`, `Part 12`,
 | `Q1`, `Q3` to `Q10`, `Q12` | The C3 capability probes | Answered in `../c3-capabilities-001.md`. `Q2` and `Q11` are the two whose answers changed a design decision, and both are cited above |
 | `S1` to `S7` | The sanitizer findings | `../3tk-sanitizer-notes-001.md`. About the runs and the tests, not about `src/` |
 | `V8` to `V10`, `V14` to `V17` | Specification edits carried into 003 | Edits to the specification's own text. The port's side of each is above, under the file it belongs to |
-| `P3`, `P4`, `P5` | Audit findings, still open | Not fixed, so no source line records them. `../3tk-deviations-001.md` holds them |
+| `P3`, `P5` | Audit findings, still open | Not fixed, so no source line records them. **`P3` is written out in full in `3tk-status.md`** — the audit that held it, `3tk-deviations-001.md`, was retired by 3TK-73 on 2026-09-09 and `backup/` is not a source of truth. **`P4` is closed**: `pool.c3` has no `signal()` left, so the one-bucket leaver the finding names does not exist |
 | `P7` | The wait loop passes the timeout again on every iteration | A finding of `../3tk-drafts-review-001.md` about a draft, not a ruling of this port. See Appendix B |
 | `E7` | Nothing is lost by `H0b`; the premise was wrong | It was cited at `managed.c3:21`; `managed.c3` was deleted by 3TK-64, and the ruling itself outlived it — see the closing paragraph of *`managed.c3` — deleted by 3TK-64* |
 

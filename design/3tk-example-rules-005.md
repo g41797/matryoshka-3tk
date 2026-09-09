@@ -70,7 +70,7 @@ fourth port. The secondary trigger is a specification `005` written for any
 other reason.
 
 **The debt is recorded in `matryoshka-tk`**, in `3tk-status.md` under *Open
-questions* and in `3tk-port-findings-004.md`, the port's channel to another
+questions* and in `3tk-port-findings-005.md`, the port's channel to another
 port. **`../common/` is not one of those places.**
 
 ## The four trees
@@ -414,7 +414,7 @@ current file contents at the moment of the claim.**
 - **No change to `test/common.c3`**, and no change to the 87 existing tests.
 - **Nothing is written under `matryoshka-tk`'s `common/`**, and nothing is said
   to another port. A finding for another port goes in
-  `3tk-port-findings-004.md`, which describes and recommends nothing.
+  `3tk-port-findings-005.md`, which describes and recommends nothing.
 - **No `git`.** The owner saves — in `matryoshka-tk`. In `matryoshka-3tk`, the
   owner also runs the copy and the push; a stage does not push on its own.
 - **A stage revising a document in `matryoshka-3tk/design` versions it.** `001`
