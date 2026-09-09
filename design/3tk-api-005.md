@@ -4,7 +4,7 @@ Every public declaration of the C3 port, with every assert and every contract
 clause copied from the source and carrying its `file:line`.
 
 **This is not the page to learn the toolkit from.**
-[3tk-reference-008.md](3tk-reference-008.md) is that page, and it is the one a
+[3tk-reference-009.md](3tk-reference-009.md) is that page, and it is the one a
 caller reads. (Until this version the pointer here was `3tk-api-002.md`, which
 3TK-60 moved to `matryoshka-tk`'s `backup/`.) Read this one to check that the
 reference is telling the truth, or to find where in `3tk/src` a promise is
@@ -31,6 +31,11 @@ refused. Those live in [3tk-decisions-007.md](3tk-decisions-007.md).
 
 **Every contract and every check below is copied from `3tk/src`**, with its
 `file:line`. None is inferred from what a declaration ought to check.
+
+**Re-anchored by 3TK-70, 2026-09-09.** The module split moved nearly every line
+of four files, so all 90 citations were resolved again — each from the contract
+or check clause the entry itself quotes, found in the current tree, and never
+from the number it carried. The free crossings are `inner::internal::` now.
 
 **005 replaces 004, written by 3TK-66 on 2026-09-08**, and it is the largest
 change this table has taken since it stopped being a reference. `004` had fallen
@@ -194,9 +199,9 @@ that count.
   failure. One name serves both argument types, dispatched at compile time on
   `$Typeof`; anything else is a `$error` naming the mistake.
 - **Costs** — O(1), one typeid comparison and one pointer subtraction.
-- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:57`.
-- **Checks** — `inner::check_stamped(…, "the outer was never stamped: make it
-with `create`, or call `stamp` once")` — `helper.c3:65` and `helper.c3:69`.
+- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:74`.
+- **Checks** — `inner::internal::check_stamped(…, "the outer was never stamped: make it
+with `create`, or call `stamp` once")` — `helper.c3:80` and `helper.c3:80`.
 
 ### `macro Outer* OuterHelper.must_look(self, from)`
 
@@ -204,8 +209,8 @@ with `create`, or call `stamp` once")` — `helper.c3:65` and `helper.c3:69`.
 - **Promises** — use it where a mismatch would be your own defect; the abort
   names your line. Under `--safe=no` the check is gone.
 - **Costs** — O(1), and nothing at all in a fast build.
-- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:57`.
-- **Checks** — `inner::check_stamped(…)` — `helper.c3:91` and `helper.c3:95`.
+- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:97`.
+- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:103` and `helper.c3:106`.
 
 ### `macro Outer* OuterHelper.take(self, Slot* slot)`
 
@@ -214,8 +219,8 @@ with `create`, or call `stamp` once")` — `helper.c3:65` and `helper.c3:69`.
   There is no `Inner*` form: an inner has no Slot to empty.
 - **Costs** — O(1).
 - **Contract** — `@param slot : "the Slot holding the outer; empty afterwards on
-success"` — `helper.c3:108`.
-- **Checks** — `inner::check_stamped(…)` — `helper.c3:114`.
+success"` — `helper.c3:119`.
+- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:123`.
 
 ### `macro Outer* OuterHelper.must_take(self, Slot* slot)`
 
@@ -225,8 +230,8 @@ success"` — `helper.c3:108`.
   two-axis naming exposed.
 - **Costs** — O(1).
 - **Contract** — `@param slot : "the Slot holding the outer; empty afterwards"` —
-`helper.c3:108`.
-- **Checks** — `inner::check_stamped(…)` — `helper.c3:130`.
+`helper.c3:133`.
+- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:137`.
 
 ## The other three
 
@@ -237,7 +242,7 @@ success"` — `helper.c3:108`.
   linked outer, so this costs nothing to call twice. **It is what makes the
   identity impossible to forget.**
 - **Costs** — O(1), one `any_make` and one pointer addition.
-- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:143`.
+- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:150`.
 
 ### `macro void OuterHelper.stamp(self, Outer* outer)`
 
@@ -247,14 +252,14 @@ success"` — `helper.c3:108`.
   crossing or at the next insertion, whichever comes first.
 - **Costs** — O(1). It is called `stamp` and not `init` because `init` is the
   name of your own hook.
-- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:143`.
+- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:165`.
 
 ### `macro bool OuterHelper.linked(self, Outer* outer)`
 
 - **What** — true when the outer is on some chain.
 - **Promises** — **exact**, not a heuristic.
 - **Costs** — O(1).
-- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:143`.
+- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:174`.
 
 ## Allocating and freeing
 
@@ -273,11 +278,11 @@ success"` — `helper.c3:108`.
 - **Costs** — one allocation, plus whatever your hook does. It returns `void?`
   because its caller has a real decision to make.
 - **Contract** — `@param a : "the allocator; it is passed to your `init` hook and
-it is not stored"` — `helper.c3:187`.
+it is not stored"` — `helper.c3:191`.
 - **Contract** — `@param slot : "an empty Slot, filled on success"` —
-`helper.c3:188`.
+`helper.c3:192`.
 - **Checks** — `mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is
-empty on entry")` — `helper.c3:194`.
+empty on entry")` — `helper.c3:197`.
 
 ### `macro void OuterHelper.release(self, Allocator a, Slot* slot)`
 
@@ -290,11 +295,11 @@ empty on entry")` — `helper.c3:194`.
   path that is usually already unwinding.
 - **Costs** — one free, plus whatever your hook does.
 - **Contract** — `@param a : "the allocator the outer was created with"` —
-`helper.c3:214`.
+`helper.c3:217`.
 - **Contract** — `@param slot : "the Slot holding the outer; empty afterwards"` —
-`helper.c3:108`.
+`helper.c3:218`.
 - **Checks** — `mtk::@check(!f, "destroy failed during release")` —
-`helper.c3:224`. **A failing destructor is a defect, not an outcome:** the fault
+`helper.c3:226`. **A failing destructor is a defect, not an outcome:** the fault
 aborts in a safe build and is dropped in a fast one.
 
 ---
@@ -414,11 +419,11 @@ type.
   whole transfer discipline rests on.
 - **Costs** — O(1).
 - **Contract** — `@param inner : "the inner to place; must not be null"` —
-`inner.c3:151`.
+`inner.c3:149`.
 - **Checks** — `mtk::@check(inner != null, "Slot.fill with a null inner")` —
-`inner.c3:156`.
+`inner.c3:153`.
 - **Checks** — `mtk::@check(self.is_empty(), "never overwrite a full Slot")` —
-`inner.c3:158`.
+`inner.c3:155`.
 
 ## The five crossings, as methods
 
@@ -432,30 +437,30 @@ type it is testing has nowhere else to go. **Reach for the helper member first.*
   spelling to prefer.
 - **Promises** — null on an identity mismatch.
 - **Costs** — O(1).
-- **Contract** — `@param $Type : "the outer type expected"` — `inner.c3:170`.
+- **Contract** — `@param $Type : "the outer type expected"` — `inner.c3:167`.
 
 ### `macro Inner.as(&self, $Type)`
 
 - **What** — the same, and it aborts on a mismatch. `MSG.must_look(inner)` is
   the spelling to prefer.
 - **Costs** — O(1), and nothing in a fast build.
-- **Contract** — `@param $Type : "the outer type asserted"` — `inner.c3:181`.
+- **Contract** — `@param $Type : "the outer type asserted"` — `inner.c3:177`.
 - **Contract** — `@require is_mine((Inner*)self, $Type) : "the inner is not of
-this type"` — `inner.c3:182`.
+this type"` — `inner.c3:178`.
 
 ### `macro Slot.to(&self, $Type)`
 
 - **What** — from the Slot back to `$Type*`. It looks, and the Slot is
   unchanged. `MSG.look(&s)` is the spelling to prefer.
 - **Costs** — O(1).
-- **Contract** — `@param $Type : "the outer type expected"` — `inner.c3:170`.
+- **Contract** — `@param $Type : "the outer type expected"` — `inner.c3:167`.
 
 ### `macro Slot.must(&self, $Type)`
 
 - **What** — the same, and it aborts on a mismatch. The Slot is unchanged.
   `MSG.must_look(&s)` is the spelling to prefer.
 - **Costs** — O(1).
-- **Contract** — `@param $Type : "the outer type asserted"` — `inner.c3:181`.
+- **Contract** — `@param $Type : "the outer type asserted"` — `inner.c3:198`.
 
 ### `macro Slot.move(&self, $Type)`
 
@@ -463,7 +468,7 @@ this type"` — `inner.c3:182`.
   spelling to prefer.
 - **Promises** — on success the Slot is left empty; on failure it is unchanged.
 - **Costs** — O(1).
-- **Contract** — `@param $Type : "the outer type expected"` — `inner.c3:170`.
+- **Contract** — `@param $Type : "the outer type expected"` — `inner.c3:208`.
 
 ## Internal — what the helper does for you
 
@@ -490,7 +495,7 @@ forwarding above can be checked, not so that it can be called.
   sub-expression.
 - **Costs** — O(1), one `any_make`.
 - **Contract** — `@require $defined($Typeof(*outer)::members) : "not a struct
-that embeds an Inner"` — `inner.c3:244`.
+that embeds an Inner"` — `inner.c3:252`.
 
 ### `macro check_stamped(Inner* inner, $msg)`
 
@@ -501,20 +506,20 @@ that embeds an Inner"` — `inner.c3:244`.
 - **Costs** — nothing in a fast build: the condition is not evaluated and the
   identity is never read.
 - **Checks** — `mtk::@check(inner == null || (void*)inner.outer_tid() != null,
-$msg)` — `inner.c3:278`.
+$msg)` — `inner.c3:284`.
 
 ### `macro Inner* to_inner(outer)`
 
 - **What** — from your pointer to the inner. Null in, null out.
 - **Costs** — O(1).
 - **Contract** — `@require $defined($Typeof(*outer)::members) : "not a struct
-that embeds an Inner"` — `inner.c3:244`.
+that embeds an Inner"` — `inner.c3:290`.
 
 ### `macro from_inner(Inner* inner, $Type)` · `macro must_from_inner(Inner* inner, $Type)`
 
 - **What** — the checking and the asserting crossing from an inner.
 - **Contract** — `@require is_mine(inner, $Type) : "the inner is not of this
-type"` — `inner.c3:182`.
+type"` — `inner.c3:178`.
 
 ### `macro from_slot(Slot* s, $Type)` · `macro must_from_slot(Slot* s, $Type)` · `macro move_from_slot(Slot* s, $Type)`
 
@@ -573,9 +578,9 @@ That is an answer, not a fault.
 
 - **What** — the insert guard, run by both inserts.
 - **Costs** — tier 2, and O(1). Gone in a fast build.
-- **Checks** — `@check(h != null, "insert of a null inner")` — `queue.c3:203`.
+- **Checks** — `@check(h != null, "insert of a null inner")` — `queue.c3:209`.
 - **Checks** — `@check(!is_linked(h), "the outer is already on a chain")` —
-`queue.c3:205`.
+`queue.c3:211`.
 
 ## Questions
 
@@ -618,7 +623,7 @@ That is an answer, not a fault.
   tier 2 and the early return is ordinary code, so a fast build does nothing
   rather than dereference a null.
 - **Checks** — `@check(s.is_full(), "push_back_slot from an empty Slot")` —
-`queue.c3:110`.
+`queue.c3:102`.
 
 ## Removing
 
@@ -646,11 +651,11 @@ That is an answer, not a fault.
   return is ordinary code; without both, the naive move rings the outers into a
   cycle and loses every one.
 - **Contract** — `@param other : "the queue to empty onto this one; empty
-afterwards"` — `queue.c3:165`.
+afterwards"` — `queue.c3:155`.
 - **Checks** — `@check(other != null, "append_queue with a null queue")` —
-`queue.c3:170`.
+`queue.c3:159`.
 - **Checks** — `@check(other != self, "a queue cannot be moved onto itself")`
-— `queue.c3:172`.
+— `queue.c3:161`.
 
 ---
 
@@ -698,7 +703,7 @@ number of threads, then `close` with a queue to receive the remainder, then
 
 ### `macro Inner* to_inner(Mailbox* p)`
 
-- **What** — from a mailbox to an inner. Forwards to `inner::to_inner`.
+- **What** — from a mailbox to an inner. Forwards to `inner::internal::to_inner`.
 - **Promises** — cannot fail.
 - **Costs** — O(1).
 
@@ -718,7 +723,7 @@ number of threads, then `close` with a queue to receive the remainder, then
   constructed is ever returned or observable. The allocator is kept for life.
 - **Costs** — one allocation, a mutex init and a condition-variable init.
 - **Contract** — `@param a : "the allocator the mailbox keeps for life"` —
-`mailbox.c3:75`.
+`mailbox.c3:72`.
 
 ### `fn void Mailbox.release(&mbox)`
 
@@ -732,7 +737,7 @@ number of threads, then `close` with a queue to receive the remainder, then
   does not control. No allocator parameter.
 - **Costs** — one free.
 - **Checks** — `always_assert(self._closed && self._active == 0, "releasing a
-mailbox that is not quiet")` — `mailbox.c3:120`.
+mailbox that is not quiet")` — `mailbox.c3:116`.
 
 ## Sending
 
@@ -744,10 +749,10 @@ mailbox that is not quiet")` — `mailbox.c3:120`.
 - **Costs** — O(1) under the mutex, plus one signal. An empty Slot is a defect
   checked at tier 2, with an early return behind it.
 - **Contract** — `@param slot : "a full Slot; cleared on success, untouched on
-CLOSED"` — `mailbox.c3:142`.
-- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:143`.
+CLOSED"` — `mailbox.c3:137`.
+- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:138`.
 - **Checks** — `mtk::@check(slot.is_full(), "Mailbox.send from an empty
-Slot")` — `mailbox.c3:162`.
+Slot")` — `mailbox.c3:155`.
 
 ### `fn void? Mailbox.send_oob(&mbox, Slot* slot)`
 
@@ -756,8 +761,8 @@ Slot")` — `mailbox.c3:162`.
   **One priority level.** This is not a priority queue.
 - **Costs** — as `send`. Both share `send_at`, and both share its check.
 - **Contract** — `@param slot : "a full Slot; cleared on success, untouched on
-CLOSED"` — `mailbox.c3:142`.
-- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:155`.
+CLOSED"` — `mailbox.c3:148`.
+- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:149`.
 
 ## Receiving
 
@@ -769,10 +774,10 @@ CLOSED"` — `mailbox.c3:142`.
   reported, and a caller reading outcomes is entitled to the difference.
 - **Costs** — O(1) under the mutex.
 - **Contract** — `@param slot : "an empty Slot; filled on success"` —
-`mailbox.c3:185`.
-- **Contract** — `@return? mtk::CLOSED, mtk::EMPTY` — `mailbox.c3:186`.
+`mailbox.c3:178`.
+- **Contract** — `@return? mtk::CLOSED, mtk::EMPTY` — `mailbox.c3:179`.
 - **Checks** — `mtk::@check(slot.is_empty(), "an acquisition asserts the Slot
-is empty on entry")` — `mailbox.c3:194`.
+is empty on entry")` — `mailbox.c3:186`.
 
 ### `fn void? Mailbox.receive(&mbox, Slot* slot, Duration timeout)`
 
@@ -784,12 +789,12 @@ is empty on entry")` — `mailbox.c3:194`.
 - **Costs** — blocks on the condition variable. There is no interruption: C3
   has no interruptible condition wait.
 - **Contract** — `@param slot : "an empty Slot; filled on success"` —
-`mailbox.c3:185`.
-- **Contract** — `@param timeout : "how long to wait"` — `mailbox.c3:219`.
+`mailbox.c3:210`.
+- **Contract** — `@param timeout : "how long to wait"` — `mailbox.c3:211`.
 - **Contract** — `@return? mtk::CLOSED, mtk::TIMEOUT, mtk::WOKEN` —
-`mailbox.c3:220`.
+`mailbox.c3:212`.
 - **Checks** — `mtk::@check(slot.is_empty(), "an acquisition asserts the Slot
-is empty on entry")` — `mailbox.c3:194`.
+is empty on entry")` — `mailbox.c3:219`.
 
 ### `fn void? Mailbox.receive_all(&mbox, InnerQueue* out)`
 
@@ -800,8 +805,8 @@ is empty on entry")` — `mailbox.c3:194`.
   knowledge the mailbox never had.
 - **Costs** — two O(1) splices under the mutex.
 - **Contract** — `@param out : "an empty queue; every queued outer is moved
-onto it, in receive order"` — `mailbox.c3:278`.
-- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:279`.
+onto it, in receive order"` — `mailbox.c3:269`.
+- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:270`.
 
 ## Waking, closing, questions
 
@@ -812,7 +817,7 @@ onto it, in receive order"` — `mailbox.c3:278`.
   open.** The effect does not persist: a thread that starts waiting afterwards
   captures the new generation and is unaffected.
 - **Costs** — one broadcast under the mutex.
-- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:309`.
+- **Contract** — `@return? mtk::CLOSED` — `mailbox.c3:299`.
 
 ### `fn void Mailbox.close(&mbox, InnerQueue* out)`
 
@@ -825,7 +830,7 @@ onto it, in receive order"` — `mailbox.c3:278`.
   and those outers keep their links, so a later send refuses them. The refusal
   is exact, so the mistake surfaces at the first reuse.
 - **Contract** — `@param out : "an empty queue; the remainder is moved onto
-it, in receive order"` — `mailbox.c3:338`.
+it, in receive order"` — `mailbox.c3:327`.
 
 ### `fn bool Mailbox.is_closed(&mbox)`
 
@@ -895,11 +900,11 @@ it is a defect of the caller: a checking build aborts, and a fast build reports
   outer of a different identity is a defect of the application, and the pool
   checks for it at tier 2.
 - **Costs** — called with no lock held.
-- **Contract** — `@param want : "the identity asked for"` — `pool.c3:64`.
+- **Contract** — `@param want : "the identity asked for"` — `pool.c3:41`.
 - **Contract** — `@param in_pool : "how many of this identity remain, AFTER
-the removal. A hint, and stale"` — `pool.c3:65`.
+the removal. A hint, and stale"` — `pool.c3:42`.
 - **Contract** — `@param slot : "empty on entry; fill it or leave it"` —
-`pool.c3:66`.
+`pool.c3:43`.
 
 ### `fn void PoolHooks.on_put(usz in_pool, Slot* slot, InnerQueue* extra)`
 
@@ -912,10 +917,10 @@ the removal. A hint, and stale"` — `pool.c3:65`.
   same way, with the same checks: that is how a composite outer gives its parts
   back.
 - **Contract** — `@param in_pool : "how many of this identity are held, BEFORE
-the addition. A hint"` — `pool.c3:80`.
-- **Contract** — `@param slot : "full on entry"` — `pool.c3:81`.
+the addition. A hint"` — `pool.c3:57`.
+- **Contract** — `@param slot : "full on entry"` — `pool.c3:58`.
 - **Contract** — `@param extra : "an empty queue; outers added here are taken
-the same way, with the same checks"` — `pool.c3:82`.
+the same way, with the same checks"` — `pool.c3:59`.
 
 ### `fn void PoolHooks.on_close(InnerQueue* remaining)`
 
@@ -928,7 +933,7 @@ the same way, with the same checks"` — `pool.c3:82`.
   A hook writes the same loop either way, and **must not free its own context
   on the first call.**
 - **Contract** — `@param remaining : "everything the pool still held,
-flattened across every identity. No order is promised"` — `pool.c3:98`.
+flattened across every identity. No order is promised"` — `pool.c3:75`.
 
 ## Types and identity
 
@@ -989,16 +994,16 @@ flattened across every identity. No order is promised"` — `pool.c3:98`.
   compiled only where the tiers are live.** It runs before anything is
   allocated, so it needs no cleanup.
 - **Contract** — `@param a : "the allocator the pool keeps for life"` —
-`pool.c3:160`.
+`pool.c3:181`.
 - **Contract** — `@param tags : "the identities this pool holds. Not empty,
-and no duplicates — both checked"` — `pool.c3:161`.
-- **Contract** — `@param hooks : "the policy"` — `pool.c3:162`.
+and no duplicates — both checked"` — `pool.c3:182`.
+- **Contract** — `@param hooks : "the policy"` — `pool.c3:183`.
 - **Checks** — `mtk::@check(tags.len > 0, "the set of identities is not
-empty")` — `pool.c3:168`.
+empty")` — `pool.c3:188`.
 - **Checks** — `mtk::@check(hooks != null, "a pool cannot exist without
-hooks")` — `pool.c3:170`.
+hooks")` — `pool.c3:190`.
 - **Checks** — `mtk::@check(t != u, "the pool's set of identities has a
-duplicate")` — `pool.c3:179`.
+duplicate")` — `pool.c3:199`.
 
 ### `fn void Pool.release(&pool)`
 
@@ -1010,7 +1015,7 @@ duplicate")` — `pool.c3:179`.
   under the mutex, and `release` is never counted itself.
 - **Costs** — two frees.
 - **Checks** — `always_assert(self._closed && self._active == 0, "releasing a pool that is not quiet")` —
-`pool.c3:236`.
+`pool.c3:256`.
 
 ### `fn bool Pool.is_quiet(&pool)`
 
@@ -1030,17 +1035,17 @@ duplicate")` — `pool.c3:179`.
 - **Costs** — O(n) in the number of identities for the bucket lookup, then
   O(1). **The hook runs outside the mutex**, and everything read before
   unlocking is stale when it returns.
-- **Contract** — `@param want : "the identity wanted"` — `pool.c3:264`.
-- **Contract** — `@param mode : "which of the three modes"` — `pool.c3:265`.
-- **Contract** — `@param slot : "an empty Slot; filled on success"` — `pool.c3:266`.
+- **Contract** — `@param want : "the identity wanted"` — `pool.c3:283`.
+- **Contract** — `@param mode : "which of the three modes"` — `pool.c3:284`.
+- **Contract** — `@param slot : "an empty Slot; filled on success"` — `pool.c3:285`.
 - **Contract** — `@return? mtk::CLOSED, mtk::NOT_AVAILABLE, mtk::NOT_CREATED,
-mtk::UNKNOWN_IDENTITY` — `pool.c3:267`.
+mtk::UNKNOWN_IDENTITY` — `pool.c3:286`.
 - **Checks** — `mtk::@check(slot.is_empty(), "an acquisition asserts the Slot
-is empty on entry")` — `pool.c3:275`.
+is empty on entry")` — `pool.c3:293`.
 - **Checks** — `mtk::@check(b != null, "Pool.get for an identity the pool was
-not created with")` — `pool.c3:290`.
+not created with")` — `pool.c3:308`.
 - **Checks** — `mtk::@check(slot.peek().link.type == want, "the get hook
-returned an outer of a different identity")` — `pool.c3:331`.
+returned an outer of a different identity")` — `pool.c3:349`.
 
 ### `fn void? Pool.get_wait(&pool, typeid want, Slot* slot, Duration timeout)`
 
@@ -1053,15 +1058,15 @@ returned an outer of a different identity")` — `pool.c3:331`.
   before the loop; the bucket slice is allocated once and never grown, moved or
   reallocated, so its address stays valid for the pool's whole life, and only
   its contents change under the lock.
-- **Contract** — `@param want : "the identity wanted"` — `pool.c3:264`.
-- **Contract** — `@param slot : "an empty Slot; filled on success"` — `pool.c3:266`.
-- **Contract** — `@param timeout : "how long to wait"` — `pool.c3:345`.
+- **Contract** — `@param want : "the identity wanted"` — `pool.c3:361`.
+- **Contract** — `@param slot : "an empty Slot; filled on success"` — `pool.c3:362`.
+- **Contract** — `@param timeout : "how long to wait"` — `pool.c3:363`.
 - **Contract** — `@return? mtk::CLOSED, mtk::TIMEOUT, mtk::UNKNOWN_IDENTITY` —
-`pool.c3:346`.
+`pool.c3:364`.
 - **Checks** — `mtk::@check(slot.is_empty(), "an acquisition asserts the Slot
-is empty on entry")` — `pool.c3:275`.
+is empty on entry")` — `pool.c3:371`.
 - **Checks** — `mtk::@check(b != null, "Pool.get_wait for an identity the pool
-was not created with")` — `pool.c3:363`.
+was not created with")` — `pool.c3:380`.
 
 ## Putting
 
@@ -1078,11 +1083,11 @@ was not created with")` — `pool.c3:363`.
   still holding then goes to the close hook, and the caller's Slot stays
   cleared because the pool did take the outer.
 - **Contract** — `@param slot : "a full Slot; cleared if the pool took the
-outer"` — `pool.c3:414`.
+outer"` — `pool.c3:434`.
 - **Checks** — `mtk::@check(b != null, "Pool.put of an identity the pool was
-not created with")` — `pool.c3:439`.
+not created with")` — `pool.c3:458`.
 - **Checks** — `mtk::@check(b != null, "the put hook returned an identity the
-pool was not created with")` — `pool.c3:498`, reached through the private
+pool was not created with")` — `pool.c3:517`, reached through the private
 store path for both the Slot and each outer of `extra`.
 
 ## Closing and questions
@@ -1135,9 +1140,9 @@ it does not promise most-recently-returned-first.
   omitted the stamp is still on the stack.
 - **Costs** — nothing in a fast build.
 - **Checks** — `mtk::@check(inner != null, "insert of a null inner")` —
-`pool.c3:715`.
-- **Checks** — `mtk::@check(!inner::is_linked(inner), "the outer is already on a
-chain")` — `pool.c3:717`.
+`pool.c3:755`.
+- **Checks** — `mtk::@check(!inner::internal::is_linked(inner), "the outer is already on a
+chain")` — `pool.c3:757`.
 
 ### `fn bool InnerStack.is_empty(&self) @inline` · `fn usz InnerStack.len(&self) @inline`
 

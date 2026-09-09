@@ -58,6 +58,14 @@ and `release` live.
 **Anything that moves a line in `../3tk/src` must re-run that resolution**, the
 same way this file's own rule below requires. It is not a debt for a later stage.
 
+**3TK-70 re-ran it on 2026-09-09**, after the module split moved nearly every
+line of four files: 230 citations here, resolved from each entry's own text
+against the current tree. **A citation now names one line, the declaration's
+own** — the ranges and lists the older anchors carried (`:195-205`, `:60,86,111`)
+collapsed to the declarations they were pointing into, because a range measured
+against a file that has since been rewritten is a number with nothing behind it.
+The rules file is `3tk-rules-002.md` from that stage.
+
 **`3tk-boundaries-001.md` is spent, and this file cites it by part number
 anyway.** 3TK-66 moved it and `3tk-terms-001.md` to `design/backup/` on
 2026-09-08, once their content had dissolved into the source and the books.
@@ -66,8 +74,8 @@ truth**, and a `Part n` or `RT-n` below is a **historical marker**, not a live
 link: it says which sitting ruled the entry, and the entry itself says what
 stands. **Where the two would differ, this file and `../3tk/src` are what
 stands.** The surface, the invariants and the absences now live in
-[3tk-reference-008.md](3tk-reference-008.md); the rules that bind a stage live
-in [3tk-rules-001.md](3tk-rules-001.md).
+[3tk-reference-009.md](3tk-reference-009.md); the rules that bind a stage live
+in [3tk-rules-002.md](3tk-rules-002.md).
 
 ---
 
@@ -100,10 +108,10 @@ carried down**, because a port that read them got the pre-ruling design:
 - **`PL-6` — the stutter.** This section recorded the crossing as spelled
   `mtk::to_inner`, *because `mtk::inner` is not a module name any more*. **It is
   one again**, for the same reason `RT-3` was reversed. The free crossings are
-  spelled **`inner::`**, and the answer `PL-6` actually gets is that a user
+  spelled **`inner::internal::`** since 3TK-70, and the answer `PL-6` actually gets is that a user
   reaches for the helper member and meets no stutter at all — Boundaries
   `Part 6`, and the *What is deliberately absent* section of
-  [3tk-reference-008.md](3tk-reference-008.md).
+  [3tk-reference-009.md](3tk-reference-009.md).
 - **`RT-5` and `RT-13` — `xtn` and the allocator field.** Both stand as
   superseded, and the body's *`managed.c3`* section is the deletion record.
   There is no allocator-field concept in the source at all: no discovery, no
@@ -139,9 +147,9 @@ callers there.
 ### Vocabulary and shape
 
 - **Outer and Inner.** The application's struct is the outer; the structure it
-  embeds is the `Inner`. `R1`. `../3tk/src/inner.c3:86`.
+  embeds is the `Inner`. `R1`. `../3tk/src/inner.c3:90`.
 - **`Outer` is a category and never a type.** No such type is declared
-  anywhere. `R1`. `../3tk/src/mtk.c3:39`.
+  anywhere. `R1`. `../3tk/src/mtk.c3:40`.
 - **A concept gets a C3 type when the type system can express useful semantics
   for it. Otherwise it stays vocabulary.** `Slot` and `Inner` are the worked
   pair. `Slot` is a `typedef`: a distinct type the compiler and the checks
@@ -152,7 +160,7 @@ callers there.
   pointer, and said nothing about who frees the outer. It bought vocabulary,
   and vocabulary does not need a C3 identifier. **The alias is removed; the
   source says `Inner*`.** `3TK-59`, ruled 2026-09-04.
-  `../3tk/src/inner.c3:98`.
+  `../3tk/src/inner.c3:101`.
 - **3tk has exactly two terms: `Inner` and `Outer`. There is no third.**
   `Inner` is a real C3 type and the field you lend; `Outer` is a role and the
   struct you own. **The words *handle* and *item* are retired** — from the
@@ -161,102 +169,103 @@ callers there.
   the old word for an outer. This **supersedes `3TK-59`, which kept *handle* as
   an English word** on the porting rule. `Slot` is untouched: it is a real type
   naming a container state, not a participant. `3TK-60`, ruled 2026-09-04.
-  `../3tk/src/inner.c3:86`.
+  `../3tk/src/inner.c3:90`.
 - **The embedded field is named `inner`, and a local or parameter of type
   `Inner*` is named `inner`, spelled in full.** It was `node`, which was a
   third term in the same position *handle* held. Measured on c3c 0.8.3: the
   name does not collide with the module `mtk::inner`, because C3 keeps module
   paths and value identifiers in separate namespaces. `3TK-60`, ruled
-  2026-09-04. `../3tk/src/helper.c3:146`.
+  2026-09-04. `../3tk/src/helper.c3:152`.
 - **Porting is not transpiling, and each port spells the pair as its own type
   system allows.** ztk has `Inner`/`ItemHandle`, C3 has `Inner` and `Inner*`
   with no name for the outer, and **dtk meets the same question**, with D's
   type system possibly giving a different answer. What binds every port is the
-  pair itself, not the spelling. `3TK-59`, `3TK-60`. `../3tk/src/inner.c3:86`.
+  pair itself, not the spelling. `3TK-59`, `3TK-60`. `../3tk/src/inner.c3:90`.
 - **No general-purpose list.** Two ordering primitives instead: a queue for the
-  mailbox, a stack for the pool. `R2`. `../3tk/src/mtk.c3:39`.
+  mailbox, a stack for the pool. `R2`. `../3tk/src/mtk.c3:40`.
 - **The module IS the front door.** C3 needs no re-exporting file.
-  `../3tk/src/mtk.c3:39`.
+  `../3tk/src/mtk.c3:40`.
 
 ### Visibility
 
 - **Public structs with public fields.** Hiding is possible in C3 and is
-  refused on cost. `D1`. `../3tk/src/mtk.c3:39`.
+  refused on cost. `D1`. `../3tk/src/mtk.c3:40`.
 - **Internal fields carry a leading underscore.** Reading them is a
   documentation problem, not a broken invariant. `D1`.
-  `../3tk/src/mtk.c3:39`.
+  `../3tk/src/mtk.c3:40`.
 - **The containers are submodules, and the reason is enforcement.** A C3
   submodule cannot see its parent's `@private`, so `mtk::mailbox` and
-  `mtk::pool` are structurally outside `mtk`. `../3tk/src/mtk.c3:39`.
+  `mtk::pool` are structurally outside `mtk`. `../3tk/src/mtk.c3:40`.
 - **A container uses only what an application could use.** `Part 17.2`, and
-  `run-builds.sh` greps for it. `../3tk/src/mtk.c3:39`,
-  `../3tk/src/mtk.c3:39`.
+  `run-builds.sh` greps for it. `../3tk/src/mtk.c3:40`,
+  `../3tk/src/mtk.c3:40`.
 - **`@private` does not apply to a C3 method declaration**, and the compiler
   warns that it does not. Measured 2026-08-25.
-  `../3tk/src/mtk.c3:39`.
+  `../3tk/src/mtk.c3:40`.
 
 ### The helper surface
 
 - **No instantiation and no alias, for any type, ever.** The helper's members
   are macros over `$Type`, generated per call site. `H0`.
-  `../3tk/src/mtk.c3:39`.
+  `../3tk/src/mtk.c3:40`.
 - **SUPERSEDED by 3TK-64 — `mtk::managed` is gone.** `H0b` read that it follows
   the same shape. **What follows the shape now is `OuterHelper`**, and it costs
   one alias line per outer type rather than nothing — the one place `H0`'s *not
   one line* no longer holds, and it holds nowhere else.
 - **The identity is C3's own `Type::typeid`**, and the port does not re-export
-  it. `Q2`. `../3tk/src/mtk.c3:39`.
+  it. `Q2`. `../3tk/src/mtk.c3:40`.
 - **The border is held by convention and the layering checks, not by
-  visibility.** `mtk::inner_offset` is public and cannot be private.
-  `../3tk/src/inner.c3:375`.
+  visibility.** `inner_offset` is public and cannot be private; since 3TK-70 it
+  is `mtk::inner::internal::inner_offset`, on a page of its own.
+  `../3tk/src/inner.c3:367`.
 
 ### Checking
 
 - **Three tiers, one port macro.** `D6`. Tier 2 is `mtk::@check`
-  (`../3tk/src/mtk.c3:67`); tier 3 is `mtk::CHECKED`
-  (`../3tk/src/mtk.c3:67`); tier 1 is `always_assert` and has two sites,
-  `../3tk/src/mtk.c3:67` and `../3tk/src/mtk.c3:67`.
+  (`../3tk/src/mtk.c3:66`); tier 3 is `mtk::CHECKED`
+  (`../3tk/src/mtk.c3:66`); tier 1 is `always_assert` and has two sites,
+  `../3tk/src/mtk.c3:66` and `../3tk/src/mtk.c3:66`.
 - **A plain `assert` never guards a contract anywhere in this port.** Under
   `--safe=no -O3` C3's `assert` is an assumption, not a removed check, and a
   violated assumption is undefined behaviour. `Q11`.
-  `../3tk/src/mtk.c3:39`.
+  `../3tk/src/mtk.c3:40`.
 - **A compiled-out check is paired with ordinary code where a hole would
-  otherwise open.** `Part 8.9`. `../3tk/src/mtk.c3:39`.
+  otherwise open.** `Part 8.9`. `../3tk/src/mtk.c3:40`.
 
 ### Outcomes
 
-- **C3 faults are the outcome mechanism.** `D15`. `../3tk/src/mtk.c3:39`.
+- **C3 faults are the outcome mechanism.** `D15`. `../3tk/src/mtk.c3:40`.
 - **A Part 19 outcome is a runtime condition, never a defect**, and is reported
-  in every build mode. `../3tk/src/mtk.c3:39`.
+  in every build mode. `../3tk/src/mtk.c3:40`.
 - **Interruption is dropped.** C3 has no interruptible condition wait, and the
   SHOULD's own text permits the drop. `D9`, `Part 2.9`.
-  `../3tk/src/mtk.c3:39`.
+  `../3tk/src/mtk.c3:40`.
 
 ### Lifetime
 
 - **A container keeps its allocator for life, and no release call takes one.**
-  `D3`, `Part 13.1`. `../3tk/src/mtk.c3:39`, `../3tk/src/mtk.c3:39`.
+  `D3`, `Part 13.1`. `../3tk/src/mtk.c3:40`, `../3tk/src/mtk.c3:40`.
 - **An application outer keeps its allocator in the OUTER, never in the inner.**
-  `D3`. `../3tk/src/mtk.c3:39`.
+  `D3`. `../3tk/src/mtk.c3:40`.
 - **A participant is allocated once and lives for the duration of the run.**
-  `Part 3.1`. `../3tk/src/mtk.c3:39`, `../3tk/src/mtk.c3:39`.
+  `Part 3.1`. `../3tk/src/mtk.c3:40`, `../3tk/src/mtk.c3:40`.
 - **Creation is a transaction.** Each step's failure undoes exactly what
   succeeded before it, through `defer catch`. Nothing partially constructed is
-  returned or observable. `../3tk/src/mtk.c3:39`,
-  `../3tk/src/mtk.c3:39`.
+  returned or observable. `../3tk/src/mtk.c3:40`,
+  `../3tk/src/mtk.c3:40`.
 
 ### Concurrency
 
 - **One wait-loop shape, used by every waiting call.** The deadline is anchored
   once before the loop; the state is re-evaluated from scratch every turn; a
-  leaver that times out passes the signal on. `D7`. `../3tk/src/mtk.c3:39`,
-  `../3tk/src/mtk.c3:39`.
+  leaver that times out passes the signal on. `D7`. `../3tk/src/mtk.c3:40`,
+  `../3tk/src/mtk.c3:40`.
 - **`wait_timeout` is banned in the port.** It recomputes the deadline on every
-  call. `D7`, `Part 2.5`. `../3tk/src/mtk.c3:39`.
+  call. `D7`, `Part 2.5`. `../3tk/src/mtk.c3:40`.
 - **The pre-lock fast read is kept, and the re-read under the lock is not
-  optional.** `D16`, `Part 15.4`. `../3tk/src/mtk.c3:39`,
-  `../3tk/src/mtk.c3:39`.
-- **A hook runs outside the mutex.** `Part 12.3`. `../3tk/src/mtk.c3:39`.
+  optional.** `D16`, `Part 15.4`. `../3tk/src/mtk.c3:40`,
+  `../3tk/src/mtk.c3:40`.
+- **A hook runs outside the mutex.** `Part 12.3`. `../3tk/src/mtk.c3:40`.
 
 ---
 
@@ -266,23 +275,23 @@ callers there.
 
 - **No front-door file to write.** `import mtk` brings in everything
   `module mtk` declares, across every file that declares it. The proposal's
-  re-exporting front door does not exist. `../3tk/src/mtk.c3:39`.
+  re-exporting front door does not exist. `../3tk/src/mtk.c3:40`.
 - **The reading order is the core in `module mtk`, then the border, then
   `Part 11`'s two optional containers.** The border and the containers are
-  submodules of `mtk`. `../3tk/src/mtk.c3:39`.
+  submodules of `mtk`. `../3tk/src/mtk.c3:40`.
 - **The first five files are the required toolkit; the last two are optional
-  tools.** `Part 17.1`, `Part 17.2`. `../3tk/src/mtk.c3:39`.
+  tools.** `Part 17.1`, `Part 17.2`. `../3tk/src/mtk.c3:40`.
 - **The vocabulary ruling lives here.** Outer and Inner; no `Any` prefix; no
-  `NodeList`. `R1`, `R2`. `../3tk/src/mtk.c3:39`.
+  `NodeList`. `R1`, `R2`. `../3tk/src/mtk.c3:40`.
 - **The submodule ruling lives here.** What it proves and what it does not is
-  in this file. `D1`, `Part 17.2`. `../3tk/src/mtk.c3:39`.
-- **Neither helper module is generic.** `H0`, `H0b`. `../3tk/src/mtk.c3:39`.
+  in this file. `D1`, `Part 17.2`. `../3tk/src/mtk.c3:40`.
+- **Neither helper module is generic.** `H0`, `H0b`. `../3tk/src/mtk.c3:40`.
 - **Part 7.1 was a SPECIFICATION defect and 004 closed it.** `V19`, `E6`.
-  `../3tk/src/mtk.c3:39`.
+  `../3tk/src/mtk.c3:40`.
 - **The port's three ruling sets are named here** — `D1` to `D16`, `R1` to
   `R15`, and `H0`, `H0b`, `H5` to `H10`. It is the one place in the sources
-  that lists them. `../3tk/src/mtk.c3:39`.
-- **`VERSION` is `"0.0.1"`.** `../3tk/src/mtk.c3:44`.
+  that lists them. `../3tk/src/mtk.c3:40`.
+- **`VERSION` is `"0.0.1"`.** `../3tk/src/mtk.c3:45`.
 
 ---
 
@@ -290,74 +299,74 @@ callers there.
 
 **What it is.** The inner (`Part 4`), the inner (`Part 10.1`), the Slot
 (`Part 9`), the faults, the check macro, the link test, and the compile-time
-discovery of the outer's fields. `../3tk/src/inner.c3:77`.
+discovery of the outer's fields. `../3tk/src/inner.c3:81`.
 
 ### The inner
 
 - **One field, and it is a built-in pair.** `any link`: `link.ptr` is the chain
   link, `link.type` is the identity. `R6b`, `Part 4.2`, `Part 5`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **The two meanings did not move; only where they are stored moved.** Two
   named fields until 2026-08-25. 16 bytes before, 16 after — an observation, and
-  no code may depend on it. `../3tk/src/inner.c3:77`.
+  no code may depend on it. `../3tk/src/inner.c3:81`.
 - **One link, not two.** `prev` is deleted. Nothing needed arbitrary removal,
   arbitrary insertion, backward traversal or a take from the back. `R5`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **A second field is added only with a reason written down.** `D3` refused an
-  allocator here; `R6` refused a membership field. `../3tk/src/inner.c3:77`.
+  allocator here; `R6` refused a membership field. `../3tk/src/inner.c3:81`.
 
 ### The self-link
 
 - **The invariant: an outer on a chain has a non-null link, the last outer points
   at itself, an outer on no chain has `link.ptr == null`.** `R6b`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **It replaces invariant 16, retired in place.** `R10`, `V12`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **The price: the link carries two meanings, and a walk that forgets
   `n.points_to() == n` loops forever.** Four sites carry the end test.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **The field is named `link` and not `next` because of that price.** On the
-  last outer `next` is a false claim. `../3tk/src/queue.c3:77`.
+  last outer `next` is a false claim. `../3tk/src/queue.c3:71`.
 
 ### Writing and reading the link
 
 - **`any`'s halves are read-only**, so every link write rebuilds the whole
   value and carries the identity through by hand.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **`Inner.repoint_to` keeps the identity and swaps the chain link**, and it is
   the fourth corner of the stdlib's own table. Nine link writes go through it;
-  `helper::init` is the exception. `../3tk/src/inner.c3:336`.
+  `helper::init` is the exception. `../3tk/src/inner.c3:335`.
 - **`Inner.points_to` is the reader**, and it is what lets a walk site say *the
-  last outer points at itself* word for word. `../3tk/src/inner.c3:343`.
+  last outer points at itself* word for word. `../3tk/src/inner.c3:341`.
 - **Methods on `Inner`, not an extension of `any`** — the owner's ruling,
   2026-08-25. Extending a builtin widens the surface past what the change may
-  touch. `../3tk/src/inner.c3:86`.
+  touch. `../3tk/src/inner.c3:90`.
 - **Neither is `@private`, and the language decided that.**
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 
 ### The inner and the Slot
 
 - **One inner spelling, and it is `Inner*`.** There is no inner type: a
   pointer to an embedded `Inner` is the whole of it. `D4`, `Part 10.1`,
-  `3TK-59`. `../3tk/src/inner.c3:86`.
+  `3TK-59`. `../3tk/src/inner.c3:90`.
 - **The Slot is a container of one inner, or of nothing, and its emptiness is
   the transfer signal.** Empty means the outer is elsewhere; full means the outer
   is here and this Slot's holder is responsible for it. `Part 9.1`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **The Slot is distinct, and a `typedef` and not an alias is what makes it
   so.** An `Inner*` does not implicitly become a `Slot`. `D5`,
-  `Part 9.2 rule 1`. `../3tk/src/inner.c3:98`.
+  `Part 9.2 rule 1`. `../3tk/src/inner.c3:101`.
 - **A Slot starts empty by the language's default state.** There is no
-  initializer to forget. `Part 9.2 rule 2`. `../3tk/src/inner.c3:77`.
+  initializer to forget. `Part 9.2 rule 2`. `../3tk/src/inner.c3:81`.
 - **A distinct Slot cannot be read with a bare null test, and the five reading
-  members are the replacement.** `Part 9.9`. `../3tk/src/inner.c3:77`.
+  members are the replacement.** `Part 9.9`. `../3tk/src/inner.c3:81`.
 - **`Slot.fill` carries the never-overwrite check, and it is written once.**
-  `Part 9.2 rule 1`. `../3tk/src/inner.c3:154`.
+  `Part 9.2 rule 1`. `../3tk/src/inner.c3:151`.
 
 ### The faults
 
 - **The Part 19 outcome sets are C3 faults.** `D15`, `Part 15.5`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **`UNKNOWN_IDENTITY` is not a Part 19 outcome, and that is deliberate.** The
   pool's identity set is fixed at creation, so asking outside it is a caller
   defect. It exists because the honest report used to be `NOT_AVAILABLE`, which
@@ -365,53 +374,53 @@ discovery of the outer's fields. `../3tk/src/inner.c3:77`.
   `Pool.get_wait` and by nothing else. `A3`, `P2`, `Part 11.7`.
   `../3tk/src/mtk.c3:56`.
 - **`interrupted` is absent, and 003 made that legible in the outcome tables.**
-  `D9`, `V13`. `../3tk/src/inner.c3:77`.
+  `D9`, `V13`. `../3tk/src/inner.c3:81`.
 
 ### The checks
 
 - **`mtk::@check` is tier 2, and under `--safe=no` it expands to nothing at
   all** — the condition is not evaluated and nothing reaches the optimizer
-  as a promise. `D6`, `Q11`. `../3tk/src/mtk.c3:67`.
+  as a promise. `D6`, `Q11`. `../3tk/src/mtk.c3:66`.
 - **It is public, not `@private`.** `@private` does not reach a submodule, and
   `Part 17.2` entitles an application to the same check.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **The message is a compile-time string**, because `always_assert` takes one.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **`mtk::CHECKED` is tier 3, and the pool's duplicate-identity scan is the
   port's last reader.** `R6b` deleted the other one. `D6`.
-  `../3tk/src/mtk.c3:80`.
+  `../3tk/src/mtk.c3:78`.
 
 ### The link test and the repair
 
 - **The link test is exact, and it costs no field.** `h.points_to() != null`
   answers *is this outer on some chain* with no false negative and no false
   positive, in O(1), through the public surface. `R6b`, `Part 8.7`, `V5`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **`Part 8.6` and its O(n) walk are deleted outright.** A check that refuses
   an outer on ANY chain catches everything the same-container walk caught.
-  `V4`, `D12`. `../3tk/src/inner.c3:77`.
+  `V4`, `D12`. `../3tk/src/inner.c3:81`.
 - **What it does not catch: a chain corrupted by code that reached around the
-  container surface.** `../3tk/src/inner.c3:77`.
+  container surface.** `../3tk/src/inner.c3:81`.
 - **`reset` clears the LINK and not the identity.** `Part 5.4`'s identity is
-  written once, by `helper::init`. `Part 8.8`. `../3tk/src/inner.c3:355`.
+  written once, by `helper::init`. `Part 8.8`. `../3tk/src/inner.c3:351`.
 - **The link test and the repair live with the inner, not with a container**,
   because after `R6b` they are statements about one outer.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 
 ### Compile-time discovery
 
 - **`inner_offset` is where `Part 4.4` — one inner per outer — is checked, and
   it is the only place it can be.** Both messages name the offending type.
-  `Part 4.3`, `Part 7.4`. `../3tk/src/inner.c3:375`.
+  `Part 4.3`, `Part 7.4`. `../3tk/src/inner.c3:367`.
 - **A `return` inside `$foreach` does not end compile-time iteration**, so the
   count accumulates and the assertions run afterwards.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 - **`required_alloc_offset` counts as `inner_offset` counts, and refuses a
   type with two `Allocator` fields.** Before, it overwrote on every match and
   took the last silently, so which allocator `release` returned the memory to
   was decided by declaration order and stated nowhere. The two discovery macros
   now read alike and both messages name the offending type. `P1`, `Part 4.4`.
-  `../3tk/src/inner.c3:375`.
+  `../3tk/src/inner.c3:367`.
 - **DELETED by 3TK-64, 2026-09-07 — `required_alloc_offset` and the entries
   below it.** `P2` recorded it as declared once in `mtk::inner`, with
   `mtk::managed` its only caller. **There is no such macro, no such caller and
@@ -420,7 +429,7 @@ discovery of the outer's fields. `../3tk/src/inner.c3:77`.
   3TK-64* for what replaced the build-time gate.
 - **`required_alloc_offset` lives inside a macro** because a module-scope
   `$assert` in a generic module cannot see the module's type parameter. `D3`.
-  `../3tk/src/inner.c3:77`.
+  `../3tk/src/inner.c3:81`.
 
 ---
 
@@ -443,28 +452,28 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   both plain and generic (Boundaries `A.6`) — and **3TK-pre-65 reversed it on
   2026-09-07**: one generic section made the whole of `mtk` read as generic on
   the docs site. The file declares `module mtk::helper <Outer>;`, the free
-  crossing is spelled `inner::to_inner(&m)`, and the binding line is
+  crossing is spelled `inner::internal::to_inner(&m)` since 3TK-70, and the binding line is
   `alias MSG = helper::OF{Msg};`. **Nothing at a call site grew**: C3 imports a
   module's submodules with `import mtk;` and accepts the last segment of a
-  module path. `../3tk/src/helper.c3:21`.
+  module path. `../3tk/src/helper.c3:40`.
 - **`OuterHelper` is a first-class citizen**, not an optional convenience: the
   books lead with it and the macros are the layer beneath. `RT-6`.
-  `../3tk/src/helper.c3:33`.
+  `../3tk/src/helper.c3:59`.
 - **`struct OuterHelper { typeid outer_tid; }` — its state is the type
   identity.** `RT-7`. **The field is `outer_tid`, not the `otrid` the ruling
   named**; Boundaries `Part 3.1` is the later document and the source follows
   it. `typeid`, not `void*`: same size, but it type-checks and compares directly
   against `Inner.link.type` with no cast at either end.
-  `../3tk/src/inner.c3:108`.
+  `../3tk/src/inner.c3:110`.
 - **The field is carried, never trusted.** No member reads `self.outer_tid` to
   decide anything; every member compares against `Outer::typeid`, the
   compile-time constant from the instantiation. `RT-8`. **`OF` is a `const`**, so
   the field cannot be clobbered even by accident — the ruling accepted a
   writable field, and the `const` made the exposure moot. **It is written into
-  the file with its reason.** `../3tk/src/helper.c3:25-29`.
+  the file with its reason.** `../3tk/src/helper.c3:51`.
 - **A user binds one alias per outer type**, `alias MSG = mtk::OF{Msg};`, and
   the casing is forced in both directions: an uppercase alias must alias a
-  constant. `RT-18`, Boundaries `A.5`. `../3tk/src/helper.c3:21`.
+  constant. `RT-18`, Boundaries `A.5`. `../3tk/src/helper.c3:40`.
 - **An alias cannot be shared across modules.** c3c refuses an unprefixed
   cross-module alias — *"Aliases from other modules must be prefixed with the
   module name"* — so a shared alias buys nothing over the prefix, and **each
@@ -475,52 +484,52 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   macro names, and not every macro is exposed. `RT-10`.
 - **Nine members, and that is a ceiling rather than a target.** The four
   crossings `look`, `must_look`, `take`, `must_take`
-  (`../3tk/src/helper.c3:60,86,111,127`), then `inner`, `stamp`, `linked`,
+  (`../3tk/src/helper.c3:76,99,121,135`), then `inner`, `stamp`, `linked`,
   `create`, `release` (`:146,162,172,191,218`).
 - **`look` and `must_look` take a `Slot*` or an `Inner*`**, dispatched at
   compile time on `$Typeof`; `take` and `must_take` take a Slot only, because an
-  inner has no Slot to empty. `../3tk/src/helper.c3:62-73`.
+  inner has no Slot to empty. `../3tk/src/helper.c3:76`.
 - **`must_take` is new.** The old `move_from_slot` had no abort form.
-  `../3tk/src/helper.c3:127`.
+  `../3tk/src/helper.c3:135`.
 - **Two ergonomic targets, and only two: forgetting `init`, and too many
   names.** `RT-16`. Forgetting is answered by `inner()`, which stamps on every
-  crossing out of an `Outer*` (`../3tk/src/helper.c3:21`).
+  crossing out of an `Outer*` (`../3tk/src/helper.c3:40`).
 - **No dispatch construct** — users write a `switch` on the identity. `RT-17`.
   `Inner.outer_tid()` exists so no user writes `inner.link.type`.
-  `../3tk/src/helper.c3:21`.
+  `../3tk/src/helper.c3:40`.
 
 ### `create` and `release` — built by 3TK-64, 2026-09-07
 
 - **`create` and `release` take the allocator. Nothing mandatory is stored.**
   `RT-12`. This undoes a port deviation: ztk never stores it
   (`matryoshka-tk/src/polynode.zig:201,223`), and 3tk stored it only to reach a
-  `release` with no argument. `../3tk/src/helper.c3:191,218`.
+  `release` with no argument. `../3tk/src/helper.c3:194,220`.
 - **`create` establishes defaults only, and the hook does the rest.** `RT-14`.
   C3 has no struct default field initializers, but `alloc::new_try` allocates
   zeroed when given no `#init`, so the outer arrives at the hook already zeroed.
   **The `#init` struct literal is dropped: a method can set anything a literal
-  can, and a method can also fail.** `../3tk/src/helper.c3:195`.
+  can, and a method can also fail.** `../3tk/src/helper.c3:194`.
 - **Four steps, in this order: allocate zeroed, call `init(a)` if declared,
   stamp, fill the Slot.** **Stamping after the hook is deliberate** — if `init`
   fails the outer was never stamped, so a pointer that escaped a failed creation
-  can never be mistaken for a live outer. `../3tk/src/helper.c3:195-205`.
+  can never be mistaken for a live outer. `../3tk/src/helper.c3:194`.
 - **Both hooks are optional and both receive the allocator from the caller.**
   They never read it from the outer. A type that declares neither compiles and
-  behaves as before. `../3tk/src/helper.c3:196,222`.
+  behaves as before. `../3tk/src/helper.c3:194,220`.
 - **`create` returns `void?`, and so does the `init` hook — not `bool`.** A
   `bool` says something failed and nothing about what; an optional lets the
   outer's own fault reach the caller. On a hook failure the allocation is freed
-  and the fault propagates unchanged. `../3tk/src/helper.c3:186-190`.
+  and the fault propagates unchanged. `../3tk/src/helper.c3:194`.
 - **`release` returns `void`, and the reason is narrower than the ergonomics.**
   C3 refuses a bare failable call in a `defer`, and every workaround puts a
   policy choice at each call site. But the honest reason is that **a teardown
   fault has no recipient**: `release` runs on a path usually already unwinding,
   nobody can act on *"freeing failed"*, and the resource is gone either way.
   `init` is the opposite — it fails before anything is committed.
-  `../3tk/src/helper.c3:218`.
+  `../3tk/src/helper.c3:220`.
 - **A `destroy` fault aborts in a safe build and is dropped in a fast one.** A
   failing destructor is a defect, not an outcome — the same contract as every
-  other `mtk::@check`. `../3tk/src/mtk.c3:67`.
+  other `mtk::@check`. `../3tk/src/mtk.c3:66`.
 - **The pool's create hook carries the same rule and the same sentence.**
   `RT-15`.
 
@@ -528,7 +537,7 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
 
 - **`_Mbox` and `_Pool` are Outers**, and each takes one `@private` alias and
   crosses through it exactly as an application would. Boundaries `Part 4.6`.
-  `../3tk/src/mailbox.c3:476`, `../3tk/src/mailbox.c3:476`.
+  `../3tk/src/mailbox.c3:483`, `../3tk/src/mailbox.c3:483`.
 - **The attribute goes before the `=`:** `alias MBOX @private = mtk::OF{_Mbox};`.
   Measured by 3TK-64 on c3c 0.8.3, at the cost of one build.
 - **`to_inner` is the one crossing that does NOT go through the alias**, and the
@@ -536,7 +545,7 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   way out, and this is the direction crossed concurrently: a user turning a live
   `Mailbox*` into an `Inner*` to send it does so while other threads use that
   mailbox. **A stamp writes the bytes it finds, but it writes them.** Both sites
-  carry the reason. `../3tk/src/inner.c3:287`, `../3tk/src/inner.c3:287`.
+  carry the reason. `../3tk/src/inner.c3:292`, `../3tk/src/inner.c3:292`.
 - **They do not use `create`/`release`.** Their construction has four failable
   steps with staged rollback, and `Mailbox.release` is a lifetime contract
   check, not a free. Boundaries `Part 4.6`.
@@ -548,37 +557,37 @@ type-erased inner. `Part 7`, `Part 7.5`.
 
 - **Every crossing happens in this file and nowhere else.** That is what makes
   the address arithmetic auditable. `Part 7.5` MUST.
-  `../3tk/src/helper.c3:21`.
+  `../3tk/src/helper.c3:40`.
 - **No `inline` on the inner field.** An implicit conversion is a crossing that
-  appears at no call site and in no file. `D2`. `../3tk/src/helper.c3:21`.
+  appears at no call site and in no file. `D2`. `../3tk/src/helper.c3:40`.
 - **The members are macros over `$Type`; a new outer type costs not one line.**
-  `H0`. `../3tk/src/helper.c3:21`.
+  `H0`. `../3tk/src/helper.c3:40`.
 - **The identity is `Type::typeid`, native.** No per-type mutable byte, which
   is what ztk needed against linker merging. `Q2`, `Part 7.2`.
-  `../3tk/src/helper.c3:21`.
+  `../3tk/src/helper.c3:40`.
 - **REVERSED by 3TK-63, 2026-09-07 — the border is now a wall, as far as C3
   will make one.** This entry read *"`helper.c3` is not a wall: `mtk::inner_offset`
   is public, so any module importing `mtk` can compute an offset and cast."*
   Since the merge, `inner_offset` is **`@private` to `module mtk`**
-  (`../3tk/src/inner.c3:375`) and a foreign module calling it does not compile.
+  (`../3tk/src/inner.c3:367`) and a foreign module calling it does not compile.
   Probed, not assumed. What is still open is `Inner.link` itself, which is a
   public field: the door is narrower, not shut, and the books say so plainly
   rather than claiming a lock. `H0` still neither creates nor fixes that.
 - **A macro's boundary guard is a `@require` that reports at the CALLER's line.**
   `Part 15.5`'s tiers come from the language here, not from `mtk::@check`.
-  `../3tk/src/mtk.c3:67`.
+  `../3tk/src/mtk.c3:66`.
 - **One thing is lost against per-type instantiation:** a type declared but
   never crossed with is never validated, because there is no instantiation to
-  force `Part 7.4`'s check. `../3tk/src/helper.c3:21`.
+  force `Part 7.4`'s check. `../3tk/src/helper.c3:40`.
 - **Part 7.1 as 004 words it is what this file is**, and the history of the
   correction is kept because a reader meeting this file next to 003 should know
-  which way it ran. `E6`, `V19`. `../3tk/src/helper.c3:21`.
+  which way it ran. `E6`, `V19`. `../3tk/src/helper.c3:40`.
 
 ### The members
 
 - **`is_mine` refuses a null inner and an uninitialized outer.** A zeroed
   typeid matches no type. `Part 5.5`, `Part 7.2`.
-  `../3tk/src/inner.c3:239`.
+  `../3tk/src/inner.c3:247`.
 - **REVISED by 3TK-64, 2026-09-07 — the macro is `stamp`, and it no longer
   clears the link.** This entry read *"`init` writes the identity and clears the
   link in one write, and it is the ONE `any_make` in the port whose second
@@ -588,43 +597,43 @@ type-erased inner. `Part 7`, `Part 7.5`.
   touched about sixty call sites. And the write **preserves `link.ptr`** —
   `any_make(inner.link.ptr, ...)` — which is what makes the stamp safe on a
   linked inner as well as an unlinked one. Boundaries `Part 5.1`.
-  `../3tk/src/helper.c3:162`.
+  `../3tk/src/helper.c3:167`.
 - **The correct line differs from the destructive one by a single
   sub-expression**, and it is written into the file with its reason. The natural
   maintenance edit is `any_make(null, ...)` — the old `init` body verbatim — and
-  it silently unlinks a linked outer. `../3tk/src/helper.c3:21`.
+  it silently unlinks a linked outer. `../3tk/src/helper.c3:40`.
 - **`stamp` stays a separate call and is not folded into construction** — but it
   no longer has to be remembered. `H8`, `HR-5`. `OuterHelper.inner()` stamps on
   every crossing out of an `Outer*`, and `OuterHelper.stamp()` does it alone for
-  an outer allocated by hand. `../3tk/src/helper.c3:146,162`.
+  an outer allocated by hand. `../3tk/src/helper.c3:152,167`.
 - **`Inner.outer_tid()` exists so that no user writes `inner.link.type`.** An
   `@inline` accessor, and the thing a dispatch `switch` reads. It is above
   `inner.c3`'s internal banner for that reason: the helper cannot read an
-  identity before the type is known. `../3tk/src/inner.c3:108`.
+  identity before the type is known. `../3tk/src/inner.c3:110`.
 - **`to_inner` is the only direction that adds the offset, and it cannot
   fail.** The type is inferred; no call site names it.
-  `../3tk/src/inner.c3:287`.
+  `../3tk/src/inner.c3:292`.
 - **An inbound crossing names its type, and that is not ceremony.** A crossing
   from an erased inner must say what it expects.
-  `../3tk/src/helper.c3:21`.
+  `../3tk/src/helper.c3:40`.
 - **`from_inner` returns null on a mismatch, which is a legitimate state of a
   correct program** — a walker of a heterogeneous list meets other types by
-  design. `Part 6.2`, `Part 6.3`. `../3tk/src/inner.c3:294`.
+  design. `Part 6.2`, `Part 6.3`. `../3tk/src/inner.c3:298`.
 - **`must_from_inner` is the asserting form, named apart**, and its `@require`
   compiles out under `--safe=no`. `Part 6.3`.
-  `../3tk/src/inner.c3:306`.
+  `../3tk/src/inner.c3:309`.
 - **One check, not two.** A null inner and a wrong identity are the same kind
-  of wrong. `H7`, `Part 15.5`. `../3tk/src/helper.c3:21`.
+  of wrong. `H7`, `Part 15.5`. `../3tk/src/helper.c3:40`.
 - **`move_from_slot` has two postconditions and both are tested.** On a match
   the pointer is returned AND the Slot is cleared; on a mismatch null is
   returned AND the Slot is untouched. `Part 9.2 rule 4`.
   `../3tk/src/inner.c3:324`.
 - **It computes from the inner `peek` observed, not from `take()`'s return
-  value.** `H6`. `../3tk/src/inner.c3:130`.
+  value.** `H6`. `../3tk/src/inner.c3:136`.
 - **`to` and `as` are `any`'s own names**, so a C3 reader already knows which is
-  which. `../3tk/src/inner.c3:173`.
+  which. `../3tk/src/inner.c3:180`.
 - **`to_inner`/`from_inner`, not `to_inner`/`from_inner`.** `H5`.
-  `../3tk/src/inner.c3:287`.
+  `../3tk/src/inner.c3:292`.
 
 ---
 
@@ -674,50 +683,50 @@ line is a binding, not a declaration of kind.
 operations.
 
 - **There is no general-purpose list.** `NodeList` offered sixteen operations
-  and nine had no caller. `R2`, `R3`. `../3tk/src/queue.c3:21`.
+  and nine had no caller. `R2`, `R3`. `../3tk/src/queue.c3:22`.
 - **003 made that a legal reading of `Part 8.1` rather than a deviation.** 8.1
-  says *ordering primitives*. `V2`. `../3tk/src/queue.c3:21`.
+  says *ordering primitives*. `V2`. `../3tk/src/queue.c3:22`.
 - **Nothing allocates, the outer is the inner, and every operation is O(1)** — in
   every build mode, because `R6b` deleted the insert walk.
-  `../3tk/src/queue.c3:21`.
+  `../3tk/src/queue.c3:22`.
 - **This is the port's TRANSFER container.** What crosses the public surface is
-  always an `InnerQueue`. `R13`. `../3tk/src/queue.c3:34`.
+  always an `InnerQueue`. `R13`. `../3tk/src/queue.c3:33`.
 - **This is the layer where the checks live, and `Part 8.10`'s bridge is
   dropped** — C3's stdlib has no intrusive list, so there is no other side.
-  `Part 8.5`. `../3tk/src/queue.c3:21`.
+  `Part 8.5`. `../3tk/src/queue.c3:22`.
 - **No operation here can fail, and there is no fault type in the file.** A
   take from an empty queue returns null; that is an answer.
-  `Part 19.4`. `../3tk/src/queue.c3:21`.
+  `Part 19.4`. `../3tk/src/queue.c3:22`.
 - **The count is kept, so `len` is O(1).** `Part 11.7` asks for a separate
-  count only where the length is not. `../3tk/src/queue.c3:65`.
+  count only where the length is not. `../3tk/src/queue.c3:61`.
 - **The walker is `Part 8.4`, and removing the current outer during a walk is
-  not supported.** `../3tk/src/queue.c3:21`.
+  not supported.** `../3tk/src/queue.c3:22`.
 - **The dispatch table is the application's, not something the toolkit ships.**
-  `V18`, `Part 6.5`. `../3tk/src/queue.c3:21`.
+  `V18`, `Part 6.5`. `../3tk/src/queue.c3:22`.
 - **The insert guard is ONE check, tier 2**, and it moves the guard from tier 3
   to tier 2 so a safe build pays O(1) per insert. `R6b`, `V4`.
-  `../3tk/src/queue.c3:21`.
+  `../3tk/src/queue.c3:22`.
 - **The end test `n.points_to() == n` is not optional.** A walker that followed
   the link blindly would hand the last outer back for ever.
-  `../3tk/src/queue.c3:21`.
+  `../3tk/src/queue.c3:22`.
 - **There is no `push_front`.** `R15` dropped `Pool.put_all`, its only caller.
-  `../3tk/src/queue.c3:21`.
+  `../3tk/src/queue.c3:22`.
 - **`push_back_slot` is required at the public surface**, because `Part 12.5`'s
   composite hook gives a container to the application. `V3`.
-  `../3tk/src/queue.c3:108`.
+  `../3tk/src/queue.c3:100`.
 - **An empty Slot is a defect on an insert, not a no-op.** Rule 6's tolerance
-  is for release. `../3tk/src/queue.c3:21`.
+  is for release. `../3tk/src/queue.c3:22`.
 - **`pop_front` recognises the sole outer by `head == tail`**, not by a null
   link: with the self-link there is no null link on a chain.
-  `../3tk/src/queue.c3:124`.
+  `../3tk/src/queue.c3:115`.
 - **`append_queue` is O(1) and needs no repair at the join.** `other.tail` is
-  already self-linked. `Part 8.9`. `../3tk/src/queue.c3:168`.
+  already self-linked. `Part 8.9`. `../3tk/src/queue.c3:157`.
 - **Self-move is refused twice — an assert and an early return** — because the
   naive move rings the outers into a cycle and loses every one.
-  `Part 8.9`. `../3tk/src/queue.c3:21`.
+  `Part 8.9`. `../3tk/src/queue.c3:22`.
 - **`take()` gives the caller everything the queue holds and empties the
   source, O(1), and cannot fail.** Written for the by-value `Pool.on_close`,
-  `P6`, built by 3TK-56. `../3tk/src/queue.c3:21`.
+  `P6`, built by 3TK-56. `../3tk/src/queue.c3:22`.
 
 ---
 
@@ -726,13 +735,13 @@ operations.
 **What it is.** The intrusive stack, last-in first-out. `Part 8`. Four
 operations. **Since 3TK-62, 2026-09-07, it is not a file and not a module**: it
 is the last section of `pool.c3`, inside `module mtk::pool`, marked by a comment
-banner and not by a second module line. `../3tk/src/pool.c3:42`.
+banner and not by a second module line. `../3tk/src/pool.c3:126`.
 
 - **It is private to the pool, and that reverses 3TK-45.** The 2026-08-26
   ruling — *"it is available to a caller like the queue"* — is **withdrawn**.
   `InnerStack` is no longer a name a user can reach: `mtk::stack` is gone,
   `test/t_stack.c3` is deleted, and `pool.c3` is its only user, as it always
-  was in practice. `RT-4`. `../3tk/src/pool.c3:669-670`.
+  was in practice. `RT-4`. `../3tk/src/pool.c3:742`.
   - **What made the reversal available** is that `@private` reaches the module
     and nothing else, so *"who may call this"* has one answer: do we share a
     module. Boundaries `Part 4.2`, `Part 4.3`.
@@ -747,37 +756,37 @@ banner and not by a second module line. `../3tk/src/pool.c3:42`.
     that half asserted — because Boundaries `Part 4.5` records it as the only
     enforcement there is. `../3tk/run-builds.sh:229-263`.
 - **`Part 8.1` permits it in the plural since 003.** `V2`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **The pool keeps one per identity, and it is the only `InnerStack` in the
   port.** It is on no signature 3tk publishes — the four container-typed ones
-  take an `InnerQueue*`. `R2`, `R11`, `R13`. `../3tk/src/pool.c3:668-669`.
+  take an `InnerQueue*`. `R2`, `R11`, `R13`. `../3tk/src/pool.c3:742`.
 - **No walker** — nothing walks a free list and `Part 8.4` is a SHOULD — **and
-  no splice**, because a stack keeps no tail. `../3tk/src/pool.c3:42`.
+  no splice**, because a stack keeps no tail. `../3tk/src/pool.c3:126`.
 - **There is no Slot-shaped insert.** `push_slot`'s only caller was `put_all`,
   which `R15` dropped; with that gone it had none, and it was deleted
   2026-08-24 on the owner's instruction. `R15`, `R13`, `P6`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **The stack is the storage container, where the queue is the transfer
   container.** Outers rest in it until they are wanted again. That is the
   stack's own reason, and it does not depend on the pool. `R2`.
-  `../3tk/src/pool.c3:666-667`.
+  `../3tk/src/pool.c3:742`.
 - **The pool reuses last-in first-out for DEFECT SURFACING, not for
   performance.** The outer just given back is on top, so a stale writer and a new
   holder collide immediately instead of much later. It is the owner's reason, and
   this entry is the only place it is written down. `R11`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **No caller is entitled to the order, and that is what keeps the property
   useful.** `Part 11.7` stays silent on order; `Part 11.10` MUST already
-  promises nothing. `R11`, `R14`. `../3tk/src/pool.c3:672-673`.
+  promises nothing. `R11`, `R14`. `../3tk/src/pool.c3:742`.
 - **There is no `tail`.** That is what makes `Pool.close`'s flatten O(n) rather
-  than a splice, and `R12` accepted the cost. `../3tk/src/pool.c3:514`.
+  than a splice, and `R12` accepted the cost. `../3tk/src/pool.c3:532`.
 - **`top` and a kept count, so `len` is O(1)**, and `Part 12.4`'s hint is read
-  from it under the lock. `../3tk/src/pool.c3:736`.
+  from it under the lock. `../3tk/src/pool.c3:773`.
 - **The insert guard is the same one the queue carries, for the same reason.**
-  `R6b`. `../3tk/src/pool.c3:42`.
+  `R6b`. `../3tk/src/pool.c3:126`.
 - **The bottom outer points at itself, and `pop` recognises the sole outer by
-  `h.points_to() == h`.** `../3tk/src/pool.c3:761`.
-- **Nothing here can fail.** `Part 19.4`. `../3tk/src/pool.c3:42`.
+  `h.points_to() == h`.** `../3tk/src/pool.c3:796`.
+- **Nothing here can fail.** `Part 19.4`. `../3tk/src/pool.c3:126`.
 
 ---
 
@@ -791,76 +800,76 @@ on one object. `Part 11.3` to `11.6`, `Part 19.1`.
 - **The mailbox is itself an outer.** It embeds an inner, has a type identity,
   and can travel through another mailbox. `D1` kept that literal by refusing the
   opaque-type route: a `typedef Mailbox = void` embeds nothing. `Part 11.1`.
-  `../3tk/src/mailbox.c3:28`.
+  `../3tk/src/mailbox.c3:27`.
 - **The five parts are spelled out rather than shared.** Sharing them would put
   a second inner in the outer and break `Part 4.4`. After 003 the refusal is the
   specification's to allow. `V6`, `Part 11.2`.
-  `../3tk/src/mailbox.c3:28`.
+  `../3tk/src/mailbox.c3:27`.
 - **TWO queues, not one list with an anchor.** Out-of-band outers live in their
   own queue and every take tries `_oob` first, so absolute priority with
   first-in first-out inside each class falls out of the structure. `R7`, `V7`,
-  `Part 11.3`. `../3tk/src/mailbox.c3:28`.
+  `Part 11.3`. `../3tk/src/mailbox.c3:27`.
 - **Invariant 22 is kept; only the mechanism that produced it was deleted.**
-  `R9`. `../3tk/src/mailbox.c3:28`.
+  `R9`. `../3tk/src/mailbox.c3:27`.
 - **The closed flag is a pair** — read and set under the mutex, also readable
   through the atomic and always re-read under it. `D16`, `Part 15.3`,
-  `Part 15.4`. `../3tk/src/mailbox.c3:28`.
+  `Part 15.4`. `../3tk/src/mailbox.c3:27`.
 - **The wake generation is bumped by the waker, captured by each waiter before
   it waits, compared after every wakeup.** `Part 11.5`.
-  `../3tk/src/mailbox.c3:28`.
+  `../3tk/src/mailbox.c3:27`.
 - **REVISED by 3TK-64, 2026-09-07 — the container writes an alias after all.**
   This entry read *"the container's own crossings are macros forwarding to
   `mtk::helper`; `H0` left no alias to write."* Boundaries `Part 4.6` makes the
   container an ordinary client, so it writes the same one line an application
   writes: `alias MBOX @private = mtk::OF{_Mbox};`.
-  `../3tk/src/mailbox.c3:61`. **`to_inner` is the exception** and the reason is
+  `../3tk/src/mailbox.c3:53`. **`to_inner` is the exception** and the reason is
   in the *`helper.c3`* section.
 
 ### The operations
 
 - **Creation is a transaction**, in the shape `std::threads::channel` uses.
-  `../3tk/src/mailbox.c3:28`.
+  `../3tk/src/mailbox.c3:27`.
 - **Close before release is the one precondition the toolkit refuses to
   soften**, and it is tier 1: `always_assert`, aborting in every build mode.
-  `D6`, `Part 11.12` MUST. `../3tk/src/mailbox.c3:28`.
+  `D6`, `Part 11.12` MUST. `../3tk/src/mailbox.c3:27`.
 - **`send` is Slot-shaped: on success the Slot is cleared, on a closed mailbox
   it is untouched and the sender still has the outer.** `Part 9.3`,
-  `Part 11.6`. `../3tk/src/mailbox.c3:146`.
+  `Part 11.6`. `../3tk/src/mailbox.c3:140`.
 - **Out-of-band is ONE priority level, not a priority queue**, and two queues
   are one level with a cleaner home. `D14`, `R7`, `Part 11.4`.
-  `../3tk/src/mailbox.c3:28`.
+  `../3tk/src/mailbox.c3:27`.
 - **`poll` is kept beside `receive` although a zero-timeout receive has the
   same reach**, because the two differ in how the empty case is reported.
-  `D13`. `../3tk/src/mailbox.c3:189`.
+  `D13`. `../3tk/src/mailbox.c3:181`.
 - **The wait loop carries four MUSTs**: the deadline anchored once; a wakeup
   carries no meaning; a leaver on a timeout signals if the queue is not empty;
   the closed flag read under the mutex. `D7`, `Part 2.4`, `Part 2.5`,
-  `Part 2.6`, `Part 15.3`. `../3tk/src/mailbox.c3:28`.
+  `Part 2.6`, `Part 15.3`. `../3tk/src/mailbox.c3:27`.
 - **The leaver must test BOTH queues**, or it consumes a signal and leaves a
   queued out-of-band outer with nobody woken.
-  `../3tk/src/mailbox.c3:28`.
+  `../3tk/src/mailbox.c3:27`.
 - **The give-back order, one rule for `receive_all` and `close` both:** the
   queue is in the order `receive` would have taken them out — out-of-band first,
   then ordinary, first-in first-out within each. `R8`.
-  `../3tk/src/mailbox.c3:282`.
+  `../3tk/src/mailbox.c3:272`.
 - **`receive_all` gives the whole batch to the caller, and releasing the outers
   is the caller's work.** What they are is knowledge the mailbox never had.
-  `Part 11.6`. `../3tk/src/mailbox.c3:282`.
+  `Part 11.6`. `../3tk/src/mailbox.c3:272`.
 - **`wake_all` does not persist.** A thread that starts waiting afterwards
   captures the new generation and is unaffected. `Part 11.5`.
-  `../3tk/src/mailbox.c3:312`.
+  `../3tk/src/mailbox.c3:301`.
 - **`close` is callable more than once, and the test-and-set is inside the
-  mutex.** `Part 11.12`. `../3tk/src/mailbox.c3:341`.
+  mutex.** `Part 11.12`. `../3tk/src/mailbox.c3:329`.
 - **The named mistake: discarding the queue `close` returns drops the outers**,
   and after `R6b` the refusal at the first reuse is exact.
-  `Part 11.6`. `../3tk/src/mailbox.c3:341`.
+  `Part 11.6`. `../3tk/src/mailbox.c3:329`.
 - **`receive_all` and `close` assert the caller's queue is empty on entry, the
   way every Slot acquisition does.** Both say so in the contract and neither
   checked it; both call `append_queue`, which appends. A reused queue got a
   silently longer chain with no way to tell where the mailbox's outers began.
   Tier 2, and no paired `if` — appending onto a non-empty queue in a fast build
   is defined, not a hole. `P3`, `Part 9.2 rule 3`.
-  `../3tk/src/mailbox.c3:282`, `../3tk/src/mailbox.c3:282`.
+  `../3tk/src/mailbox.c3:272`, `../3tk/src/mailbox.c3:272`.
 - **The two vacuous `Part 2.6` signals are gone.** A timed-out waiter reached
   `if (self.has_queued()) self._cv.signal()` only when the `dequeue` two lines
   above had returned null, and under the same held mutex — the condition could
@@ -870,9 +879,9 @@ on one object. `Part 11.3` to `11.6`, `Part 19.1`.
   the `A3` precedent recorded for the pool's get loop: a live-looking branch
   that cannot be taken is a reader's trap. The function-level `Part 2.6` marker
   stands, because the port still owes and still keeps the MUST. `P4`.
-  `../3tk/src/mailbox.c3:432`, `../3tk/src/mailbox.c3:432`.
+  `../3tk/src/mailbox.c3:214`, `../3tk/src/mailbox.c3:214`.
 - **`len` is read under the lock and is stale by the time the caller reads
-  it.** `Part 12.4`. `../3tk/src/mailbox.c3:388`.
+  it.** `Part 12.4`. `../3tk/src/mailbox.c3:374`.
 
 ---
 
@@ -886,30 +895,30 @@ not in the pool; policy is in the hooks. `Part 11.7` to `11.10`, `Part 12`,
 
 - **The sharpest asymmetry in the toolkit lives here:** the mailbox gives
   everything back to a caller, and the pool's close gives nothing back at all.
-  `Part 11.8`. `../3tk/src/pool.c3:42`.
+  `Part 11.8`. `../3tk/src/pool.c3:126`.
 - **`put_all` is gone.** It was `Pool.put` in a loop — no lock kept, the hook
   still run per outer, no batching and no atomicity — and it gave the difficult
-  case back in a different shape. `R15`. `../3tk/src/pool.c3:417`.
+  case back in a different shape. `R15`. `../3tk/src/pool.c3:436`.
 - **The counter is recorded:** the caller now writes that loop itself, with a
   chance of getting the refusal case wrong. `R15`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **The hooks are a C3 interface, and `ctx` disappears** — the implementing
-  object IS the context. `Part 12.1` MUST. `../3tk/src/pool.c3:42`.
+  object IS the context. `Part 12.1` MUST. `../3tk/src/pool.c3:126`.
 - **A hook runs outside the mutex, several at once on different threads. It
   protects its own shared state, does not call back into the pool, and does not
-  block.** `Part 12.3`. `../3tk/src/pool.c3:42`.
+  block.** `Part 12.3`. `../3tk/src/pool.c3:126`.
 - **One free STACK per identity.** `R11`, `Part 11.7`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **No count field beside the stack**, because `InnerStack.len` is O(1) and
   `Part 12.4`'s hint is read from it under the lock.
-  `../3tk/src/pool.c3:736`.
+  `../3tk/src/pool.c3:773`.
 - **The buckets are a flat slice, allocated once and scanned linearly.** A hash
   map would buy nothing: the set is small, fixed, and never grows.
-  `Part 11.7`. `../3tk/src/pool.c3:42`.
+  `Part 11.7`. `../3tk/src/pool.c3:126`.
 - **The five parts are repeated rather than shared, as in the mailbox.** `V6`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **Only the public surface of the core is used** — five types, `InnerStack`
-  being the new one. `Part 17.2`. `../3tk/src/pool.c3:701`.
+  being the new one. `Part 17.2`. `../3tk/src/pool.c3:742`.
 
 ### The hook contracts
 
@@ -923,47 +932,47 @@ not in the pool; policy is in the hooks. `Part 11.7` to `11.10`, `Part 12`,
   two `always_assert` sites. A fast build therefore cannot catch it, and the
   hook contract now says so. Without that sentence a reader could take the rule
   for a guarantee, when the failure is silent: every crossing downstream then
-  answers correctly about the wrong type. `W2`. `../3tk/src/mtk.c3:67`.
+  answers correctly about the wrong type. `W2`. `../3tk/src/mtk.c3:66`.
 - **`on_put` has four outcomes and none is mandated.** A full Slot on return
   means one thing: an outer is kept, original or replacement. `Part 12.2`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **`extra` is the composite mechanism**: outers added there are taken the same
-  way, with the same checks. `Part 12.5`. `../3tk/src/pool.c3:42`.
+  way, with the same checks. `Part 12.5`. `../3tk/src/pool.c3:126`.
 - **`on_close` is called once by `close`, and possibly once more with
   stragglers**, and a hook must not free its own context on the first call.
   003 weakened `Part 12.2` for exactly this, and it is the only MUST 003
-  weakens. `V11`. `../3tk/src/pool.c3:514`.
+  weakens. `V11`. `../3tk/src/pool.c3:532`.
 - **`on_close` receives one flat queue and no order is promised.** `R12`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **`on_close` takes the queue by value, not by pointer.** *I do not care what
   you did* — the pool passes the outers to the hook and keeps nothing: no
     pointer, no count, no check. `P6` (`3tk-open-defects.md`), ruled
   2026-08-28, built by
   3TK-56. `InnerQueue.take()` (`../3tk/src/queue.c3`) is the O(1) move both call
-  sites use. `../3tk/src/pool.c3:42`.
+  sites use. `../3tk/src/pool.c3:126`.
 - **The count a hook is given is a hint and is stale** — after the removal on
   get, before the addition on put. `Part 12.4`.
-  `../3tk/src/pool.c3:42`, `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`, `../3tk/src/pool.c3:126`.
 
 ### Creation and release
 
 - **The hooks are a parameter of creation, not a later step.** A pool cannot
-  exist without them. `Part 12.1` MUST. `../3tk/src/pool.c3:42`.
+  exist without them. `Part 12.1` MUST. `../3tk/src/pool.c3:126`.
 - **The identity set is fixed at creation and is not empty.** `Part 11.7`.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **A duplicate identity is refused at creation**, because `bucket_for` returns
   the FIRST match and a second bucket would be unreachable for the pool's whole
   life — a silent halving rather than a fault. `Part 11.7`.
-  `../3tk/src/pool.c3:621`.
+  `../3tk/src/pool.c3:185`.
 - **That scan is tier 2 with its O(n^2) cost behind the tier gate** — the
   technique `Part 8.6` used, surviving the Part's deletion with no Part left to
-  cite. `D6`. `../3tk/src/pool.c3:42`.
+  cite. `D6`. `../3tk/src/pool.c3:126`.
 - **Creation is a transaction**, and the bucket array is the last thing
   allocated and the one most likely to fail.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **Releasing an open pool aborts in every build mode.** The second of the
   port's two tier 1 sites. `D6`, `Part 11.12` MUST.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 
 ### Get, put, close
 
@@ -974,66 +983,66 @@ not in the pool; policy is in the hooks. `Part 11.7` to `11.10`, `Part 12`,
   aborts; a fast build reports `UNKNOWN_IDENTITY`. `A3`, `P2`, `Part 11.7`.
   `../3tk/src/mtk.c3:56`.
 - **Everything read before the pool unlocks for a hook is stale when the hook
-  returns.** `Part 12.3`. `../3tk/src/pool.c3:42`.
+  returns.** `Part 12.3`. `../3tk/src/pool.c3:126`.
 - **No lock is held across a call into application code.** `Part 12.3`,
-  `Part 15.2`. `../3tk/src/pool.c3:42`.
+  `Part 15.2`. `../3tk/src/pool.c3:126`.
 - **`get_wait` never creates. No hook is called on that path**, and where a
   plain get in `AVAILABLE_ONLY` reports `NOT_AVAILABLE` this reports `TIMEOUT`.
-  `Part 11.9` calls the divergence deliberate. `../3tk/src/pool.c3:349`.
+  `Part 11.9` calls the divergence deliberate. `../3tk/src/pool.c3:366`.
 - **ztk's book says twice that `get_wait` calls the creation hook. The ztk code
   says it does not, and the code is the truth.**
-  `../3tk/src/pool.c3:349`.
+  `../3tk/src/pool.c3:366`.
 - **`get_wait` reports `UNKNOWN_IDENTITY` too, on two grounds that are not
   conformance:** the two gets must not disagree about the same defect, and a
   defect that sleeps for the whole timeout gets diagnosed as a performance
-  problem. `A3`. `../3tk/src/pool.c3:349`.
+  problem. `A3`. `../3tk/src/pool.c3:366`.
 - **`get_wait` is the one place that holds a `PoolBucket*` across a release of
   the mutex**, and it is safe because the bucket slice is allocated once and
   never grown, moved or reallocated. Only the contents change, and they are
-  re-read every turn. `../3tk/src/pool.c3:349`.
+  re-read every turn. `../3tk/src/pool.c3:366`.
 - **No such pointer may be held across a call into application code.** A hook
   may put outers back, and the rule there is to look the bucket up again by
-  identity. `../3tk/src/pool.c3:42`.
+  identity. `../3tk/src/pool.c3:126`.
 - **No `if (b)` guard on either pop in the loop.** The early return made `b`
   non-null, and a live-looking branch that cannot be taken is a reader's trap.
-  `A3`. `../3tk/src/pool.c3:42`.
+  `A3`. `../3tk/src/pool.c3:126`.
 - **`put` returns nothing: the Slot is the answer, not the outcome.** Cleared
   means the pool took it; unchanged means it was refused. `Part 9.4`.
-  `../3tk/src/pool.c3:417`.
+  `../3tk/src/pool.c3:436`.
 - **Unchanged means the POOL refused it, before any hook ran.** All four such
   paths — an empty Slot, the fast closed read, the closed flag under the mutex,
   an unknown identity — precede the hook, and none of `on_put`'s four outcomes
   gives the outer back. The contract said only *it was refused*, which read as
   though a hook could hand it back. Reworded, not rebuilt: taking the outer
   before the answer is known is the ruled design. `W1`, ruled 2026-08-24.
-  `../3tk/src/pool.c3:42`.
+  `../3tk/src/pool.c3:126`.
 - **`put` cannot fail and cannot be interrupted.** A worker that must give its
   outer back must always be able to. `Part 2.10`.
-  `../3tk/src/pool.c3:417`.
+  `../3tk/src/pool.c3:436`.
 - **`put` re-reads the closed flag after the hook.** `Part 12.3` MUST forces
   the mutex open across a hook, and a close can run to completion inside that
-  window. `P1`, ruled 2026-08-24. `../3tk/src/pool.c3:417`.
+  window. `P1`, ruled 2026-08-24. `../3tk/src/pool.c3:436`.
 - **One rule for that window, and it is the pool's own: what the pool holds
   when it discovers it is closed goes to `on_close`.** Invariant 34 holds —
   nothing lands in a bucket after the flag is set. `Part 11.8` holds — nothing
-  comes back to the caller. `P1`, `V11`. `../3tk/src/pool.c3:42`.
+  comes back to the caller. `P1`, `V11`. `../3tk/src/pool.c3:126`.
 - **The alternative, restoring the caller's Slot, cannot carry `extra`**, whose
-  outers the caller never had. `../3tk/src/pool.c3:42`.
+  outers the caller never had. `../3tk/src/pool.c3:126`.
 - **`close` empties every bucket into ONE queue, flattened.** The close hook
   never sees buckets or per-identity groups. `R12`.
-  `../3tk/src/pool.c3:514`.
+  `../3tk/src/pool.c3:532`.
 - **That flatten is `pop` then `push_back`, O(n) once, on a pool going down**,
   and the loop repairs every outer's self-link on the way — which a splice would
-  have had to walk and do anyway. `R12`. `../3tk/src/pool.c3:761`.
+  have had to walk and do anyway. `R12`. `../3tk/src/pool.c3:796`.
 - **No order is promised, and `push_back` is chosen for being the simplest
-  write.** `R12`. `../3tk/src/queue.c3:92`.
+  write.** `R12`. `../3tk/src/queue.c3:85`.
 - **`close` is callable more than once and does NOT run the hook again.** The
   test-and-set is inside the mutex. `Part 11.12`.
-  `../3tk/src/pool.c3:514`.
+  `../3tk/src/pool.c3:532`.
 - **The hook is called ONCE, OUTSIDE the mutex, AFTER the flag is set.**
-  `Part 12.2`. `../3tk/src/pool.c3:42`.
+  `Part 12.2`. `../3tk/src/pool.c3:126`.
 - **`count_of` is a hint, stale on return.** `Part 12.4`.
-  `../3tk/src/pool.c3:572`.
+  `../3tk/src/pool.c3:589`.
 
 ---
 
