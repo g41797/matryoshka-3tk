@@ -64,7 +64,7 @@ against the current tree. **A citation now names one line, the declaration's
 own** — the ranges and lists the older anchors carried (`:195-205`, `:60,86,111`)
 collapsed to the declarations they were pointing into, because a range measured
 against a file that has since been rewritten is a number with nothing behind it.
-The rules file is `3tk-rules-003.md` from `3TK-71` on.
+The rules file is `3tk-rules-004.md` from `3TK-72` on.
 
 **`3tk-boundaries-001.md` is spent, and this file cites it by part number
 anyway.** 3TK-66 moved it and `3tk-terms-001.md` to `design/backup/` on
@@ -75,7 +75,7 @@ link: it says which sitting ruled the entry, and the entry itself says what
 stands. **Where the two would differ, this file and `../3tk/src` are what
 stands.** The surface, the invariants and the absences now live in
 [3tk-reference-009.md](3tk-reference-009.md); the rules that bind a stage live
-in [3tk-rules-003.md](3tk-rules-003.md).
+in [3tk-rules-004.md](3tk-rules-004.md).
 
 ---
 
