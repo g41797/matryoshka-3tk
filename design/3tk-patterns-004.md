@@ -4,7 +4,7 @@
 declaration is. This says what the declarations are put together to do.
 
 **It is descriptive.** The normative document is
-[3tk-example-rules-005.md](3tk-example-rules-005.md), and a rule is changed
+[3tk-example-rules-006.md](3tk-example-rules-006.md), and a rule is changed
 there and nowhere else.
 
 **Version 004, superseding `3tk-patterns-004.md` (now in this repo's
@@ -1702,7 +1702,7 @@ main --Command----> mailbox --> worker recognizes the identity, releases it, lea
 ## Coordinator patterns
 
 **The shapes that carry the *Two levels* rule** of
-[3tk-example-rules-005.md](3tk-example-rules-005.md).
+[3tk-example-rules-006.md](3tk-example-rules-006.md).
 
 ### 49 — The coordinator
 

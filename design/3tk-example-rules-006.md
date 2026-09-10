@@ -1,0 +1,464 @@
+# 3tk — the rules for an example
+
+What an example under `3tk/examples/` must be, and what a stage that adds one
+must do.
+
+**This is a procedure, not a stage.** Like `3tk-doc-loop-003.md`, it writes no
+status row and no log entry of its own. The named stage that follows it writes
+those.
+
+**Version 006, superseding
+[3tk-example-rules-005.md](backup/3tk-example-rules-005.md)
+(now in this repo's `backup/`).** The only change from `005`: the promise this
+file makes about `test/` is now written with the file that keeps it. *Every
+example leads with the helper* let an example drop `Slot.to`, `Slot.must`,
+`Slot.move`, `Inner.to` and `Inner.as` **because all five keep callers in
+`test/`**, and until now no document said where. **Measured 2026-09-10: all ten
+remaining callers are in `test/t_identity.c3`** — `.to(` 6, `.must(` 1, `.move(`
+2, `.as(` 1 — and that file is white box on its own subject under **Rule 8 of
+[3tk-rules-007.md](3tk-rules-007.md)**, so the two rules agree and nothing is
+owed. Ruled by 3TK-75, 2026-09-10, under `C-6` and `C-7` of
+`3tk-staging-plan-036.md`. Nothing else changed; no rule was added, removed or
+weakened.
+
+`005`'s change from `004`: an example
+belongs to a **group**, and its module name says so —
+`module shc::<group>::<name>;`. The rule that changed is *The file name*; the
+rule that is new is *The groups*. Ruled by 3TK-72, 2026-09-09, under `G-1`
+… `G-5` of `3tk-staging-plan-033.md`. Nothing else changed; no other rule was
+added, removed or weakened. **This version, and every later one, lives in
+`matryoshka-3tk/design/`, not in `matryoshka-tk`'s `ref/`.**
+
+`004` carried the two-term ruling from `003`, and it stands unchanged: 3tk has
+exactly two terms, **`Inner`**, a real C3 type and the field you lend, and
+**`Outer`**, a role and the struct you own. The words *handle* and *item* are
+retired. `Slot` is untouched: a real type naming a container state, not a
+participant. Ruled by 3TK-60, 2026-09-04.
+
+**Written by 3TK-48**, from `3tk-staging-plan-019.md`, from the owner's
+rulings of 2026-08-26, and from `matryoshka-tk`'s `rules-049.md` Parts 1, 2, 4,
+5, 6 and 7 read the same day.
+
+**It binds 3TK-49, 3TK-50 and every later stage that adds an example.** It does
+not bind `3tk/src`, `3tk/test` or `3tk/negative`, none of which it changes.
+
+**It is normative. The catalog is descriptive.** A rule is changed here and
+nowhere else. [3tk-patterns-004.md](3tk-patterns-004.md), written by 3TK-49 and
+revised by the owner's stack-outer ruling, says what the shapes are; this file
+says how one is written down.
+
+**Nothing here is inherited untested.** A rule with a ztk precedent is named as
+ported, and the three ztk rules that do not survive the crossing are named as
+not taken. Ported, never copied.
+
+## The word is Outer — MUST
+
+**An outer is the application struct that embeds an `Inner`.** The inner is the
+embedded inner; the outer is the embedding struct. Never *parent*.
+
+**Every name and every sentence this document's scope covers says `Outer` or
+`outer`.** Module names, struct names, function names, parameter names, doc
+comments, the catalog, an index row, and the prose of any stage that writes
+one.
+
+**Never `Outer` or `Outers` in new work.**
+
+### The scope of the rule, and why two words are in the port
+
+**The rule binds new work only.** `3tk/examples/`, `3tk-patterns-004.md`,
+this file, and anything a later stage adds.
+
+**The existing tree in `matryoshka-tk` is not searched and replaced.** That is
+the owner's ruling of 2026-08-26, carried forward unchanged. The counts that
+produced it are in `matryoshka-tk`'s `3tk-example-rules-001.md` (now in
+`backup/`) and are not re-measured here — this document did not change that
+ruling, only the stack-outer rule below.
+
+**The deadline is dtk's first stage.**
+`matryoshka-tk/design/secondary/d/dtk-status.md`
+has a prepared folder and no stage run, and dtk builds from the specification
+alone, so the first dtk stage bakes whichever word the specification uses into a
+fourth port. The secondary trigger is a specification `005` written for any
+other reason.
+
+**The debt is recorded in `matryoshka-tk`**, in `3tk-status.md` under *Open
+questions* and in `3tk-port-findings-005.md`, the port's channel to another
+port. **`../common/` is not one of those places.**
+
+## The four trees
+
+| tree | supermodule | what it is |
+|---|---|---|
+| `src/` | `mtk`, `mtk::…` | the toolkit. Eight files, eight modules |
+| `test/` | `mtk_test` | correctness. Ten files, 87 tests |
+| `negative/` | `neg` | the compile-failure and abort cases |
+| `examples/` | `shc`, `shc::…` | one pattern per file, shown to a reader |
+
+**An example is not a test and a test is not an example.** A test probes the
+implementation. An example demonstrates it, and is shown in documentation. A
+file carrying `@test` and `always_assert` cannot be shown.
+
+**One file per module — MUST.** C3 gives a module one description, and
+`c3c docgen` keeps whichever file it reaches first. That is 3TK-38's defect, and
+3TK-44 paid for it by splitting `module mtk` across four files into eight
+one-file modules. **`examples/` does not re-incur it.**
+
+**The demo outers are one file.** Zig's file-as-struct makes `Event.zig` a type;
+C3 has no equivalent, so `shc::outers` is one `outers.c3` and not four files.
+
+## The file name
+
+**`NNN-name.c3`, declaring `module shc::<group>::<name>;`.**
+
+- `NNN` is a three-digit number, and it is what correlates a file with a
+  numbered row in the catalog.
+- `name` is lowercase, words joined with `_`.
+- `<group>` is the group the pattern belongs to — see *The groups* below.
+- **The file name and the module name necessarily differ**, in two ways. A C3
+  module name takes no leading digit and no hyphen, so the number cannot be in
+  it; and the module carries a group segment the file name does not. Both are
+  written here so no stage reads either difference as a defect.
+- The number is never reused, and it is never renumbered once written.
+
+## The groups
+
+**An example belongs to exactly one group, and the group is a module segment
+in the middle of its name.**
+
+- **A group is a submodule with a file of its own**, `<group>.c3`, holding a
+  `<* *>` block that describes the group and then `module shc::<group>;`.
+  **That file declares nothing.** It is the group's page on the generated
+  docs, and it is what keeps one description per module: an example remains
+  the sole carrier of its own leaf module's block.
+- **The group segment is prefixed `a_`, `b_`, `c_` …**, in the order the
+  groups are meant to be read. `c3c docgen` groups by module and orders
+  alphabetically, and a C3 module segment cannot start with a digit, so a
+  letter is what carries the order. **The number stays in the file name**,
+  where it names the catalog row.
+- **The leaf segment carries no prefix and no number.** It is the plain name.
+- **A group is not a wall.** An example may import another group's example
+  where the catalog says it reuses it.
+- **The groups follow the catalog's sections, but they are not the catalog.**
+  Where a section is two subjects, a stage may give each its own group and
+  says so — `shc::b_cleanup` was split out of *Slot and transfer idioms* by
+  3TK-72. **The catalog is not rewritten to match.**
+- **Adding a group is adding a file.** A stage that introduces one writes its
+  carrier file and its description in the same stage.
+
+## What an example is
+
+**Real C3, compiled by the ordinary build, and nothing from the test surface.**
+
+- **No `@test`.** An example is a plain function.
+- **No `always_assert`, and no `assert`.** A check goes through
+  `shc::helpers::expect`.
+- **Nothing from `mtk_test`.** Not the module, not its outers, not
+  `test/common.c3`.
+- **The outers are `shc::outers`'.** Shared, declared once, and reused by every
+  example.
+- **Diagnostic output is the standard library's.** No testing logger.
+
+**The entry point is one public function per file.**
+
+- A descriptive name, never `run`.
+- Lowercase, words joined with `_`, derived from the example's one-line
+  description.
+- **It takes an `Allocator`.** An example never reaches for a global allocator.
+- **It reports by returning.** A fault, or a value. It never aborts, and it
+  never prints a verdict in place of returning one.
+
+## Every example leads with the helper — MUST
+
+**Ruled by 3TK-66, 2026-09-08, and applied to all 52 files in the same stage.**
+
+- **One alias per outer type the file uses**, written with the file's other
+  little-endian imports at the bottom: `alias HOLDER = helper::OF{Holder};`.
+  Uppercase, because `OF` is a `const` and C3 enforces the pairing both ways.
+- **Every crossing is a member of that alias.** `look`, `must_look`, `take`,
+  `must_take` — never `Slot.to`, `Slot.must`, `Slot.move`, `Inner.to`,
+  `Inner.as`, and never a free `inner::` crossing.
+- **Two files are exempt, and only two.** `012-type_crossing.c3` and
+  `013-recovering_the_type.c3` show the helper member beside the form it
+  forwards to, because the layering is their subject. **They assert the two
+  spellings land on the same pointer**, which is the only reason to show both.
+  A third file doing this is a defect.
+- **The exemption does not reach `test/`.** The tests probe the primitives
+  deliberately, and all five methods keep callers there. That is why an example
+  may drop them without leaving anything unexercised. **Where, exactly: all ten
+  remaining callers are in `test/t_identity.c3`**, measured 2026-09-10 — `.to(`
+  6, `.must(` 1, `.move(` 2, `.as(` 1. That file's subject is the border, so
+  **Rule 8 of [3tk-rules-007.md](3tk-rules-007.md) leaves it white box** and the
+  two rules keep each other's promise. **A stage that converts those ten breaks
+  this rule without ever opening this file**, which is why the count is written
+  down here and not left to be re-derived.
+- **Why.** The helper is the surface; the macros are the layer beneath. An
+  example is what a reader copies, and 52 files copying the lower layer taught
+  the wrong one. See *What is deliberately absent* in
+  [3tk-reference-011.md](3tk-reference-011.md).
+
+## Allocation — every outer is heap-allocated, never stack — MUST
+
+**An outer is never created on the stack.** No exceptions, and no
+demonstration is exempt.
+
+- **Why.** 3tk computes an outer's address from its embedded `Inner` at every
+  crossing — a `fieldParentPtr`-style offset from a fixed field. That address
+  must stay valid for as long as any `Inner`, queue entry, or mailbox
+  reference to the outer can still be reached. A stack struct's address is
+  valid for exactly one lexical instance of one frame: a copy of the struct,
+  or a use after the frame returns, reaches through a stale address. It can
+  appear to work and fail later, unpredictably. See
+  [3tk-patterns-004.md](3tk-patterns-004.md) entry 14 for the full account and
+  the owner's ruling.
+- **The default path is the helper.** `MSG.create(a, &slot)` and
+  `MSG.release(a, &slot)`, off one `alias MSG = helper::OF{Msg};` per outer
+  type per module. `mtk::managed` is deleted, and there is no allocator-field
+  requirement of any kind.
+- **The other legal path** is a raw heap allocation plus `MSG.stamp(outer)`.
+  The caller then owns the release by hand. **The helper is the default because
+  it also owns cleanup and cannot forget the stamp**, not because it is the
+  only way to get a heap outer.
+- **Never a raw allocator call with no stamp.** `a.new(Msg)` alone leaves the
+  outer with no identity, and a safe build catches that at the next crossing or
+  the next insertion, whichever comes first. That refusal is deliberate, but it
+  is a different mistake from a stack outer, and this rule is about where the
+  memory lives.
+- **An outer keeps an allocator only if it says so**, in an `init(a)` hook of
+  its own. The toolkit reads and writes no field of an outer except the
+  `Inner`, and `release` is told which allocator to use at the call.
+
+**Cleanup is registered before the acquisition — MUST.**
+
+- The `defer` that releases comes before the call that may fill the Slot.
+- The release is null-safe, so the `defer` needs no guard.
+- A refused `put` leaves the outer with the caller, and the caller releases it.
+- **A reader copies an example. An example that leaks teaches a leak. An
+  example that allocates on the stack teaches a bug that surfaces somewhere
+  else, later.**
+
+**A check is `shc::helpers::expect`.**
+
+- It takes the fault to return, the condition, and the message.
+- **It survives all four builds**, which `assert` does not — a fast build makes
+  `assert` a no-op, and a suite built on it reports green without having
+  checked.
+- **Each example declares its own fault**, named for the example, so a failure
+  says which one failed.
+
+## Completeness
+
+**A get-then-put example is not a pattern.**
+
+- **Say where the work comes in.** A caller seeds it, a thread produces it, a
+  timer raises it, or the coordinator accumulates it.
+- **Say what is done with the outer** once it is in hand.
+- **Say where the result goes.** Another mailbox, the caller, a counter the
+  caller reads.
+- **A pool outer is an empty container on acquisition.** The intent comes from
+  outside the pool, always. An example that invents the work inside the pool
+  outer is describing something the toolkit does not do.
+
+## Two levels
+
+**Ported from `rules-049.md` Part 1, *Observable by human*.** It applies to
+every line of an example.
+
+**Level 1 — the coordinator.** Its body reads as calls to named steps. A guard,
+one `expect`, one log line stay inline. The whole flow is visible in a few
+lines without opening anything.
+
+**Level 2 — the steps.** One step each, named for what it does. The name is the
+documentation.
+
+**The signal.** A comment explaining a block is the signal the block wanted a
+name. Extract it and delete the comment.
+
+**One quality bar.** An example is production-quality code. It differs from
+`src/` in its job, never in its quality.
+
+## The description is written like the code
+
+**A `<* *>` block at the top of the file, above the `module` line**, in the
+shape `3tk-doc-loop-003.md` requires of a module block: one module block per
+file, above that file's own `module` line.
+
+**The shape of the description mirrors *Two levels*.**
+
+- **One line of intent** — what this example demonstrates. That is the
+  coordinator line.
+- **Then one bullet per step**, in the order the steps run, each naming what the
+  step does and not how.
+- **Never one long sentence chaining facts with commas.** That is an
+  unextracted block, the same defect in prose as in code.
+
+**The register is the source register**, measured by the doc loop and restated
+here because an example stage will not have read that file.
+
+- One sentence per line, and never a wrapped one.
+- Every identifier in backticks. `must_from_inner()` bare loses its
+  underscores to the italic rule.
+- No trailing `\`. It is a literal backslash to `formatDocText`.
+- **No numbered lists.** Not implemented; `1. one` renders as the literal text.
+- **No tables.** A `|` row renders as itself.
+- **No nested bullets.** An indented sub-bullet renders at the parent's level.
+- Rationale only where it is short and non-obvious. No argument.
+- **A backticked `Module::symbol` auto-links, if it resolves.** Measured
+  2026-08-31 in `docs.html`'s `highlightC3`: a token containing `::` links to
+  the matching declaration's page with no `[text](url)` needed, the way
+  `examples/shc.c3`'s own module description links `` `shc::outers` `` and
+  `` `shc::helpers` `` for free. A bare capitalized word or `@attribute` links
+  the same way if it matches a known symbol; a bare lowercase word never does,
+  even when a function of that name exists. Prefer the qualified form when a
+  descriptor names another module or struct, since only the qualified and
+  capitalized forms are guaranteed to link.
+
+**Every diagram is fenced.** ` ``` ` on its own line, the diagram, ` ``` ` on
+its own line. Unfenced box drawing collapses.
+
+**No doc comment is not done.**
+
+## The wrapper in `test/`
+
+**Every example is called by a wrapper, and the wrapper is the only place
+`always_assert` appears.**
+
+- The wrapper lives in `test/`, carries the `@test`, supplies the allocator, and
+  calls the example's entry point.
+- **It checks the returned fault**, and names it when it reports.
+- **It adds no logic of its own.** A wrapper that does work is a test wearing an
+  example's name.
+- The wrappers are the reason the examples are compiled and run at all. An
+  example nothing calls is not verified.
+
+**What "no logic of its own" means, made explicit after 3TK-50 step 5 found
+two wrappers already breaking it:**
+
+> A wrapper creates and tears down the shared infrastructure the example
+> needs, calls the one example function, and `always_assert`s on failure. It
+> never receives, dispatches, inspects a result, or releases an outer itself
+> — that bookkeeping belongs inside the example function, which is the thing
+> actually being demonstrated and documented.
+
+- **Creating and closing a `Mailbox*` or `Pool*` the example takes as a
+  parameter is infrastructure, not logic.** The example does not own the
+  pointer it was handed, so someone above it must.
+- **Anything that touches a `Slot`, an `Inner*`, or an `InnerQueue` is logic.**
+  A wrapper that pops a queue, receives off a mailbox, or releases an outer
+  to clean up after the example is demonstrating the pattern a second time,
+  in the one file the catalog and any doc tool never reads.
+- **The test — not the doc reader — is the only audience for that split.** If
+  the wrapper's own body would teach a reader something about the pattern,
+  it is in the wrong file.
+
+## An index routes and never copies
+
+**The description lives in the example's own `<* *>` block and nowhere else.**
+
+- An index row is a number, a name, a one-line hook, and a link to the file.
+- **Do not restate the description in the index.** The source is the single
+  truth and the index routes to it.
+- **The catalog's index is its own opening table**, not a second file. It earns
+  a file of its own on the first of three triggers: a script has to read it, the
+  catalog outgrows its own table, or the numbering has to be published to
+  another port.
+
+## Dispatch
+
+**`switch` over an identity is permitted in 3tk — and this is an inversion.**
+
+- ztk's `rules-049.md` Part 7 makes *No switch over tags* a MUST. That rests on
+  a Zig tag being the address of a global, which the linker assigns, so a
+  `switch` prong is not known while compiling.
+- **A C3 `typeid` has no such problem.** `switch` over an identity is a shape
+  3tk may write, and `c3-capabilities-001.md` lines 147 to 162 measured it.
+- **The permission is subject to a live probe.** A stage writing the shape
+  compiles it in all four builds before it writes it down.
+
+**A dispatch chain ends with its final branch — MUST.** Ported unchanged.
+
+- Closed set, every identity present in the chain: the last branch is
+  `unreachable`, with the reason beside it.
+- Open set, anything anyone may send: count it, report it, or return a fault.
+  Then move on.
+- **It cannot free the outer.** Releasing needs the size, the size needs the
+  type, and an unknown identity gives neither. Unknown memory belongs to
+  whoever knows what it is.
+
+**The transfer rule for a handler — convention, not a MUST.** Ported unchanged.
+
+> On return, the Slot is empty if the handler took the outer, full if it did
+> not.
+
+- **The Slot says where the outer went. The fault says whether the work
+  succeeded.** They are two questions.
+- A handler may move the outer and then fail. A caller that releases on fault
+  without reading the Slot double-frees.
+
+**The word for a `typeid` in an example is identity, not tag.** That is the
+port's word, in `src/` and in the reference, and an example does not introduce a
+second one.
+
+## What binds `src/` and nothing else
+
+**Named in a section of its own so no example stage mistakes these for its
+own.**
+
+- **LE import order** — imports at the bottom of the file. It binds `src/`. It
+  does not reach `test/`, `negative/` or `examples/`.
+- **The SPDX header** — the two `SPDX-` lines at the top. **The owner adds
+  them.** They bind `src/` and nothing else.
+
+**Neither is a defect when it is absent from an example.**
+
+## What binds a stage that writes an example
+
+**Every one of these is run, not assumed. The live-scan rule is ztk's Part 4
+and it is taken whole: a scan is done only when it has been re-run against the
+current file contents at the moment of the claim.**
+
+- **Every fenced ` ```c3 ` block in a catalog or a rules document is
+  compiled**, by 3TK-30b's method: a scratch module built against `3tk/src`,
+  every block drawn from it, the scratch output and any generated `headers/`
+  removed afterwards.
+- **The banned-word scan is run live** over every file the stage wrote,
+  including `Outer` and `Outers` over anything in this rule's scope.
+- **`3tk/run-builds.sh` is green.** Four builds.
+- **`3tk/check-doc-loop.sh` is unchanged** unless the stage touched a
+  descriptor, and a stage that touches one follows
+  `3tk-doc-loop-003.md` before it edits either side.
+- **Every link is printed and read, both directions.**
+- **No change to `3tk/src`.** Not one byte, unless the stage's own charter says
+  otherwise.
+- **No change to `test/common.c3`**, and no change to the 87 existing tests.
+- **Nothing is written under `matryoshka-tk`'s `common/`**, and nothing is said
+  to another port. A finding for another port goes in
+  `3tk-port-findings-005.md`, which describes and recommends nothing.
+- **No `git`.** The owner saves — in `matryoshka-tk`. In `matryoshka-3tk`, the
+  owner also runs the copy and the push; a stage does not push on its own.
+- **A stage revising a document in `matryoshka-3tk/design` versions it.** `001`
+  to `002` and onward, the old one stays in `matryoshka-tk`'s `backup/` for the
+  version this rule superseded, and every cross-reference in `matryoshka-tk` is
+  repointed at the new location and version.
+
+## What is not taken from ztk
+
+**Named so no stage re-derives them and adopts one by accident.**
+
+- **The quoted-identifier ban.** It is a defect of Zig's autodoc viewer. C3
+  ships through neither.
+- **The `zig build docs` target-size rule**, and the mkdocs nav sync. Both are
+  tooling defects of a pipeline 3tk does not have.
+- **Stories.** 3tk has no story tree and no stage has declared one.
+- **Every Master rule resting on `Io.Select`, `Io.Group` or `Future`.** The
+  owner ruled `std.Io` out of scope on 2026-08-26. C3 has none of them, and
+  `error.Canceled` with them.
+
+## What this document does not do
+
+- It writes no code, and it creates no folder.
+- It does not decide which pattern lands in which file. The mapping comes after
+  the catalog.
+- It does not search and replace `Outer` across the existing tree. It records the
+  counts and the deadline where the count-bearing document already does.
+- It rules on nothing the owner has not ruled, and it softens nothing the owner
+  has.
