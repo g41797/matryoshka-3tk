@@ -17,6 +17,11 @@ the rethinking of the core's shape and built none of it; `006` is in
 `backup/`, and `005` is in `matryoshka-tk`'s
 `design/secondary/lang/c3/backup/`.
 
+**Revised in place by 3TK-74, 2026-09-09** — the outer's hooks became required,
+`destroy` became `finish` and narrowed to `void`, and every `helper.c3`
+citation was re-resolved against the built tree because the file moved by
+sixteen to twenty lines.
+
 **Revised in place by 3TK-62, 3TK-63 and 3TK-64**, each folding its own entries
 out of the ahead-of-the-source section and into the body. **3TK-64 folded the
 largest group** — `RT-3`, `RT-5`, `RT-6` … `RT-10`, `RT-12` … `RT-18`, and
@@ -64,7 +69,7 @@ against the current tree. **A citation now names one line, the declaration's
 own** — the ranges and lists the older anchors carried (`:195-205`, `:60,86,111`)
 collapsed to the declarations they were pointing into, because a range measured
 against a file that has since been rewritten is a number with nothing behind it.
-The rules file is `3tk-rules-004.md` from `3TK-72` on.
+The rules file is `3tk-rules-005.md` from `3TK-72` on.
 
 **`3tk-boundaries-001.md` is spent, and this file cites it by part number
 anyway.** 3TK-66 moved it and `3tk-terms-001.md` to `design/backup/` on
@@ -74,8 +79,8 @@ truth**, and a `Part n` or `RT-n` below is a **historical marker**, not a live
 link: it says which sitting ruled the entry, and the entry itself says what
 stands. **Where the two would differ, this file and `../3tk/src` are what
 stands.** The surface, the invariants and the absences now live in
-[3tk-reference-009.md](3tk-reference-009.md); the rules that bind a stage live
-in [3tk-rules-004.md](3tk-rules-004.md).
+[3tk-reference-010.md](3tk-reference-010.md); the rules that bind a stage live
+in [3tk-rules-005.md](3tk-rules-005.md).
 
 ---
 
@@ -111,7 +116,7 @@ carried down**, because a port that read them got the pre-ruling design:
   spelled **`inner::internal::`** since 3TK-70, and the answer `PL-6` actually gets is that a user
   reaches for the helper member and meets no stutter at all — Boundaries
   `Part 6`, and the *What is deliberately absent* section of
-  [3tk-reference-009.md](3tk-reference-009.md).
+  [3tk-reference-010.md](3tk-reference-010.md).
 - **`RT-5` and `RT-13` — `xtn` and the allocator field.** Both stand as
   superseded, and the body's *`managed.c3`* section is the deletion record.
   There is no allocator-field concept in the source at all: no discovery, no
@@ -175,7 +180,7 @@ callers there.
   third term in the same position *handle* held. Measured on c3c 0.8.3: the
   name does not collide with the module `mtk::inner`, because C3 keeps module
   paths and value identifiers in separate namespaces. `3TK-60`, ruled
-  2026-09-04. `../3tk/src/helper.c3:152`.
+  2026-09-04. `../3tk/src/helper.c3:168`.
 - **Porting is not transpiling, and each port spells the pair as its own type
   system allows.** ztk has `Inner`/`ItemHandle`, C3 has `Inner` and `Inner*`
   with no name for the outer, and **dtk meets the same question**, with D's
@@ -455,10 +460,10 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   crossing is spelled `inner::internal::to_inner(&m)` since 3TK-70, and the binding line is
   `alias MSG = helper::OF{Msg};`. **Nothing at a call site grew**: C3 imports a
   module's submodules with `import mtk;` and accepts the last segment of a
-  module path. `../3tk/src/helper.c3:40`.
+  module path. `../3tk/src/helper.c3:56`.
 - **`OuterHelper` is a first-class citizen**, not an optional convenience: the
   books lead with it and the macros are the layer beneath. `RT-6`.
-  `../3tk/src/helper.c3:59`.
+  `../3tk/src/helper.c3:75`.
 - **`struct OuterHelper { typeid outer_tid; }` — its state is the type
   identity.** `RT-7`. **The field is `outer_tid`, not the `otrid` the ruling
   named**; Boundaries `Part 3.1` is the later document and the source follows
@@ -470,10 +475,10 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   compile-time constant from the instantiation. `RT-8`. **`OF` is a `const`**, so
   the field cannot be clobbered even by accident — the ruling accepted a
   writable field, and the `const` made the exposure moot. **It is written into
-  the file with its reason.** `../3tk/src/helper.c3:51`.
+  the file with its reason.** `../3tk/src/helper.c3:67`.
 - **A user binds one alias per outer type**, `alias MSG = mtk::OF{Msg};`, and
   the casing is forced in both directions: an uppercase alias must alias a
-  constant. `RT-18`, Boundaries `A.5`. `../3tk/src/helper.c3:40`.
+  constant. `RT-18`, Boundaries `A.5`. `../3tk/src/helper.c3:56`.
 - **An alias cannot be shared across modules.** c3c refuses an unprefixed
   cross-module alias — *"Aliases from other modules must be prefixed with the
   module name"* — so a shared alias buys nothing over the prefix, and **each
@@ -484,52 +489,75 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   macro names, and not every macro is exposed. `RT-10`.
 - **Nine members, and that is a ceiling rather than a target.** The four
   crossings `look`, `must_look`, `take`, `must_take`
-  (`../3tk/src/helper.c3:76,99,121,135`), then `inner`, `stamp`, `linked`,
+  (`../3tk/src/helper.c3:92,115,137,151`), then `inner`, `stamp`, `linked`,
   `create`, `release` (`:146,162,172,191,218`).
 - **`look` and `must_look` take a `Slot*` or an `Inner*`**, dispatched at
   compile time on `$Typeof`; `take` and `must_take` take a Slot only, because an
-  inner has no Slot to empty. `../3tk/src/helper.c3:76`.
+  inner has no Slot to empty. `../3tk/src/helper.c3:92`.
 - **`must_take` is new.** The old `move_from_slot` had no abort form.
-  `../3tk/src/helper.c3:135`.
+  `../3tk/src/helper.c3:151`.
 - **Two ergonomic targets, and only two: forgetting `init`, and too many
   names.** `RT-16`. Forgetting is answered by `inner()`, which stamps on every
-  crossing out of an `Outer*` (`../3tk/src/helper.c3:40`).
+  crossing out of an `Outer*` (`../3tk/src/helper.c3:56`).
 - **No dispatch construct** — users write a `switch` on the identity. `RT-17`.
   `Inner.outer_tid()` exists so no user writes `inner.link.type`.
-  `../3tk/src/helper.c3:40`.
+  `../3tk/src/helper.c3:56`.
 
 ### `create` and `release` — built by 3TK-64, 2026-09-07
 
 - **`create` and `release` take the allocator. Nothing mandatory is stored.**
   `RT-12`. This undoes a port deviation: ztk never stores it
   (`matryoshka-tk/src/polynode.zig:201,223`), and 3tk stored it only to reach a
-  `release` with no argument. `../3tk/src/helper.c3:194,220`.
+  `release` with no argument. `../3tk/src/helper.c3:212,240`.
 - **`create` establishes defaults only, and the hook does the rest.** `RT-14`.
   C3 has no struct default field initializers, but `alloc::new_try` allocates
   zeroed when given no `#init`, so the outer arrives at the hook already zeroed.
   **The `#init` struct literal is dropped: a method can set anything a literal
-  can, and a method can also fail.** `../3tk/src/helper.c3:194`.
-- **Four steps, in this order: allocate zeroed, call `init(a)` if declared,
-  stamp, fill the Slot.** **Stamping after the hook is deliberate** — if `init`
+  can, and a method can also fail.** `../3tk/src/helper.c3:212`.
+- **Four steps, in this order: allocate zeroed, call `init(a)`, stamp, fill the
+  Slot.** **Stamping after the hook is deliberate** — if `init`
   fails the outer was never stamped, so a pointer that escaped a failed creation
-  can never be mistaken for a live outer. `../3tk/src/helper.c3:194`.
-- **Both hooks are optional and both receive the allocator from the caller.**
-  They never read it from the outer. A type that declares neither compiles and
-  behaves as before. `../3tk/src/helper.c3:194,220`.
-- **`create` returns `void?`, and so does the `init` hook — not `bool`.** A
+  can never be mistaken for a live outer. `../3tk/src/helper.c3:212`.
+- **MUST: every outer `OuterHelper.create` makes declares both hooks, and an
+  empty body is fine.** `B-1`. `fn void? Outer.init(&self, Allocator a)` and
+  `fn void Outer.finish(&self, Allocator a)`. A per-type fact with no default is
+  stated, not inferred from absence, and absence was the ambiguity: no `init`
+  meant either *this type needs none* or *you spelled it wrong*. Rule 7 of
+  [3tk-rules-005.md](3tk-rules-005.md). `../3tk/src/helper.c3:212,240`.
+- **The mechanism is two compile-time `$assert`s, in `create` and in `release`,
+  and nothing else.** `B-4`. Compile-time, so it is alive in every build mode —
+  unlike `mtk::@check`, which compiles out under `--safe=no`, the build where a
+  silently-uninitialized outer does the most damage. A failing `$assert` inside
+  a macro names the **call site**. A flag at the call site, a second `create`
+  and a near-miss list were refused and are not reopened.
+  `../3tk/src/helper.c3:212,240`.
+- **The containers are outside the MUST.** `B-5`. `_Mbox` and `_Pool` bind the
+  helper for `stamp` and `look` and never call `create`. The rule binds every
+  outer *the helper creates*.
+- **No interface for the outer's hooks, and 3TK-70's ruling stands on a
+  replaced argument.** `B-6`. 3TK-70 refused it because both hooks were
+  *optional*; `B-1` deletes that premise. What stands: an interface carries a
+  choice across a boundary at runtime, and these hooks are never passed.
+- **Both hooks receive the allocator from the caller.**
+  They never read it from the outer. `../3tk/src/helper.c3:212,240`.
+- **`create` returns `void?`, and so does the `init` hook — not `bool`.**  A
   `bool` says something failed and nothing about what; an optional lets the
   outer's own fault reach the caller. On a hook failure the allocation is freed
-  and the fault propagates unchanged. `../3tk/src/helper.c3:194`.
+  and the fault propagates unchanged. `../3tk/src/helper.c3:212`.
 - **`release` returns `void`, and the reason is narrower than the ergonomics.**
   C3 refuses a bare failable call in a `defer`, and every workaround puts a
   policy choice at each call site. But the honest reason is that **a teardown
   fault has no recipient**: `release` runs on a path usually already unwinding,
   nobody can act on *"freeing failed"*, and the resource is gone either way.
   `init` is the opposite — it fails before anything is committed.
-  `../3tk/src/helper.c3:220`.
-- **A `destroy` fault aborts in a safe build and is dropped in a fast one.** A
-  failing destructor is a defect, not an outcome — the same contract as every
-  other `mtk::@check`. `../3tk/src/mtk.c3:66`.
+  `../3tk/src/helper.c3:240`.
+- **`destroy` is renamed `finish`, and it narrows from `void?` to `void`.**
+  `B-2`, `B-3`. `destroy` is C3's own word for tearing a thing down, which is
+  the one thing the hook must not do — `release` frees the outer the moment it
+  returns. The narrowing removes a fault no caller could use: the old `release`
+  turned a `destroy` failure into `mtk::@check`, an abort in a safe build and
+  dropped in a fast one. A failing teardown is a defect, not an outcome, and now
+  it cannot be spelled. `../3tk/src/helper.c3:240`.
 - **The pool's create hook carries the same rule and the same sentence.**
   `RT-15`.
 
@@ -557,14 +585,14 @@ type-erased inner. `Part 7`, `Part 7.5`.
 
 - **Every crossing happens in this file and nowhere else.** That is what makes
   the address arithmetic auditable. `Part 7.5` MUST.
-  `../3tk/src/helper.c3:40`.
+  `../3tk/src/helper.c3:56`.
 - **No `inline` on the inner field.** An implicit conversion is a crossing that
-  appears at no call site and in no file. `D2`. `../3tk/src/helper.c3:40`.
+  appears at no call site and in no file. `D2`. `../3tk/src/helper.c3:56`.
 - **The members are macros over `$Type`; a new outer type costs not one line.**
-  `H0`. `../3tk/src/helper.c3:40`.
+  `H0`. `../3tk/src/helper.c3:56`.
 - **The identity is `Type::typeid`, native.** No per-type mutable byte, which
   is what ztk needed against linker merging. `Q2`, `Part 7.2`.
-  `../3tk/src/helper.c3:40`.
+  `../3tk/src/helper.c3:56`.
 - **REVERSED by 3TK-63, 2026-09-07 — the border is now a wall, as far as C3
   will make one.** This entry read *"`helper.c3` is not a wall: `mtk::inner_offset`
   is public, so any module importing `mtk` can compute an offset and cast."*
@@ -578,10 +606,10 @@ type-erased inner. `Part 7`, `Part 7.5`.
   `../3tk/src/mtk.c3:66`.
 - **One thing is lost against per-type instantiation:** a type declared but
   never crossed with is never validated, because there is no instantiation to
-  force `Part 7.4`'s check. `../3tk/src/helper.c3:40`.
+  force `Part 7.4`'s check. `../3tk/src/helper.c3:56`.
 - **Part 7.1 as 004 words it is what this file is**, and the history of the
   correction is kept because a reader meeting this file next to 003 should know
-  which way it ran. `E6`, `V19`. `../3tk/src/helper.c3:40`.
+  which way it ran. `E6`, `V19`. `../3tk/src/helper.c3:56`.
 
 ### The members
 
@@ -597,15 +625,15 @@ type-erased inner. `Part 7`, `Part 7.5`.
   touched about sixty call sites. And the write **preserves `link.ptr`** —
   `any_make(inner.link.ptr, ...)` — which is what makes the stamp safe on a
   linked inner as well as an unlinked one. Boundaries `Part 5.1`.
-  `../3tk/src/helper.c3:167`.
+  `../3tk/src/helper.c3:183`.
 - **The correct line differs from the destructive one by a single
   sub-expression**, and it is written into the file with its reason. The natural
   maintenance edit is `any_make(null, ...)` — the old `init` body verbatim — and
-  it silently unlinks a linked outer. `../3tk/src/helper.c3:40`.
+  it silently unlinks a linked outer. `../3tk/src/helper.c3:56`.
 - **`stamp` stays a separate call and is not folded into construction** — but it
   no longer has to be remembered. `H8`, `HR-5`. `OuterHelper.inner()` stamps on
   every crossing out of an `Outer*`, and `OuterHelper.stamp()` does it alone for
-  an outer allocated by hand. `../3tk/src/helper.c3:152,167`.
+  an outer allocated by hand. `../3tk/src/helper.c3:168,183`.
 - **`Inner.outer_tid()` exists so that no user writes `inner.link.type`.** An
   `@inline` accessor, and the thing a dispatch `switch` reads. It is above
   `inner.c3`'s internal banner for that reason: the helper cannot read an
@@ -615,7 +643,7 @@ type-erased inner. `Part 7`, `Part 7.5`.
   `../3tk/src/inner.c3:292`.
 - **An inbound crossing names its type, and that is not ceremony.** A crossing
   from an erased inner must say what it expects.
-  `../3tk/src/helper.c3:40`.
+  `../3tk/src/helper.c3:56`.
 - **`from_inner` returns null on a mismatch, which is a legitimate state of a
   correct program** — a walker of a heterogeneous list meets other types by
   design. `Part 6.2`, `Part 6.3`. `../3tk/src/inner.c3:298`.
@@ -623,7 +651,7 @@ type-erased inner. `Part 7`, `Part 7.5`.
   compiles out under `--safe=no`. `Part 6.3`.
   `../3tk/src/inner.c3:309`.
 - **One check, not two.** A null inner and a wrong identity are the same kind
-  of wrong. `H7`, `Part 15.5`. `../3tk/src/helper.c3:40`.
+  of wrong. `H7`, `Part 15.5`. `../3tk/src/helper.c3:56`.
 - **`move_from_slot` has two postconditions and both are tested.** On a match
   the pointer is returned AND the Slot is cleared; on a mismatch null is
   returned AND the Slot is untouched. `Part 9.2 rule 4`.

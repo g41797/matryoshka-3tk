@@ -292,7 +292,7 @@ state is hidden, and N19 builds a whole separation of concerns on it —
 *"private fields hide implementation state; typed handles restrict API usage.
 Do not mix these two reasons"*. The first half of that sentence describes a
 feature C3 does not have in 0.8.3. This is the study's sharpest correction, and
-it reopens a design question both drafts considered settled.
+it reopens a design question both drafts took as decided.
 
 The honest options for the port are three, and none is free:
 
@@ -382,7 +382,7 @@ the cleanup that runs only when the function succeeded, which in Zig is written
 by hand at the end of the happy path.
 
 **All three verified together, and the two conditional forms are exclusive** —
-exactly one fires per exit. A function carrying both, called twice:
+exactly one runs per exit. A function carrying both, called twice:
 
 ```
 failing:
@@ -554,7 +554,7 @@ was right.
 exists as a fault, but only for `sleep` and for `TimedMutex.lock_timeout` on
 `EINTR`. *Read*: `threads/os/thread_posix.c3:94`, `:334`. There is no
 interruptible condition wait. A port that wants Part 2.9 builds it from a flag
-and a broadcast. Part 20 decision 8 stands open, and C3 does not settle it.
+and a broadcast. Part 20 decision 8 stands open, and C3 does not decide it.
 
 ---
 
@@ -915,3 +915,4 @@ Two naming hazards found while probing, neither in any draft:
 | 001 | 2026-08-23 | First version. Stage 3TK-4. c3c 0.8.3, twelve probes. |
 | 002 | 2026-09-09 | Q6 extended by 3TK-72, against `MANUAL.md` §6_12 and probes: the three `defer` forms, `defer (catch f)` binding the fault, five refused spellings, and the `~` fault return. Seven probes. Nothing else changed. |
 | 003 | 2026-09-09 | Stage 3TK-73, the design-folder audit. **Crossed from `matryoshka-tk` into this repository.** *For 3TK-5* and *What this study rules on* deleted, not carried — `A-4` of staging plan 034. **New: Q13**, packaging and distribution, folded in from `3tk-build-dist.md` and rebuilt from `c3c --help` and `c3c init-lib` on 0.8.3; that document retires. The toolchain was re-measured before the crossing and had not moved: 0.8.3, git `1d155ee`, LLVM 22.1.8. The Part 21 link into `common/backup/` became a historical marker — `A-10`. Nothing else changed. |
+| 003, amended | 2026-09-09 | **A banned-word pass, and nothing else.** Three words replaced in prose, on the owner's approval, after 3TK-73 reported them: they left a folder the scan skips for one it does not. No answer, no measurement, no probe and no citation changed, and no section moved. |

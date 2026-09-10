@@ -505,8 +505,8 @@ is closed goes to `on_close`** — `pool.c3:475-484`.
 **P1 of the deviation audit, found by measuring rather than by reading.** The
 shape predates the redesign and belongs to neither an R nor a D: the audit says
 it **drifted**. Without the re-read, `Pool.close` can run to completion inside
-the hook window — set the flags, drain every bucket, call `on_close` — and the
-put then pushes into a bucket of a closed and already-drained pool. The item is
+the hook window — set the flags, empty every bucket, call `on_close` — and the
+put then pushes into a bucket of a closed and already-emptied pool. The item is
 **with nobody**: the caller's Slot was emptied, so Part 9.4 truthfully tells the
 caller the pool has it, and the close hook has already run.
 
@@ -730,7 +730,7 @@ identity. Leaving it empty is the `NOT_CREATED` outcome.*
 
 **No R-ruling and no D-decision covers it**, and that is the finding rather
 than an omission from this document: the redesign never treated it as a
-question, because the specification the port was written from reads as settled
+question, because the specification the port was written from reads as decided
 on the point. The doc comment on `Pool.get` cites Part 11.7 and Part 19 and
 records no choice here — `pool.c3:271-287`.
 
@@ -933,8 +933,8 @@ summary of what tier 2 restores:
 
 **The rule that follows binds every call site**, and D6 states it because the
 mechanism can reintroduce the class of bug it exists to prevent: *an expression
-passed to `mtk::@check` must have no required side effect.* A check that drains
-a container drains it in a safe build only, and the program then behaves
+passed to `mtk::@check` must have no required side effect.* A check that empties
+a container empties it in a safe build only, and the program then behaves
 differently in the two build families.
 
 **Two corrections came from the code and are recorded as such:** the macro is
@@ -991,7 +991,7 @@ The port's own doc comment recorded the deviation honestly: Part 7.1 asked for a
 helper **object bound to one type**, this port had none, and the file said *this
 is a SPECIFICATION defect, not a port defect* and told the next reader **not to
 "fix" this file to match it.** That guard was filed as E6, then as **V19**, and
-3TK-17 cut 004 to settle it.
+3TK-17 wrote 004 to decide it.
 
 **The one thing that lost against the per-type instantiation is named rather
 than buried**: a type that is declared but never crossed with is never
@@ -1022,9 +1022,9 @@ mistake in fourteen other Parts:
 > *generate code per type* a different way. **This is the first specification
 > defect found since 003, and it was found by building, not by auditing.**
 
-**And it was cut before dtk started, deliberately**, because D's idiomatic
-answer to *generate code per type* — templates and mixins — is call-site
-expansion, the same shape as a C3 macro.
+**And it was written before dtk started, deliberately**, because D answers
+*generate code per type* with templates and mixins — call-site expansion, the
+same shape as a C3 macro.
 
 ## What ztk does
 
@@ -1122,3 +1122,4 @@ current, and what has not run, is `3tk-status.md` in `matryoshka-tk`.**
 | 003 | 2026-08-25 | Stage 3TK-24. **New: §5a**, the creation hook on a get that found a stored item — 3tk returns without calling it (`pool.c3:337-345`), ztk calls it with the Slot full (`pool.zig:565-590`). All three modes of both ports read and set out, the specification's two passages quoted by line, and the disagreement named between 004 on one side and `ztk-audit-001.md` 2.7 and `matryoshka-api-reference-042.md` on the other. Every `file:line` in the new section, 3tk's and ztk's, was printed and read before it was written down; nothing outside §5a changed but this row, the version line and one sentence in *How to read it*. The word *should* appears **nowhere**, as in 001 and 002. Describes; recommends nothing. |
 | 004 | 2026-08-30 | Stage 3TK-56. **New: §4a**, `on_close` takes the queue by value, not by pointer — `P6` ruled 2026-08-28, built by this stage. Both call sites and `InnerQueue.take()` cited, ztk's still-by-pointer `on_close` read at `pool.zig:127-130` and named as an open divergence, not a recommendation. Nothing outside §4a changed but this row and one sentence in *How to read it*. The word *should* appears **nowhere**, as in every earlier version. Describes; recommends nothing. |
 | 005 | 2026-09-09 | Stage 3TK-73, the design-folder audit — `A-7` and `A-10` of staging plan 034. **Crossed from `matryoshka-tk` into this repository**, where the port's reader lands, after being read against [3tk-decisions-007.md](3tk-decisions-007.md) and ruled a different subject from it: that file is the registry of what stands, this one is the argument, and neither does the other's job. **Every 3tk `file:line` re-resolved against the built tree** and every quoted 3tk block re-cut, because 3TK-63, 3TK-64 and 3TK-70 had rewritten four files — `Handle` became `Inner*`, `stack.c3` and `managed.c3` are gone, `@check` moved to `mtk.c3`, and the identity write moved from `helper::init` to `inner::internal::stamp`. **ztk's citations were not re-read and were not touched.** **Three claims changed with the code**: the mailbox's Part 2.6 hand-off in §3, `P4` in §9 — **closed; the pool has no `signal()` left** — and §8's Part 7.4 sentence. `P3` re-read and still live. Six links into documents that retired the same day became historical markers — `A-10`. No section was added and none was removed. The word *should* appears **nowhere**, as in every earlier version. Describes; recommends nothing. |
+| 005, amended | 2026-09-09 | **A banned-word pass, and nothing else.** Six words replaced in prose, on the owner's approval, after 3TK-73 reported them: this document left a folder the scan skips for one it does not. Quoted source is untouched — every remaining hit of the scan pattern is inside a `c3` or `zig` block and is the code as measured. No finding, no `file:line`, no verdict and no section changed. The word *should* still appears **nowhere**. Describes; recommends nothing. |

@@ -4,7 +4,7 @@ Every public declaration of the C3 port, with every assert and every contract
 clause copied from the source and carrying its `file:line`.
 
 **This is not the page to learn the toolkit from.**
-[3tk-reference-009.md](3tk-reference-009.md) is that page, and it is the one a
+[3tk-reference-010.md](3tk-reference-010.md) is that page, and it is the one a
 caller reads. (Until this version the pointer here was `3tk-api-002.md`, which
 3TK-60 moved to `matryoshka-tk`'s `backup/`.) Read this one to check that the
 reference is telling the truth, or to find where in `3tk/src` a promise is
@@ -31,6 +31,10 @@ refused. Those live in [3tk-decisions-007.md](3tk-decisions-007.md).
 
 **Every contract and every check below is copied from `3tk/src`**, with its
 `file:line`. None is inferred from what a declaration ought to check.
+
+**Re-anchored by 3TK-74, 2026-09-09**, which made the outer's two hooks
+required and moved every line of `helper.c3` by sixteen to twenty. Every
+citation below was re-resolved against the built tree.
 
 **Re-anchored by 3TK-70, 2026-09-09.** The module split moved nearly every line
 of four files, so all 90 citations were resolved again — each from the contract
@@ -199,9 +203,9 @@ that count.
   failure. One name serves both argument types, dispatched at compile time on
   `$Typeof`; anything else is a `$error` naming the mistake.
 - **Costs** — O(1), one typeid comparison and one pointer subtraction.
-- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:74`.
+- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:90`.
 - **Checks** — `inner::internal::check_stamped(…, "the outer was never stamped: make it
-with `create`, or call `stamp` once")` — `helper.c3:80` and `helper.c3:80`.
+with `create`, or call `stamp` once")` — `helper.c3:96` and `helper.c3:99`.
 
 ### `macro Outer* OuterHelper.must_look(self, from)`
 
@@ -209,8 +213,8 @@ with `create`, or call `stamp` once")` — `helper.c3:80` and `helper.c3:80`.
 - **Promises** — use it where a mismatch would be your own defect; the abort
   names your line. Under `--safe=no` the check is gone.
 - **Costs** — O(1), and nothing at all in a fast build.
-- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:97`.
-- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:103` and `helper.c3:106`.
+- **Contract** — `@param from : "a `Slot*` or an `Inner*`"` — `helper.c3:113`.
+- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:135` and `helper.c3:122`.
 
 ### `macro Outer* OuterHelper.take(self, Slot* slot)`
 
@@ -219,8 +223,8 @@ with `create`, or call `stamp` once")` — `helper.c3:80` and `helper.c3:80`.
   There is no `Inner*` form: an inner has no Slot to empty.
 - **Costs** — O(1).
 - **Contract** — `@param slot : "the Slot holding the outer; empty afterwards on
-success"` — `helper.c3:119`.
-- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:123`.
+success"` — `helper.c3:135`.
+- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:139`.
 
 ### `macro Outer* OuterHelper.must_take(self, Slot* slot)`
 
@@ -230,8 +234,8 @@ success"` — `helper.c3:119`.
   two-axis naming exposed.
 - **Costs** — O(1).
 - **Contract** — `@param slot : "the Slot holding the outer; empty afterwards"` —
-`helper.c3:133`.
-- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:137`.
+`helper.c3:149`.
+- **Checks** — `inner::internal::check_stamped(…)` — `helper.c3:153`.
 
 ## The other three
 
@@ -242,7 +246,7 @@ success"` — `helper.c3:119`.
   linked outer, so this costs nothing to call twice. **It is what makes the
   identity impossible to forget.**
 - **Costs** — O(1), one `any_make` and one pointer addition.
-- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:150`.
+- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:166`.
 
 ### `macro void OuterHelper.stamp(self, Outer* outer)`
 
@@ -252,14 +256,14 @@ success"` — `helper.c3:119`.
   crossing or at the next insertion, whichever comes first.
 - **Costs** — O(1). It is called `stamp` and not `init` because `init` is the
   name of your own hook.
-- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:165`.
+- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:181`.
 
 ### `macro bool OuterHelper.linked(self, Outer* outer)`
 
 - **What** — true when the outer is on some chain.
 - **Promises** — **exact**, not a heuristic.
 - **Costs** — O(1).
-- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:174`.
+- **Contract** — `@param outer : "a pointer to the outer"` — `helper.c3:190`.
 
 ## Allocating and freeing
 
@@ -278,16 +282,20 @@ success"` — `helper.c3:119`.
 - **Costs** — one allocation, plus whatever your hook does. It returns `void?`
   because its caller has a real decision to make.
 - **Contract** — `@param a : "the allocator; it is passed to your `init` hook and
-it is not stored"` — `helper.c3:191`.
+it is not stored"` — `helper.c3:209`.
 - **Contract** — `@param slot : "an empty Slot, filled on success"` —
-`helper.c3:192`.
+`helper.c3:210`.
 - **Checks** — `mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is
-empty on entry")` — `helper.c3:197`.
+empty on entry")` — `helper.c3:215`.
+- **Checks** — `$assert $defined(outer.init)` and `$assert $defined(outer.finish)`
+— `helper.c3:217` and `helper.c3:218`. Compile-time, and they name your call
+site rather than `helper.c3`.
 
 ### `macro void OuterHelper.release(self, Allocator a, Slot* slot)`
 
-- **What** — calls your `destroy(a)` hook if you declared one, empties the Slot,
-  and frees the outer.
+- **What** — calls your `finish(a)` hook, empties the Slot, and frees the outer.
+  Every outer the helper creates declares `init` and `finish`; an empty body is
+  fine, and two compile-time `$assert`s here and in `create` say so.
 - **Promises** — **a no-op on an empty Slot**, so a `defer` registered before the
   acquisition is safe. It returns `void`, so it needs no `!`, no `!!` and no
   `(void)` cast in a `defer`, which is why the signature is shaped this way. The
@@ -295,12 +303,15 @@ empty on entry")` — `helper.c3:197`.
   path that is usually already unwinding.
 - **Costs** — one free, plus whatever your hook does.
 - **Contract** — `@param a : "the allocator the outer was created with"` —
-`helper.c3:217`.
+`helper.c3:237`.
 - **Contract** — `@param slot : "the Slot holding the outer; empty afterwards"` —
-`helper.c3:218`.
-- **Checks** — `mtk::@check(!f, "destroy failed during release")` —
-`helper.c3:226`. **A failing destructor is a defect, not an outcome:** the fault
-aborts in a safe build and is dropped in a fast one.
+`helper.c3:238`.
+- **Checks** — `$assert $defined(outer.init)` and `$assert $defined(outer.finish)`
+— `helper.c3:244` and `helper.c3:245`. Compile-time, so they are alive in every
+build mode. **There is no runtime check here any more:** 3TK-74 narrowed the
+hook to `fn void Outer.finish(&self, Allocator a)`, so the
+`mtk::@check(!f, …)` that guarded the old `destroy`'s fault is gone with the
+fault it guarded.
 
 ---
 
