@@ -2,7 +2,7 @@
 *.html linguist-detectable=false
 *.css linguist-detectable=false
 *.js linguist-detectable=false
-*.zig text eol=lf
+*.zig linguist-detectable=false
 *.py linguist-detectable=false
 *.c3l linguist-detectable=false
 *.cmd linguist-detectable=false
