@@ -53,7 +53,7 @@ const String VERSION = "0.0.1";
  `UNKNOWN_IDENTITY` is the one that is also a defect.
  It comes only from `Pool.get` and `Pool.get_wait`.
 *>
-faultdef CLOSED, TIMEOUT, NOT_AVAILABLE, NOT_CREATED, EMPTY, WOKEN, UNKNOWN_IDENTITY;
+faultdef CLOSED, TIMEOUT, NOT_AVAILABLE, NOT_CREATED, EMPTY, WOKEN, UNKNOWN_IDENTITY, LIMIT;
 
 <*
  Aborts in a safe build and names the message.

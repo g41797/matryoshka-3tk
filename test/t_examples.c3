@@ -175,6 +175,13 @@ fn void test_example_wake_without_a_message() @test
     if (catch f = shc::f_mailbox::wake_without_a_message::wake_reaches_a_blocked_receiver(mb)) always_assert(false, "wake_without_a_message example failed");
 }
 
+fn void test_example_send_with_limit() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = shc::f_mailbox::send_with_limit::one_over_the_limit(mem, mb)) always_assert(false, "send_with_limit example failed");
+}
+
 fn void test_example_request_response() @test
 {
     Mailbox* req_mbx = mtk::mailbox::create(mem)!!;

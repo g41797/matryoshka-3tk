@@ -10,6 +10,7 @@
  - `030-close_recovery.c3` — what close gives back, and who frees it.
  - `031-release_a_refused_transfer.c3` — a refused send keeps the outer.
  - `032-wake_without_a_message.c3` — ending a wait with nothing to deliver.
+ - `062-send_with_limit.c3` — a bounded queue depth, per typeid.
 
  This module holds no code of its own.
 *>

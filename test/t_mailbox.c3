@@ -549,3 +549,60 @@ fn int sender_fn(void* arg)
     }
     return 0;
 }
+
+<*
+ 3TK-78: `Mailbox.send`'s `limit` parameter.
+
+ A limit of 2 on `Msg` is reached by the third send of the same typeid, which
+ fails with `LIMIT` and leaves the Slot full; a `Job` sent at the same mailbox,
+ same limit, is unaffected by the `Msg` count already queued.
+*>
+fn void send_limit_is_per_typeid() @test
+{
+    Mailbox* mb = new_mailbox();
+    defer drop_mailbox(mb);
+
+    Slot s0, s1, s2, sj;
+    if (catch MSG.create(mem, &s0)) { always_assert(false, "create failed"); }
+    if (catch MSG.create(mem, &s1)) { always_assert(false, "create failed"); }
+    if (catch MSG.create(mem, &s2)) { always_assert(false, "create failed"); }
+    if (catch JOB.create(mem, &sj)) { always_assert(false, "create failed"); }
+
+    if (catch mb.send(&s0, 2)) { always_assert(false, "first send under the limit refused"); }
+    if (catch mb.send(&s1, 2)) { always_assert(false, "second send at the limit refused"); }
+
+    always_assert(s0.is_empty() && s1.is_empty(), "an accepted send left the Slot full");
+
+    if (catch f = mb.send(&s2, 2))
+    {
+        always_assert(f == mtk::LIMIT, "the limit was reached but the fault is not LIMIT");
+    }
+    else
+    {
+        always_assert(false, "a send past the limit was accepted");
+    }
+    always_assert(s2.is_full(), "a refused send emptied the sender's Slot");
+
+    // a different typeid at the same mailbox, same limit, is untouched by the
+    // two Msg already queued
+    if (catch mb.send(&sj, 2)) { always_assert(false, "a different typeid was blocked by another type's limit"); }
+    always_assert(sj.is_empty(), "the Job send did not go through");
+
+    // drain: two Msg, one Job, then release each by its own type, plus the
+    // Msg still held by the refused s2
+    InnerQueue left;
+    mb.close(&left);
+    usz drained = 0;
+    while (Inner* inner = left.pop_front())
+    {
+        drained++;
+        Slot out;
+        out.fill(inner);
+        if (Msg* m = MSG.look(inner)) { MSG.release(mem, &out); }
+        else if (Job* j = JOB.look(inner)) { JOB.release(mem, &out); }
+        else { always_assert(false, "an unexpected type came back from the mailbox"); }
+    }
+    always_assert(drained == 3, "the mailbox did not hold the three accepted sends");
+
+    MSG.release(mem, &s2);
+}

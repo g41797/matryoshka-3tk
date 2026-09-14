@@ -126,12 +126,14 @@ fn void Mailbox.release(&mbox)
 
  The Slot is the answer. Cleared on success.
  Untouched on `CLOSED`, and the sender still has the outer.
+ Untouched on `LIMIT`, and the sender still has the outer.
  An empty Slot is a defect.
 
- @param slot : "a full Slot; cleared on success, untouched on CLOSED"
- @return? mtk::CLOSED
+ @param slot : "a full Slot; cleared on success, untouched on CLOSED or LIMIT"
+ @param limit : "0 (default) for unbounded; otherwise the max already-queued outers of the same typeid"
+ @return? mtk::CLOSED, mtk::LIMIT
 *>
-fn void? Mailbox.send(&mbox, Slot* slot) => ((_Mbox*)mbox).send_at(slot, false);
+fn void? Mailbox.send(&mbox, Slot* slot, usz limit = 0) => ((_Mbox*)mbox).send_at(slot, false, limit);
 
 <*
  Same as `send()`, ahead of every ordinary outer.
@@ -142,7 +144,7 @@ fn void? Mailbox.send(&mbox, Slot* slot) => ((_Mbox*)mbox).send_at(slot, false);
  @param slot : "a full Slot; cleared on success, untouched on CLOSED"
  @return? mtk::CLOSED
 *>
-fn void? Mailbox.send_oob(&mbox, Slot* slot) => ((_Mbox*)mbox).send_at(slot, true);
+fn void? Mailbox.send_oob(&mbox, Slot* slot) => ((_Mbox*)mbox).send_at(slot, true, 0);
 
 
 <*
@@ -453,7 +455,7 @@ fn void _Mbox._close(&self, InnerQueue* out)
 <*
  For internal usage.
 *>
-fn void? _Mbox.send_at(&self, Slot* slot, bool oob)
+fn void? _Mbox.send_at(&self, Slot* slot, bool oob, usz limit)
 {
     mtk::@check(slot.is_full(), "Mailbox.send from an empty Slot");
     if (slot.is_empty()) return;
@@ -468,6 +470,23 @@ fn void? _Mbox.send_at(&self, Slot* slot, bool oob)
 
     self._active++;
     defer self._active--;
+
+    if ((!oob) && (limit > 0))
+    {
+        typeid tid = slot.peek().outer_tid();
+        InnerQueue* target = &self._regular;
+        if(target.len() >= limit)
+        {
+            usz count = 0;
+            InnerQueueIterator it = target.iter();
+            while (Inner* inner = it.next())
+            {
+                if (inner.outer_tid() == tid) count++;
+
+                if (count >= limit) return mtk::LIMIT~;
+            }
+        }
+    }
 
     self.enqueue(slot.take(), oob);
     self._cv.signal();
