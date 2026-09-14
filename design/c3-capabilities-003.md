@@ -3,7 +3,7 @@
 **What C3 can do, measured.** Stage 3TK-4 wrote it, 3TK-72 extended Q6 on
 2026-09-09, and **3TK-73 crossed it into this repository on 2026-09-09** — the
 version that a reader of the port lands on. `002` and `001` are in
-`matryoshka-tk`'s `design/secondary/lang/c3/backup/`, which is transient and is
+`matryoshka-ztk`'s `design/secondary/lang/c3/backup/`, which is transient and is
 not a source of truth.
 
 **What 3TK-73 changed, and nothing else.** Two sections were deleted rather
@@ -914,5 +914,5 @@ Two naming hazards found while probing, neither in any draft:
 |---|---|---|
 | 001 | 2026-08-23 | First version. Stage 3TK-4. c3c 0.8.3, twelve probes. |
 | 002 | 2026-09-09 | Q6 extended by 3TK-72, against `MANUAL.md` §6_12 and probes: the three `defer` forms, `defer (catch f)` binding the fault, five refused spellings, and the `~` fault return. Seven probes. Nothing else changed. |
-| 003 | 2026-09-09 | Stage 3TK-73, the design-folder audit. **Crossed from `matryoshka-tk` into this repository.** *For 3TK-5* and *What this study rules on* deleted, not carried — `A-4` of staging plan 034. **New: Q13**, packaging and distribution, folded in from `3tk-build-dist.md` and rebuilt from `c3c --help` and `c3c init-lib` on 0.8.3; that document retires. The toolchain was re-measured before the crossing and had not moved: 0.8.3, git `1d155ee`, LLVM 22.1.8. The Part 21 link into `common/backup/` became a historical marker — `A-10`. Nothing else changed. |
+| 003 | 2026-09-09 | Stage 3TK-73, the design-folder audit. **Crossed from `matryoshka-ztk` into this repository.** *For 3TK-5* and *What this study rules on* deleted, not carried — `A-4` of staging plan 034. **New: Q13**, packaging and distribution, folded in from `3tk-build-dist.md` and rebuilt from `c3c --help` and `c3c init-lib` on 0.8.3; that document retires. The toolchain was re-measured before the crossing and had not moved: 0.8.3, git `1d155ee`, LLVM 22.1.8. The Part 21 link into `common/backup/` became a historical marker — `A-10`. Nothing else changed. |
 | 003, amended | 2026-09-09 | **A banned-word pass, and nothing else.** Three words replaced in prose, on the owner's approval, after 3TK-73 reported them: they left a folder the scan skips for one it does not. No answer, no measurement, no probe and no citation changed, and no section moved. |

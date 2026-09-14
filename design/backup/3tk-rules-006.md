@@ -526,7 +526,7 @@ confirmed each went red.
 Every stage carries its script changes across to `matryoshka-3tk`. The four
 ported scripts differ from this repo's copies **only** in the `ROOT` line.
 
-**3tk sources — `.c3`, docs — are edited only in `matryoshka-tk`'s copy**, and
+**3tk sources — `.c3`, docs — are edited only in `matryoshka-ztk`'s copy**, and
 the owner copies them across. **The scripts, the CI `.yml` files and the design
 documents under `matryoshka-3tk/design/` are edited in `matryoshka-3tk`
 directly.**

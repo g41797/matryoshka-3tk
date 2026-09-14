@@ -75,14 +75,14 @@ flow* walkthrough created its demo outer on the stack. The owner ruled a stack
 outer illegal, in every case, not only across a mailbox or thread boundary —
 see [3tk-patterns-004.md](3tk-patterns-004.md) entry 14. The walkthrough now
 creates the outer on the heap. Nothing else changed. **`004` is in
-`matryoshka-tk`'s `backup/`, and this version lives in `matryoshka-3tk/design/`,
+`matryoshka-ztk`'s `backup/`, and this version lives in `matryoshka-3tk/design/`,
 not in that repo's `ref/`.**
 
 `004` carried all of `003` and corrects one claim about the close
 hook: the pool's close section said the hook is called once, while the hooks
 section of the same file already said it can be called again by a put that finds
 the pool closed. The specification's `Part 12.2` says the second thing. The close
-section now says it too. `003` is in `matryoshka-tk`'s `backup/`.
+section now says it too. `003` is in `matryoshka-ztk`'s `backup/`.
 
 `003` carried all of `002` and re-anchored the citations. `002`, written by
 3TK-46, added Part 7's *The modules, one by one* — the eight labelled module

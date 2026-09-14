@@ -27,7 +27,7 @@ belongs to a **group**, and its module name says so —
 rule that is new is *The groups*. Ruled by 3TK-72, 2026-09-09, under `G-1`
 … `G-5` of `3tk-staging-plan-033.md`. Nothing else changed; no other rule was
 added, removed or weakened. **This version, and every later one, lives in
-`matryoshka-3tk/design/`, not in `matryoshka-tk`'s `ref/`.**
+`matryoshka-3tk/design/`, not in `matryoshka-ztk`'s `ref/`.**
 
 `004` carried the two-term ruling from `003`, and it stands unchanged: 3tk has
 exactly two terms, **`Inner`**, a real C3 type and the field you lend, and
@@ -36,7 +36,7 @@ retired. `Slot` is untouched: a real type naming a container state, not a
 participant. Ruled by 3TK-60, 2026-09-04.
 
 **Written by 3TK-48**, from `3tk-staging-plan-019.md`, from the owner's
-rulings of 2026-08-26, and from `matryoshka-tk`'s `rules-049.md` Parts 1, 2, 4,
+rulings of 2026-08-26, and from `matryoshka-ztk`'s `rules-049.md` Parts 1, 2, 4,
 5, 6 and 7 read the same day.
 
 **It binds 3TK-49, 3TK-50 and every later stage that adds an example.** It does
@@ -68,20 +68,20 @@ one.
 **The rule binds new work only.** `3tk/examples/`, `3tk-patterns-004.md`,
 this file, and anything a later stage adds.
 
-**The existing tree in `matryoshka-tk` is not searched and replaced.** That is
+**The existing tree in `matryoshka-ztk` is not searched and replaced.** That is
 the owner's ruling of 2026-08-26, carried forward unchanged. The counts that
-produced it are in `matryoshka-tk`'s `3tk-example-rules-001.md` (now in
+produced it are in `matryoshka-ztk`'s `3tk-example-rules-001.md` (now in
 `backup/`) and are not re-measured here — this document did not change that
 ruling, only the stack-outer rule below.
 
 **The deadline is dtk's first stage.**
-`matryoshka-tk/design/secondary/d/dtk-status.md`
+`matryoshka-ztk/design/secondary/d/dtk-status.md`
 has a prepared folder and no stage run, and dtk builds from the specification
 alone, so the first dtk stage bakes whichever word the specification uses into a
 fourth port. The secondary trigger is a specification `005` written for any
 other reason.
 
-**The debt is recorded in `matryoshka-tk`**, in `3tk-status.md` under *Open
+**The debt is recorded in `matryoshka-ztk`**, in `3tk-status.md` under *Open
 questions* and in `3tk-port-findings-005.md`, the port's channel to another
 port. **`../common/` is not one of those places.**
 
@@ -430,14 +430,14 @@ current file contents at the moment of the claim.**
 - **No change to `3tk/src`.** Not one byte, unless the stage's own charter says
   otherwise.
 - **No change to `test/common.c3`**, and no change to the 87 existing tests.
-- **Nothing is written under `matryoshka-tk`'s `common/`**, and nothing is said
+- **Nothing is written under `matryoshka-ztk`'s `common/`**, and nothing is said
   to another port. A finding for another port goes in
   `3tk-port-findings-005.md`, which describes and recommends nothing.
-- **No `git`.** The owner saves — in `matryoshka-tk`. In `matryoshka-3tk`, the
+- **No `git`.** The owner saves — in `matryoshka-ztk`. In `matryoshka-3tk`, the
   owner also runs the copy and the push; a stage does not push on its own.
 - **A stage revising a document in `matryoshka-3tk/design` versions it.** `001`
-  to `002` and onward, the old one stays in `matryoshka-tk`'s `backup/` for the
-  version this rule superseded, and every cross-reference in `matryoshka-tk` is
+  to `002` and onward, the old one stays in `matryoshka-ztk`'s `backup/` for the
+  version this rule superseded, and every cross-reference in `matryoshka-ztk` is
   repointed at the new location and version.
 
 ## What is not taken from ztk

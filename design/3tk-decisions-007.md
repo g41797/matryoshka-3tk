@@ -14,7 +14,7 @@ back to the document that ruled it. Paths are relative to
 **It is alive.** It is revised whenever a decision changes, and a superseded
 version goes to `backup/`. **This is `007`**, written by `3TK-61`, which ruled
 the rethinking of the core's shape and built none of it; `006` is in
-`backup/`, and `005` is in `matryoshka-tk`'s
+`backup/`, and `005` is in `matryoshka-ztk`'s
 `design/secondary/lang/c3/backup/`.
 
 **Revised in place by 3TK-75, 2026-09-10** — `OuterHelper.inner` stopped
@@ -35,8 +35,8 @@ largest group** — `RT-3`, `RT-5`, `RT-6` … `RT-10`, `RT-12` … `RT-18`, and
 `HR-5` — because it is the stage that built the helper.
 
 **This version, and every later one, lives in `matryoshka-3tk/design/`, not in
-`matryoshka-tk`'s `ref/`.** Paths beginning `../3tk/` still point into
-`matryoshka-tk`, where the source is edited.
+`matryoshka-ztk`'s `ref/`.** Paths beginning `../3tk/` still point into
+`matryoshka-ztk`, where the source is edited.
 
 **A change to `../3tk/src` revises this file in the same stage.** Not later,
 and not as a debt for the next stage to pay. **This file contradicting
@@ -516,7 +516,7 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
 
 - **`create` and `release` take the allocator. Nothing mandatory is stored.**
   `RT-12`. This undoes a port deviation: ztk never stores it
-  (`matryoshka-tk/src/polynode.zig:201,223`), and 3tk stored it only to reach a
+  (`matryoshka-ztk/src/polynode.zig:201,223`), and 3tk stored it only to reach a
   `release` with no argument. `../3tk/src/helper.c3:226,240`.
 - **`create` establishes defaults only, and the hook does the rest.** `RT-14`.
   C3 has no struct default field initializers, but `alloc::new_try` allocates

@@ -12,7 +12,7 @@ clause copied from the source and carrying its `file:line`.
 **This is not the page to learn the toolkit from.**
 [3tk-reference-011.md](3tk-reference-011.md) is that page, and it is the one a
 caller reads. (Until this version the pointer here was `3tk-api-002.md`, which
-3TK-60 moved to `matryoshka-tk`'s `backup/`.) Read this one to check that the
+3TK-60 moved to `matryoshka-ztk`'s `backup/`.) Read this one to check that the
 reference is telling the truth, or to find where in `3tk/src` a promise is
 actually made.
 
@@ -28,7 +28,7 @@ that changes it. A file that contradicts `3tk/src` is a defect of the stage
 that changed the source.
 
 **This version, and every later one, lives in `matryoshka-3tk/design/`, not in
-`matryoshka-tk`'s `ref/`.** `003` is in `matryoshka-tk`'s
+`matryoshka-ztk`'s `ref/`.** `003` is in `matryoshka-ztk`'s
 `design/secondary/lang/c3/backup/`. **`backup/` is transient — the owner empties
 it — so no version there is ever cited as a source of truth.**
 
@@ -69,9 +69,9 @@ version.** 3TK-66 revised it **in place** first, on the strength of the *It is
 alive* rule, and the owner ruled afterwards that the change deserved a version.
 By then the pre-3TK-66 text no longer existed on disk — git is not run in this
 work — so what `backup/` could hold would be byte-identical to this file and
-would misdescribe itself. **Nothing is lost:** `003` is in `matryoshka-tk`'s
+would misdescribe itself. **Nothing is lost:** `003` is in `matryoshka-ztk`'s
 `design/secondary/lang/c3/backup/`, and what `004` said that this file does not
-is recorded in [3tk-log.md](../../matryoshka-tk/design/secondary/lang/c3/3tk-log.md)
+is recorded in [3tk-log.md](../../matryoshka-ztk/design/secondary/lang/c3/3tk-log.md)
 under 3TK-66.
 
 **004 replaced 003, revised by 3TK-60 on 2026-09-04**, which applied the

@@ -25,11 +25,11 @@ Inner*`, so every code shape spells the pointer `Inner*`.
 `002` was the only change from `001`: entry 14 was rewritten, after the owner
 ruled a stack outer illegal, not only across a mailbox or thread boundary —
 see the entry for why. **This version, and every later one, lives in
-`matryoshka-3tk/design/`, not in `matryoshka-tk`'s `ref/`.**
+`matryoshka-3tk/design/`, not in `matryoshka-ztk`'s `ref/`.**
 
 **Written by 3TK-49**, from
-`../../matryoshka-tk/design/secondary/lang/c3/3tk-staging-plan-019.md`.
-Its input is `patterns-029.md` from `matryoshka-tk`, the ztk catalog, **read as
+`../../matryoshka-ztk/design/secondary/lang/c3/3tk-staging-plan-019.md`.
+Its input is `patterns-029.md` from `matryoshka-ztk`, the ztk catalog, **read as
 an input and not used as a template.** Every one of that file's 75 entries is
 classified below, and the classification is the work.
 

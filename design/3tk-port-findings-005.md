@@ -4,7 +4,7 @@
 
 Written by 3TK-20 on 2026-08-24 and grown by 3TK-22, 3TK-24 and 3TK-56.
 **3TK-73 crossed it into this repository on 2026-09-09** — this is where a
-reader of the port lands. `001` to `004` are in `matryoshka-tk`'s
+reader of the port lands. `001` to `004` are in `matryoshka-ztk`'s
 `design/secondary/lang/c3/backup/`, which is transient and is not a source of
 truth.
 
@@ -36,7 +36,7 @@ informs.**
 ## Who it is for
 
 - **dtk**, the D port, which has run no stage and starts from the shared
-  specification alone — `matryoshka-specification-005.md`, in `matryoshka-tk`'s
+  specification alone — `matryoshka-specification-005.md`, in `matryoshka-ztk`'s
   `design/secondary/lang/common/`. It has no way to learn
   from the specification that a port deleted a field, deleted a walk and got a
   MUST weakened, because the specification records the outcome and not the
@@ -69,7 +69,7 @@ first read under.
 `V19`, `H0` and `P1` to `P6` are **historical markers, not live links.** They
 name the 2026-08 sitting that ruled each point — the core redesign proposal,
 the porting proposal, and the port's own audit against the specification — and
-those three documents are spent and in `matryoshka-tk`'s `backup/`, which is
+those three documents are spent and in `matryoshka-ztk`'s `backup/`, which is
 transient. **A marker says who ruled it; the sentence beside it says what
 stands, and where the two would differ the source is what stands.** Parts and
 invariants are the specification's.
@@ -1099,7 +1099,7 @@ added or removed.**
 - **An audit of ztk.** Every ztk fact here was read from `src/*.zig` at the
   repository root and is cited to a line, and none of them is scored. The
   document that audits ztk against the specification is
-  `ztk-audit-001.md`, in `matryoshka-tk`'s `design/secondary/lang/common/`,
+  `ztk-audit-001.md`, in `matryoshka-ztk`'s `design/secondary/lang/common/`,
   which predates all of this, and any successor to it is ztk's own work.
 - **A plan.** Nothing here declares a stage in any line.
 
@@ -1109,7 +1109,7 @@ core redesign proposal for `R1` to `R15`, the porting proposal for `D1` to
 were retired by 3TK-73 on 2026-09-09, spent. What each ruled that still stands
 is in this file and in [3tk-decisions-007.md](3tk-decisions-007.md), which is
 the registry of what the port decided and where it lives in the code. **What is
-current, and what has not run, is `3tk-status.md` in `matryoshka-tk`.**
+current, and what has not run, is `3tk-status.md` in `matryoshka-ztk`.**
 
 ---
 
@@ -1121,5 +1121,5 @@ current, and what has not run, is `3tk-status.md` in `matryoshka-tk`.**
 | 002 | 2026-08-25 | Stage 3TK-22, after 3TK-21 made `struct Inner` one `any`. §1's code block, its `is_linked` block and its four walk citations were re-cut from `inner.c3`, `queue.c3` and `stack.c3`; §7's tier 2 and tier 3 citations and §8's `is_mine` block were re-cut the same way; `helper.c3`'s span moved to `76-232`. **New: §1a**, the identity and the chain link stored as one built-in pair — the ruling, the read-only halves, `repoint_to` and `points_to`, the two outcomes the language decided, and what ztk does instead. Every `file:line` in the document, 3tk's and ztk's, was printed and read again; no ztk citation had moved. The word *should* appears **nowhere**, as in 001. Describes; recommends nothing. |
 | 003 | 2026-08-25 | Stage 3TK-24. **New: §5a**, the creation hook on a get that found a stored item — 3tk returns without calling it (`pool.c3:337-345`), ztk calls it with the Slot full (`pool.zig:565-590`). All three modes of both ports read and set out, the specification's two passages quoted by line, and the disagreement named between 004 on one side and `ztk-audit-001.md` 2.7 and `matryoshka-api-reference-042.md` on the other. Every `file:line` in the new section, 3tk's and ztk's, was printed and read before it was written down; nothing outside §5a changed but this row, the version line and one sentence in *How to read it*. The word *should* appears **nowhere**, as in 001 and 002. Describes; recommends nothing. |
 | 004 | 2026-08-30 | Stage 3TK-56. **New: §4a**, `on_close` takes the queue by value, not by pointer — `P6` ruled 2026-08-28, built by this stage. Both call sites and `InnerQueue.take()` cited, ztk's still-by-pointer `on_close` read at `pool.zig:127-130` and named as an open divergence, not a recommendation. Nothing outside §4a changed but this row and one sentence in *How to read it*. The word *should* appears **nowhere**, as in every earlier version. Describes; recommends nothing. |
-| 005 | 2026-09-09 | Stage 3TK-73, the design-folder audit — `A-7` and `A-10` of staging plan 034. **Crossed from `matryoshka-tk` into this repository**, where the port's reader lands, after being read against [3tk-decisions-007.md](3tk-decisions-007.md) and ruled a different subject from it: that file is the registry of what stands, this one is the argument, and neither does the other's job. **Every 3tk `file:line` re-resolved against the built tree** and every quoted 3tk block re-cut, because 3TK-63, 3TK-64 and 3TK-70 had rewritten four files — `Handle` became `Inner*`, `stack.c3` and `managed.c3` are gone, `@check` moved to `mtk.c3`, and the identity write moved from `helper::init` to `inner::internal::stamp`. **ztk's citations were not re-read and were not touched.** **Three claims changed with the code**: the mailbox's Part 2.6 hand-off in §3, `P4` in §9 — **closed; the pool has no `signal()` left** — and §8's Part 7.4 sentence. `P3` re-read and still live. Six links into documents that retired the same day became historical markers — `A-10`. No section was added and none was removed. The word *should* appears **nowhere**, as in every earlier version. Describes; recommends nothing. |
+| 005 | 2026-09-09 | Stage 3TK-73, the design-folder audit — `A-7` and `A-10` of staging plan 034. **Crossed from `matryoshka-ztk` into this repository**, where the port's reader lands, after being read against [3tk-decisions-007.md](3tk-decisions-007.md) and ruled a different subject from it: that file is the registry of what stands, this one is the argument, and neither does the other's job. **Every 3tk `file:line` re-resolved against the built tree** and every quoted 3tk block re-cut, because 3TK-63, 3TK-64 and 3TK-70 had rewritten four files — `Handle` became `Inner*`, `stack.c3` and `managed.c3` are gone, `@check` moved to `mtk.c3`, and the identity write moved from `helper::init` to `inner::internal::stamp`. **ztk's citations were not re-read and were not touched.** **Three claims changed with the code**: the mailbox's Part 2.6 hand-off in §3, `P4` in §9 — **closed; the pool has no `signal()` left** — and §8's Part 7.4 sentence. `P3` re-read and still live. Six links into documents that retired the same day became historical markers — `A-10`. No section was added and none was removed. The word *should* appears **nowhere**, as in every earlier version. Describes; recommends nothing. |
 | 005, amended | 2026-09-09 | **A banned-word pass, and nothing else.** Six words replaced in prose, on the owner's approval, after 3TK-73 reported them: this document left a folder the scan skips for one it does not. Quoted source is untouched — every remaining hit of the scan pattern is inside a `c3` or `zig` block and is the code as measured. No finding, no `file:line`, no verdict and no section changed. The word *should* still appears **nowhere**. Describes; recommends nothing. |
