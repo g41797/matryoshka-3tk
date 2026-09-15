@@ -2,69 +2,36 @@
 // SPDX-License-Identifier: MIT
 
 <*
- The mailbox. A queue of outers, with waiting.
-
- Transfer of an outer between threads.
- Create, send, receive, close, release.
- Many producers, many consumers, on one mailbox.
- The mailbox keeps outers. It never touches them.
- A mailbox is itself an outer: it can travel through another mailbox.
-
- The allocator is kept for life.
- Nothing partially constructed is ever returned.
- On send the Slot is the answer.
- Cleared: the mailbox has the outer.
- Untouched: the mailbox is closed and you still have the outer.
- On receive an empty Slot goes in, and a full Slot comes back on success.
- Every other outcome is a fault, and the Slot stays empty.
- On close what was left comes back to you, as one queue.
- Releasing those outers is your work.
- The mailbox never knew what they were.
- Close it first. Releasing an open mailbox aborts in every build mode.
- A closed mailbox can still have calls running on it. Release only after every call on it has returned.
-
- The mailbox and the pool use only the public surface of the core.
- `run-builds.sh` tests that.
- The fields named with a leading underscore are internal. Do not read them.
+ Thread-safe message queue for passing typeless outer structures between threads.
+ Supports multiple producers and consumers, out-of-band messages, non-blocking polling,
+ timeouts, and explicit mailbox shutdown.
 *>
 module mtk::mailbox;
 
 <*
- The tool itself.
-
- Created on the heap, with an allocator it keeps for life.
- Inside it are two queues.
- One for out-of-band outers.
- One for ordinary outers.
+ Opaque handle to a mailbox instance.
 *>
 typedef Mailbox = void;
 
 <*
- The identity of a `Mailbox` as an outer.
+ Identity description for using `Mailbox` as an outer inside another container.
 *>
 const typeid TYPE = _Mbox::typeid;
 
-// Part 4.6: `_Mbox` is an Outer. The mailbox is an ordinary client of the helper.
-// One `@private` alias, the same line an application writes. Every crossing below
-// goes through it.
 alias MBOX @private = helper::OF{_Mbox};
 
 <*
- From a `Mailbox*` to its `Inner*`. Cannot fail.
+ Retrieves the embedded `Inner*` for passing a mailbox through another mailbox or pool.
 *>
 macro Inner* to_inner(Mailbox* p) => MBOX.inner((_Mbox*)p);
 
 <*
- The checking crossing back. Null when the inner names another type.
+ Converts an `Inner*` back into a `Mailbox*`. Returns `null` if type mismatch occurs.
 *>
 macro Mailbox* of(Inner* inner) => (Mailbox*)MBOX.look(inner);
 
 <*
- Allocates a mailbox and returns it.
-
- The allocator is kept for life.
- Nothing partially constructed is ever returned.
- Every step undoes what succeeded before it.
+ Allocates and initializes a new Mailbox.
 
  @param a : "the allocator the mailbox keeps for life"
 *>
@@ -85,51 +52,28 @@ fn Mailbox*? create(Allocator a)
 }
 
 <*
- Frees the mailbox, with the allocator it kept.
+ Destroys a closed mailbox and frees its memory.
+ Must only be called after `close()` has been called and all active threads have exited mailbox methods.
 
- Close it first. Releasing an open mailbox aborts in every build mode.
- It takes no allocator.
- Release needs the mailbox closed, with no call on it still running.
- Close alone is not enough. A receiver waiting in `receive` is woken by the close and has not returned yet.
- Join the threads that touch the mailbox. That is how you get there.
- Releasing a mailbox with a call still running on it aborts in every build mode.
+ @param mbox : "the mailbox to release"
 *>
 fn void Mailbox.release(&mbox)
 {
     _Mbox* self = (_Mbox*)mbox;
-
-    // Rule 1 of the lifetime contract. This is the whole of what `_active` is for.
-    // Closed is one fact. No call still running is a second, separate fact.
-    // Read the predicate UNDER the mutex, never before taking it.
-    // `release` is never counted itself. It would then assert against itself.
-    //
-    // A check, not a wait. A release that waited would block on application code
-    // the port does not control. What it catches, it catches on the schedule it
-    // happens to see.
 
     self._mu.lock();
     always_assert(self._closed && self._active == 0,
                   "releasing a mailbox with a call still running on it");
     self._mu.unlock();
 
-    // The order is established against the real structs, not assumed. C3's
-    // `Mutex.destroy` is `pthread_mutex_destroy`, which aborts on the EBUSY a
-    // held mutex returns, so the unlock above must precede it. No call is still
-    // running, so no waiter can remain either.
     self._cv.destroy()!!;
     self._mu.destroy();
     Allocator a = self._alloc;
     alloc::free(a, self);
 }
 
-
 <*
- Puts the outer on the ordinary queue.
-
- The Slot is the answer. Cleared on success.
- Untouched on `CLOSED`, and the sender still has the outer.
- Untouched on `LIMIT`, and the sender still has the outer.
- An empty Slot is a defect.
+ Enqueues an outer item.
 
  @param slot : "a full Slot; cleared on success, untouched on CLOSED or LIMIT"
  @param limit : "0 (default) for unbounded; otherwise the max already-queued outers of the same typeid"
@@ -138,21 +82,15 @@ fn void Mailbox.release(&mbox)
 fn void? Mailbox.send(&mbox, Slot* slot, usz limit = 0) => ((_Mbox*)mbox).send_at(slot, false, limit);
 
 <*
- Same as `send()`, ahead of every ordinary outer.
-
- First-in first-out among out-of-band outers themselves.
- One priority level. This is not a priority queue.
+ Enqueues an outer item at the head of the queue (out-of-band delivery).
 
  @param slot : "a full Slot; cleared on success, untouched on CLOSED"
  @return? mtk::CLOSED
 *>
 fn void? Mailbox.send_oob(&mbox, Slot* slot) => ((_Mbox*)mbox).send_at(slot, true, 0);
 
-
 <*
- Takes an outer if one is queued. Never waits.
-
- Reports `EMPTY` where `receive` with a zero timeout would report `TIMEOUT`.
+ Attempts to dequeue an item immediately without waiting.
 
  @param slot : "an empty Slot; filled on success"
  @return? mtk::CLOSED, mtk::EMPTY
@@ -161,7 +99,6 @@ fn void? Mailbox.poll(&mbox, Slot* slot)
 {
     _Mbox* self = (_Mbox*)mbox;
 
-    // [3tk: Part 9.2 rule 3]
     mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is empty on entry");
 
     if (self.@closed_fast()) return mtk::CLOSED~;
@@ -180,11 +117,7 @@ fn void? Mailbox.poll(&mbox, Slot* slot)
 }
 
 <*
- Takes an outer, waiting up to the timeout.
-
- Every other outcome is a fault, and the Slot stays empty.
- The deadline is anchored once. A spurious wakeup does not restart it.
- There is no interruption. C3 has no interruptible condition wait.
+ Dequeues an item, blocking up to `timeout` if the mailbox is empty.
 
  @param slot : "an empty Slot; filled on success"
  @param timeout : "how long to wait"
@@ -194,30 +127,22 @@ fn void? Mailbox.receive(&mbox, Slot* slot, Duration timeout)
 {
     _Mbox* self = (_Mbox*)mbox;
 
-    // [3tk: Part 9.2 rule 3]
     mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is empty on entry");
 
-    // [3tk: Part 2.5]
     Time deadline = time::now() + timeout;
 
     self._mu.lock();
     defer self._mu.unlock();
 
-    // [3tk: Part 2.4]
     if (self._closed) return mtk::CLOSED~;
 
-    // Raised before the wait can release the mutex. Lowered with the mutex held
-    // again. A receiver waiting in `wait_until` below is the one mailbox call a
-    // release can overlap. The count is all that sees it.
     self._active++;
     defer self._active--;
 
-    // [3tk: Part 11.5]
     usz gen = self._wake_gen;
 
     while (true)
     {
-        // [3tk: Part 2.4]
         if (self._closed) return mtk::CLOSED~;
 
         Inner* inner = self.dequeue();
@@ -227,7 +152,7 @@ fn void? Mailbox.receive(&mbox, Slot* slot, Duration timeout)
 
         if (catch f = self._cv.wait_until(&self._mu, deadline))
         {
-            if (f != thread::WAIT_TIMEOUT) return f~; // dead today: wait_until can only fail with WAIT_TIMEOUT, kept for future wait failures
+            if (f != thread::WAIT_TIMEOUT) return f~;
 
             if (self._closed) return mtk::CLOSED~;
             inner = self.dequeue();
@@ -240,10 +165,7 @@ fn void? Mailbox.receive(&mbox, Slot* slot, Duration timeout)
 }
 
 <*
- Moves every queued outer onto your queue.
-
- The queue is in the order `receive` would have taken them out.
- Releasing the outers is your work.
+ Dequeues all pending items without closing the mailbox.
 
  @param out : "an empty queue; every queued outer is moved onto it, in receive order"
  @return? mtk::CLOSED
@@ -252,7 +174,6 @@ fn void? Mailbox.receive_all(&mbox, InnerQueue* out)
 {
     _Mbox* self = (_Mbox*)mbox;
 
-    // [3tk: Part 9.2 rule 3]
     mtk::@check(out.is_empty(), "receive_all asserts the queue is empty on entry");
 
     if (self.@closed_fast()) return mtk::CLOSED~;
@@ -270,10 +191,7 @@ fn void? Mailbox.receive_all(&mbox, InnerQueue* out)
 }
 
 <*
- Wakes every current waiter. Each one reports `WOKEN`.
-
- The mailbox stays open.
- A thread that starts waiting afterwards is unaffected.
+ Interrupts all current receivers waiting on `receive`, causing them to return `mtk::WOKEN`.
 
  @return? mtk::CLOSED
 *>
@@ -296,13 +214,7 @@ fn void? Mailbox.wake_all(&mbox)
 }
 
 <*
- Closes the mailbox and gives back what was left. Cannot fail.
-
- Callable more than once. The second call takes nothing.
- The queue is in the order `receive` would have taken them out.
- Discard that queue and the outers are dropped.
- A later send is refused.
- The mailbox can still have calls running on it after this returns.
+ Closes the mailbox and drains remaining items into `out`.
 
  @param out : "an empty queue; the remainder is moved onto it, in receive order"
 *>
@@ -310,33 +222,24 @@ fn void Mailbox.close(&mbox, InnerQueue* out)
 {
     _Mbox* self = (_Mbox*)mbox;
 
-    // [3tk: Part 9.2 rule 3]
     mtk::@check(out.is_empty(), "close asserts the queue is empty on entry");
 
     self._mu.lock();
     defer self._mu.unlock();
 
-    // Active for its whole body. The mailbox holds the mutex throughout, so no
-    // release can observe this raise. It is raised anyway. What decides is
-    // whether the memory can still be touched, not whether this one tool
-    // happens to leave the mutex.
     self._active++;
     defer self._active--;
 
     self._close(out);
 }
 
-
 <*
- True when it is closed.
+ Returns `true` if the mailbox is closed.
 *>
 fn bool Mailbox.is_closed(&mbox) => ((_Mbox*)mbox).@closed_fast();
 
 <*
- True when it is closed and no call on it is still running.
-
- The same predicate `release()` asserts, read under the mutex.
- Join the threads that touch the mailbox. That is how you reach this state.
+ Returns `true` if closed and no operations are in flight.
 *>
 fn bool Mailbox.is_idle(&mbox)
 {
@@ -347,9 +250,7 @@ fn bool Mailbox.is_idle(&mbox)
 }
 
 <*
- How many outers are queued.
-
- A hint. It is stale by the time you read it.
+ Returns the total count of queued outers (out-of-band and regular).
 *>
 fn usz Mailbox.len(&mbox)
 {
@@ -369,7 +270,7 @@ import std::atomic::types;
 
 
 //==============================================================================
-// For internal usage.
+// Internal Implementation Details
 //==============================================================================
 module mtk::mailbox::internal;
 
@@ -382,7 +283,7 @@ fn void _Mbox.enqueue(&self, Inner* inner, bool oob) @inline
     if (oob) { self._oob.push_back(inner); } else { self._regular.push_back(inner); }
 }
 
-fn Inner* _Mbox.dequeue(&self)  @inline
+fn Inner* _Mbox.dequeue(&self) @inline
 {
     Inner* inner = self._oob.pop_front();
     return inner ? inner : self._regular.pop_front();
@@ -422,7 +323,7 @@ fn void? _Mbox.send_at(&self, Slot* slot, bool oob, usz limit)
     self._active++;
     defer self._active--;
 
-    if ((!oob) && (limit > 0))  // "limited" send extension
+    if ((!oob) && (limit > 0))
     {
         typeid tid = slot.peek().outer_tid();
         InnerQueue* target = &self._regular;

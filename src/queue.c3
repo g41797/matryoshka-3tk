@@ -2,23 +2,12 @@
 // SPDX-License-Identifier: MIT
 
 <*
- The intrusive queue and its walker.
-
- One type carries outers from one place to another.
- One walks what it holds.
- It is a module of its own so that it is a page of its own.
- A user reaches it through `import mtk;` and writes `InnerQueue` unqualified.
+ Non-allocating intrusive FIFO queue and iterator for `Inner*` items.
 *>
 module mtk::queue;
 
 <*
- The intrusive queue. First-in first-out.
-
- The transfer container.
- Nothing here allocates. Every operation is O(1).
- Every chain ends at an inner pointing at itself, never at null.
- Nothing in the queue can fail.
- The count is kept, so `len` is O(1).
+ Intrusive FIFO queue holding `Inner*` elements.
 *>
 struct InnerQueue
 {
@@ -28,10 +17,7 @@ struct InnerQueue
 }
 
 <*
- A walker over a queue.
-
- Exhausted when `next` returns null.
- Removing the current outer during a walk is not supported.
+ Iterator for traversing `InnerQueue`.
 *>
 struct InnerQueueIterator
 {
@@ -39,22 +25,22 @@ struct InnerQueueIterator
 }
 
 <*
- True if the queue holds nothing.
+ Returns `true` if the queue is empty.
 *>
 fn bool InnerQueue.is_empty(&self) @inline => self.count == 0;
 
 <*
- How many outers the queue holds. O(1).
+ Returns the number of items in the queue.
 *>
 fn usz InnerQueue.len(&self) @inline => self.count;
 
 <*
- A walker, taken from the queue.
+ Initializes an iterator starting at the head of the queue.
 *>
 fn InnerQueueIterator InnerQueue.iter(&self) @inline => { .cur = self.head };
 
 <*
- The next inner, or null when the walk is exhausted.
+ Returns the next `Inner*` in the iteration sequence, or `null` when exhausted.
 *>
 fn Inner* InnerQueueIterator.next(&self)
 {
@@ -64,9 +50,9 @@ fn Inner* InnerQueueIterator.next(&self)
 }
 
 <*
- Adds at the back.
+ Appends an `Inner*` to the end of the queue.
 
- There is no front insert.
+ @param inner : "the item to append"
 *>
 fn void InnerQueue.push_back(&self, Inner* inner)
 {
@@ -78,10 +64,9 @@ fn void InnerQueue.push_back(&self, Inner* inner)
 }
 
 <*
- Same as `push_back()`, taking the outer from a Slot.
+ Extracts an item from `s` and appends it to the back of the queue.
 
- The Slot is empty afterwards.
- An empty Slot is a defect, not a no-op.
+ @param s : "the Slot to take from"
 *>
 fn void InnerQueue.push_back_slot(&self, Slot* s)
 {
@@ -91,10 +76,7 @@ fn void InnerQueue.push_back_slot(&self, Slot* s)
 }
 
 <*
- Takes the outer at the front.
-
- Null on an empty queue. That is an answer, not a fault.
- The returned outer's chain link is cleared.
+ Removes and returns the head item from the queue, or `null` if empty.
 *>
 fn Inner* InnerQueue.pop_front(&self)
 {
@@ -115,9 +97,7 @@ fn Inner* InnerQueue.pop_front(&self)
 }
 
 <*
- Takes everything the queue holds, as one flat queue. O(1).
-
- The queue is empty afterwards.
+ Removes all elements from the queue and returns them in a new `InnerQueue`.
 *>
 fn InnerQueue InnerQueue.take(&self) @inline
 {
@@ -129,17 +109,13 @@ fn InnerQueue InnerQueue.take(&self) @inline
 }
 
 <*
- Moves every outer of another queue onto the back of this one. O(1).
-
- That queue is empty afterwards.
- A queue moved onto itself is a defect.
+ Moves all elements from `other` onto the end of this queue.
 
  @param other : "the queue to empty onto this one; empty afterwards"
 *>
 fn void InnerQueue.append_queue(&self, InnerQueue* other)
 {
     mtk::@check(other != null, "append_queue with a null queue");
-    // [3tk: Part 8.9]
     mtk::@check(other != self, "a queue cannot be moved onto itself");
     if (other == self) return;
     if (other.is_empty()) return;
@@ -158,7 +134,7 @@ import mtk;
 
 
 //==============================================================================
-// For internal usage
+// Internal Implementation Details
 //==============================================================================
 
 module mtk::queue::internal;
@@ -166,7 +142,6 @@ module mtk::queue::internal;
 macro InnerQueue.@guard_insert(&self, Inner* inner)
 {
     mtk::@check(inner != null, "insert of a null inner");
-    // [3tk: Part 8.7]
     mtk::@check(!inner::internal::is_linked(inner), "the outer is already on a chain");
     inner::internal::check_stamped(inner, "the outer was never stamped: make it with `create`, or call `stamp` once");
 }

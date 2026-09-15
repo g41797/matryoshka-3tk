@@ -2,60 +2,17 @@
 // SPDX-License-Identifier: MIT
 
 <*
- The inner, the Slot, the link and the crossings.
+ Core type erasure primitives: embedded header (`Inner`), target container (`Slot`),
+ and address conversion utilities.
 
- You send and receive your own struct.
- The struct is the outer, and it is yours.
- You give the infrastructure one thing, an `Inner` embedded in it.
- From then on the infrastructure never sees your type.
- It moves `Inner*`, intrusively and with the type erased.
-
- `Inner` is the field you embed.
- The chain link and the identity, in one.
- The identity says what the outer type is.
- A pointer to an embedded `Inner` is one outer, with the type forgotten.
- 3tk transports `Inner*` and nothing else.
- `Slot` is a box that holds one `Inner*`, or nothing.
- A Slot starts empty.
-
- The Slot is how the toolkit tells you where an outer went.
- Read the Slot after every call that gives or takes an outer.
-
- The chain link is the other half of `Inner`.
- `reset` clears the chain link and not the identity.
- Every chain ends at an inner pointing at itself, never at null.
- That is what makes `is_linked` exact.
-
- You get your struct back by crossing once, from `Inner*` to `Outer*`.
- The identity in the `Inner` is what makes that crossing safe.
-
- `to_inner` goes from your pointer to the `Inner*`.
- Null in, null out.
- `from_inner` goes from an `Inner*` back to `$Type*`, and is null on an identity mismatch.
- A mismatch is an answer, not a failure.
- `must_from_inner` is the same, and it aborts on a mismatch.
- The abort names your line.
- The same three take the outer from a Slot.
- Five of them appear again as methods.
- `from_slot` looks, and the Slot is unchanged.
- `move_from_slot` takes, and on success the Slot is left empty.
- None of these moves an outer.
- Reading an identity and casting a pointer leave every container alone.
- No alias to declare, no instantiation, no registration.
-
- It is a module of its own so that it is a page of its own.
- A user reaches it through `import mtk;` and writes `Inner` and `Slot` unqualified.
+ Users embed `Inner` into domain structures (`outer`). System containers interact
+ strictly with `Inner*` pointers, ignoring the layout or type of the outer structure.
 *>
 module mtk::inner;
 
 <*
- `Inner` is the field you embed.
- The chain link and the identity, in one.
-
- Part of this module is yours to call directly.
- The Slot's five operations. The identity. The five crossings written as methods.
- Everything else goes through the helper.
- Those carry `For internal usage.` at the head of the doc block.
+ Intrusive header embedded within user structures (`outer`).
+ Holds intrusive links and type identity metadata (`typeid`).
 *>
 struct Inner
 {
@@ -63,29 +20,19 @@ struct Inner
 }
 
 <*
- The identity of the outer this inner is embedded in.
-
- Null for an inner that was never stamped.
- It exists so that no user ever writes `inner.link.type`.
- The helper cannot do this one for you: a dispatch switch reads the identity before it knows the type.
+ Returns the `typeid` of the enclosing outer structure.
 *>
 fn typeid Inner.outer_tid(&self) @inline => self.link.type;
 
 <*
- From an `Inner*` back to `$Type*`.
-
- Null on an identity mismatch.
- A mismatch is an answer, not a failure.
+ Converts `Inner*` to `$Type*`. Returns `null` if types do not match.
 
  @param $Type : "the outer type expected"
 *>
 macro Inner.to(&self, $Type) => internal::from_inner((Inner*)self, $Type);
 
 <*
- From an `Inner*` back to `$Type*`, and it aborts on a mismatch.
-
- Use it where a mismatch would be your own defect.
- The abort names your line.
+ Converts `Inner*` to `$Type*`. Aborts if types do not match.
 
  @param $Type : "the outer type asserted"
  @require internal::is_mine((Inner*)self, $Type) : "the inner is not of this type"
@@ -93,34 +40,27 @@ macro Inner.to(&self, $Type) => internal::from_inner((Inner*)self, $Type);
 macro Inner.as(&self, $Type) => ($Type*)((char*)self - internal::inner_offset($Type));
 
 <*
- A box that holds one `Inner*`, or nothing.
-
- Zero or one outer.
- A Slot starts empty.
+ Single-element container holding an `Inner*` or `null`.
 *>
 typedef Slot = Inner*;
 
 <*
- Which of the two states it is in.
+ Returns `true` if the slot holds no `Inner*`.
 *>
 fn bool Slot.is_empty(&self) @inline => !(Inner*)*self;
 
 <*
- Which of the two states it is in.
+ Returns `true` if the slot holds an `Inner*`.
 *>
 fn bool Slot.is_full(&self) @inline => (Inner*)*self != null;
 
 <*
- Look without taking.
-
- Null on an empty Slot.
+ Inspects the `Inner*` in the slot without removing it.
 *>
 fn Inner* Slot.peek(&self) @inline => (Inner*)*self;
 
 <*
- Take the `Inner*` out and clear the Slot.
-
- Null on an empty Slot.
+ Extracts and returns the `Inner*` from the slot, setting the slot to `null`.
 *>
 fn Inner* Slot.take(&self) @inline
 {
@@ -130,47 +70,33 @@ fn Inner* Slot.take(&self) @inline
 }
 
 <*
- Put an `Inner*` in.
-
- A null inner is a defect.
- Overwriting a full Slot is a defect.
+ Places an `Inner*` into an empty slot. Asserts if the slot is already full.
 
  @param inner : "the inner to place; must not be null"
 *>
 fn void Slot.fill(&self, Inner* inner) @inline
 {
     mtk::@check(inner != null, "Slot.fill with a null inner");
-    // [3tk: Part 9.2 rule 1]
     mtk::@check(self.is_empty(), "never overwrite a full Slot");
     *self = (Slot)inner;
 }
 
-
 <*
- From the Slot back to `$Type*`. It looks, and the Slot is unchanged.
-
- Null on an identity mismatch.
- A mismatch is an answer, not a failure.
+ Retrieves `$Type*` from the slot without clearing it. Returns `null` on type mismatch.
 
  @param $Type : "the outer type expected"
 *>
 macro Slot.to(&self, $Type) => internal::from_slot(self, $Type);
 
 <*
- From the Slot back to `$Type*`, and it aborts on a mismatch. The Slot is unchanged.
-
- Use it where a mismatch would be your own defect.
- The abort names your line.
+ Retrieves `$Type*` from the slot without clearing it. Aborts on type mismatch.
 
  @param $Type : "the outer type asserted"
 *>
 macro Slot.must(&self, $Type) => internal::must_from_slot(self, $Type);
 
 <*
- From the Slot back to `$Type*`, and it takes.
-
- On success the Slot is left empty.
- On failure it is unchanged.
+ Extracts `$Type*` from the slot and clears it on success. Returns `null` on mismatch.
 
  @param $Type : "the outer type expected"
 *>
@@ -181,7 +107,7 @@ import mtk;
 
 
 //==============================================================================
-// For internal usage.
+// Internal Implementation Details
 //==============================================================================
 module mtk::inner::internal;
 
@@ -265,7 +191,6 @@ macro usz inner_offset($Type)
         $endif
     $endforeach
     $assert $seen != 0 : "type " +++ $Type::name +++ " has no Inner field; it cannot be a Matryoshka outer";
-    // [3tk: Part 4.4]
     $assert $seen == 1 : "type " +++ $Type::name +++ " has more than one Inner field; exactly one is allowed";
     return $off;
 }
