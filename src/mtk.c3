@@ -27,41 +27,38 @@
  Not a garbage collector.
  The toolkit never frees an outer you gave it, except through a hook you wrote.
  Not a coordinator.
- There is no `Master` type.
-
- One import gives the toolkit.
- `import mtk;` gives this module and every submodule of it.
- This module holds `VERSION`, the faults, `@check` and `CHECKED`.
- They are the vocabulary every submodule and every user shares.
- Each subject is on the page of the module that holds it.
-
- We present you [[LOC]] lines of source.
-*>
+ *>
 module mtk;
 import std::core::env;
+
 <*
  The toolkit's version string.
 *>
 const String VERSION = "0.0.1";
 
 <*
- The faults are outcomes a correct program reaches.
+ matryoshka-3tk lines of code
+ calculated during docs generation
+ includes all c3 files under src
+ excludes:
+ - empty lines
+ - comments
+ - imports
+*>
+const String LOC = "[[LOC]]";
 
- A 3tk call that can fail returns `void?`.
- A defect is not a fault.
- A defect aborts.
- `UNKNOWN_IDENTITY` is the one that is also a defect.
- It comes only from `Pool.get` and `Pool.get_wait`.
+<*
+ 3tk faults, returned via `void?`.
+
+ Only `UNKNOWN_IDENTITY` causes abort in safe build.
 *>
 faultdef CLOSED, TIMEOUT, NOT_AVAILABLE, NOT_CREATED, EMPTY, WOKEN, UNKNOWN_IDENTITY, LIMIT;
 
 <*
- Aborts in a safe build and names the message.
+ Aborts in a safe build.
 
- Under `--safe=no` it expands to nothing.
-
- @param #cond : "the condition that must hold"
- @param $msg : "a compile-time message, named at the call site"
+ @param #cond : "the condition that must be true"
+ @param $msg : "a message"
 *>
 macro @check(#cond, $msg)
 {
@@ -71,8 +68,6 @@ macro @check(#cond, $msg)
 }
 
 <*
- True where those checks are live.
-
- Guard an expensive check with it.
+ True for safe mode
 *>
 const bool CHECKED = env::COMPILER_SAFE_MODE;

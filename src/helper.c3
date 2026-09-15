@@ -1,28 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 g41797
 // SPDX-License-Identifier: MIT
 
-//==============================================================================
-// `OuterHelper`, the one thing a user binds — and a module of its own again.
-// 3TK-63 merged it into `mtk`; `3TK-pre-65` split it back out, because one
-// generic section made the whole of `mtk` read as generic on the docs site,
-// where `Inner`, `Slot` and `InnerQueue` have nothing to do with `Outer`.
-//
-// Every declaration here is the user surface. Every member forwards to a macro
-// in `inner.c3` and has no logic of its own.
-//
-// NO HOOKS SUBMODULE, and 3TK-74 replaced 3TK-70's argument for that without
-// disturbing the ruling. 3TK-70 refused an `interface OuterHooks` because both
-// hooks were OPTIONAL and an inert interface would read as mandatory. B-1
-// deletes that premise: the hooks are required now. The reason that stands is
-// stronger and it is about the interface, not about optionality — an interface
-// exists to carry a choice across a boundary AT RUNTIME, and these hooks are
-// never passed. There is nothing to implement and nothing to hand over, so an
-// interface would add a vtable dispatch to answer a question the compiler
-// already knows, on a helper that has no instantiation at all. A module needs
-// declarations and these have none: they are resolved on the type by name.
-// A later stage that finds 3TK-70's sentence must not read the ruling as
-// lapsed with its argument.
-//==============================================================================
 <*
  The helper, bound once per outer type.
 
@@ -73,6 +51,64 @@ typedef OuterHelper = uptr;
  An uppercase alias must alias a constant, so `alias MSG = helper::OF{Msg};` is the only spelling.
 *>
 const OuterHelper OF = {};
+
+// --- Allocating and freeing --------------------------------------------------
+
+<*
+ Allocates the outer, initializes it, stamps it, and fills the Slot.
+
+ Four steps in this order: allocate zeroed, call your `init(a)` hook, stamp the inner, fill the Slot.
+ `Outer` must declare `fn void? Outer.init(&self, Allocator a)` and `fn void Outer.finish(&self, Allocator a)`, and an empty body is fine — a type with neither to write declares both and leaves them empty.
+ That is checked at compile time, here and in `release`, so a misspelled hook names your line instead of vanishing.
+ If `init` fails the outer was never stamped, so a pointer that escaped a failed creation can never be mistaken for a live outer.
+ On a hook failure the allocation is freed and the fault is propagated unchanged.
+ On an allocation failure the Slot is untouched and the fault is returned.
+
+ The toolkit reads and writes no field of your outer except the `Inner`.
+ An outer that wants to keep its allocator stores this argument in its own field, under any name, in its own `init`.
+
+ @param a : "the allocator; it is passed to your `init` hook and it is not stored"
+ @param slot : "an empty Slot, filled on success"
+*>
+macro void? OuterHelper.create(self, Allocator a, Slot* slot)
+{
+    // [3tk: Part 9.2 rule 3]
+    mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is empty on entry");
+    Outer* outer = alloc::new_try(a, Outer)!;
+    $assert $defined(outer.init) : "every outer the helper creates declares `fn void? Outer.init(&self, Allocator a)` — an empty body is fine";
+    $assert $defined(outer.finish) : "every outer the helper creates declares `fn void Outer.finish(&self, Allocator a)` — an empty body is fine";
+    if (catch f = outer.init(a))
+    {
+        alloc::free(a, outer);
+        return f~;
+    }
+    inner::internal::stamp(outer);
+    slot.fill(inner::internal::to_inner(outer));
+}
+
+<*
+ Calls your `finish(a)` hook, empties the Slot, and frees the outer.
+
+ A no-op on an empty Slot, so a `defer` registered before the acquisition is safe.
+ It returns `void`, so it needs no `!` in a `defer`, and `finish` returns `void` for the same reason: a fault raised there would reach no caller who could act on it.
+ `finish` is not `destroy`, and the name is the warning — do not tear the outer down here. `release` frees it the moment your hook returns.
+ Give up what the outer acquired and leave the memory alone.
+ The same compile-time check as `create`: both hooks must be declared, and an empty body is fine.
+
+ @param a : "the allocator the outer was created with"
+ @param slot : "the Slot holding the outer; empty afterwards"
+*>
+macro void OuterHelper.release(self, Allocator a, Slot* slot)
+{
+    if (slot.is_empty()) return;
+    Outer* outer = inner::internal::must_from_slot(slot, Outer);
+    $assert $defined(outer.init) : "every outer the helper creates declares `fn void? Outer.init(&self, Allocator a)` — an empty body is fine";
+    $assert $defined(outer.finish) : "every outer the helper creates declares `fn void Outer.finish(&self, Allocator a)` — an empty body is fine";
+    outer.finish(a);
+    slot.take();
+    alloc::free(a, outer);
+}
+
 
 // --- The four crossings ------------------------------------------------------
 //
@@ -206,66 +242,5 @@ macro bool OuterHelper.linked(self, from)
     $endswitch
 }
 
-// --- Allocating and freeing --------------------------------------------------
-
-<*
- Allocates the outer, initializes it, stamps it, and fills the Slot.
-
- Four steps in this order: allocate zeroed, call your `init(a)` hook, stamp the inner, fill the Slot.
- `Outer` must declare `fn void? Outer.init(&self, Allocator a)` and `fn void Outer.finish(&self, Allocator a)`, and an empty body is fine — a type with neither to write declares both and leaves them empty.
- That is checked at compile time, here and in `release`, so a misspelled hook names your line instead of vanishing.
- If `init` fails the outer was never stamped, so a pointer that escaped a failed creation can never be mistaken for a live outer.
- On a hook failure the allocation is freed and the fault is propagated unchanged.
- On an allocation failure the Slot is untouched and the fault is returned.
-
- The toolkit reads and writes no field of your outer except the `Inner`.
- An outer that wants to keep its allocator stores this argument in its own field, under any name, in its own `init`.
-
- @param a : "the allocator; it is passed to your `init` hook and it is not stored"
- @param slot : "an empty Slot, filled on success"
-*>
-macro void? OuterHelper.create(self, Allocator a, Slot* slot)
-{
-    // [3tk: Part 9.2 rule 3]
-    mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is empty on entry");
-    Outer* outer = alloc::new_try(a, Outer)!;
-    $assert $defined(outer.init) : "every outer the helper creates declares `fn void? Outer.init(&self, Allocator a)` — an empty body is fine";
-    $assert $defined(outer.finish) : "every outer the helper creates declares `fn void Outer.finish(&self, Allocator a)` — an empty body is fine";
-    if (catch f = outer.init(a))
-    {
-        alloc::free(a, outer);
-        return f~;
-    }
-    inner::internal::stamp(outer);
-    slot.fill(inner::internal::to_inner(outer));
-}
-
-<*
- Calls your `finish(a)` hook, empties the Slot, and frees the outer.
-
- A no-op on an empty Slot, so a `defer` registered before the acquisition is safe.
- It returns `void`, so it needs no `!` in a `defer`, and `finish` returns `void` for the same reason: a fault raised there would reach no caller who could act on it.
- `finish` is not `destroy`, and the name is the warning — do not tear the outer down here. `release` frees it the moment your hook returns.
- Give up what the outer acquired and leave the memory alone.
- The same compile-time check as `create`: both hooks must be declared, and an empty body is fine.
-
- @param a : "the allocator the outer was created with"
- @param slot : "the Slot holding the outer; empty afterwards"
-*>
-macro void OuterHelper.release(self, Allocator a, Slot* slot)
-{
-    if (slot.is_empty()) return;
-    Outer* outer = inner::internal::must_from_slot(slot, Outer);
-    $assert $defined(outer.init) : "every outer the helper creates declares `fn void? Outer.init(&self, Allocator a)` — an empty body is fine";
-    $assert $defined(outer.finish) : "every outer the helper creates declares `fn void Outer.finish(&self, Allocator a)` — an empty body is fine";
-    outer.finish(a);
-    slot.take();
-    alloc::free(a, outer);
-}
-
-
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;
 import std::core::mem::alloc;

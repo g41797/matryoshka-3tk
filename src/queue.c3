@@ -1,17 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 g41797
 // SPDX-License-Identifier: MIT
 
-//==============================================================================
-// The intrusive queue, and a module of its own again. 3TK-63 merged it into
-// `mtk`; `3TK-pre-65` split it back out, because `c3c docgen` groups by module
-// and by nothing else, and one flat page of 59 declarations is not a page.
-//
-// `@guard_insert` is public and is not the user surface: a method cannot be
-// hidden. It sits alone in `module mtk::queue::internal;` at the foot of the
-// file, below the internal banner, and its block opens with
-// `For internal usage.` One declaration is still a module: 3TK-70 ruled that a
-// rule with an exception is a rule a later stage has to remember.
-//==============================================================================
 <*
  The intrusive queue and its walker.
 
@@ -48,8 +37,6 @@ struct InnerQueueIterator
     Inner* cur;
 }
 
-// --- Questions ----------------------------------------------------------------
-
 <*
  True if the queue holds nothing.
 *>
@@ -74,8 +61,6 @@ fn Inner* InnerQueueIterator.next(&self)
     if (n) self.cur = (n.points_to() == n) ? null : n.points_to();
     return n;
 }
-
-// --- Adding --------------------------------------------------------------------
 
 <*
  Adds at the back.
@@ -103,8 +88,6 @@ fn void InnerQueue.push_back_slot(&self, Slot* s)
     if (s.is_empty()) return;
     self.push_back(s.take());
 }
-
-// --- Removing ---------------------------------------------------------------------
 
 <*
  Takes the outer at the front.
@@ -144,8 +127,6 @@ fn InnerQueue InnerQueue.take(&self) @inline
     return out;
 }
 
-// --- Moving ------------------------------------------------------------------------
-
 <*
  Moves every outer of another queue onto the back of this one. O(1).
 
@@ -172,38 +153,15 @@ fn void InnerQueue.append_queue(&self, InnerQueue* other)
 }
 
 
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;
 
 
 //==============================================================================
-// For internal usage - everything below this line.
-//
-// The insert guard is public because C3 leaves no choice: `@private` and
-// `@local` are both ignored on a method declaration. `InnerQueue.push_back` and
-// `push_back_slot` are its only callers, and a caller outside this module is
-// maintaining a chain by hand instead of calling the surface.
-//
-// It is a module of its own so that it is a page of its own: `c3c docgen`
-// groups by module and by nothing else, and it publishes `@private` and
-// `@local` declarations as public. A submodule is the only way to keep an
-// internal declaration off the page a user reads.
+// For internal usage
 //==============================================================================
-<*
- The queue's internals. Not the user surface.
 
- One declaration: the insert guard, which `push_back` and `push_back_slot` call.
- A caller outside `mtk::queue` is maintaining a chain by hand instead of calling the surface.
-*>
 module mtk::queue::internal;
 
-<*
- For internal usage.
-*>
-// The insert guard. A null inner is a defect, and so is an outer already on any
-// chain; both are gone from a fast build.
 macro InnerQueue.@guard_insert(&self, Inner* inner)
 {
     mtk::@check(inner != null, "insert of a null inner");
@@ -213,7 +171,4 @@ macro InnerQueue.@guard_insert(&self, Inner* inner)
 }
 
 
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;

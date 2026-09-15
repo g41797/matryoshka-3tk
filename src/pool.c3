@@ -1,16 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 g41797
 // SPDX-License-Identifier: MIT
 
-//==============================================================================
-// The hooks, and a module of its own. 3TK-70.
-//
-// This is the one place in `src/` where the toolkit is the caller and you are
-// the implementer. Everything else on `mtk::pool`'s page is what you call, and
-// the charter below is a contract on YOUR code, which read as a digression on a
-// page about calling the pool. It is the subject of a page now.
-//
-// The section opens the file, the way `std::atomic::types` opens `atomic.c3`.
-//==============================================================================
 <*
  The hooks. You implement them; the pool calls them.
 
@@ -58,7 +48,6 @@ interface PoolHooks
      @param slot : "full on entry"
      @param extra : "an empty queue; outers added here are taken the same way, with the same checks"
     *>
-    // [3tk: Part 12.2, Part 12.4, Part 12.5]
     fn void on_put(usz in_pool, Slot* slot, InnerQueue* extra);
 
     <*
@@ -74,13 +63,9 @@ interface PoolHooks
 
      @param remaining : "everything the pool still held, flattened across every identity, by value. No order is promised"
     *>
-    // [3tk: Part 12.2]
     fn void on_close(InnerQueue remaining);
 }
 
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;
 
 
@@ -182,18 +167,14 @@ macro Pool* of(Inner* inner) => (Pool*)POOL.look(inner);
 *>
 fn Pool*? create(Allocator a, typeid[] tags, PoolHooks hooks)
 {
-    // [3tk: Part 11.7]
     mtk::@check(tags.len > 0, "the set of identities is not empty");
-    // [3tk: Part 12.1]
     mtk::@check(hooks != null, "a pool cannot exist without hooks");
 
-    // [3tk: Part 11.7]
     $if mtk::CHECKED:
         foreach (i, t : tags)
         {
             foreach (j, u : tags)
             {
-                // [3tk: Part 11.7]
                 if (i < j) mtk::@check(t != u, "the pool's set of identities has a duplicate");
             }
         }
@@ -248,7 +229,7 @@ fn void Pool.release(&pool)
     // This is a check and not a wait. A release that waited would block on
     // application code the port does not control. What it catches, it catches
     // on the schedule it happens to see.
-    // [3tk: Part 11.12]
+
     self._mu.lock();
     always_assert(self._closed && self._active == 0,
                   "releasing a pool that is not quiet");
@@ -287,7 +268,6 @@ fn void? Pool.get(&pool, typeid want, GetMode mode, Slot* slot)
 {
     _Pool* self = (_Pool*)pool;
 
-    // [3tk: Part 9.2 rule 3]
     mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is empty on entry");
 
     if (self.@closed_fast()) return mtk::CLOSED~;
@@ -299,7 +279,6 @@ fn void? Pool.get(&pool, typeid want, GetMode mode, Slot* slot)
 
     // Accepted. Raised here, and lowered under the mutex on every path out of
     // the call — including the one that leaves the mutex to run `on_get`.
-    // [3tk: Part 11.12]
     self._active++;
 
     PoolBucket* b = self.bucket_for(want);
@@ -325,10 +304,8 @@ fn void? Pool.get(&pool, typeid want, GetMode mode, Slot* slot)
         return mtk::NOT_AVAILABLE~;
     }
 
-    // [3tk: Part 12.4]
     usz in_pool = b.free.len();
 
-    // [3tk: Part 12.3, Part 15.2]
     self._mu.unlock();
     self._hooks.on_get(want, in_pool, slot);
 
@@ -337,13 +314,12 @@ fn void? Pool.get(&pool, typeid want, GetMode mode, Slot* slot)
     // call is still active while it runs, and the count is lowered under the
     // mutex like every other lowering. The mode taken here is the only one that
     // calls a hook; the three that return above pay nothing.
-    // [3tk: Part 11.12]
     self._mu.lock();
     self._active--;
     self._mu.unlock();
 
     if (slot.is_empty()) return mtk::NOT_CREATED~;
-    // [3tk: Part 12.2]
+
     mtk::@check(slot.peek().link.type == want, "the get hook returned an outer of a different identity");
 }
 
@@ -365,10 +341,8 @@ fn void? Pool.get_wait(&pool, typeid want, Slot* slot, Duration timeout)
 {
     _Pool* self = (_Pool*)pool;
 
-    // [3tk: Part 9.2 rule 3]
     mtk::@check(slot.is_empty(), "an acquisition asserts the Slot is empty on entry");
 
-    // [3tk: Part 2.5]
     Time deadline = time::now() + timeout;
 
     self._mu.lock();
@@ -385,19 +359,16 @@ fn void? Pool.get_wait(&pool, typeid want, Slot* slot, Duration timeout)
     // the head of the loop rather than replacing it: the loop's check is what a
     // woken waiter reads, and this one is what decides whether the call was
     // accepted at all.
-    // [3tk: Part 2.4, Part 11.12]
     if (self._closed) return mtk::CLOSED~;
 
     // Raised before the wait can release the mutex, and lowered with the mutex
     // held again. C3 runs deferred statements in reverse, so this one runs
     // before the unlock declared above it.
-    // [3tk: Part 11.12]
     self._active++;
     defer self._active--;
 
     while (true)
     {
-        // [3tk: Part 2.4]
         if (self._closed) return mtk::CLOSED~;
 
         // No `if (b)` guard: the check above made `b` non-null, and a
@@ -448,7 +419,7 @@ fn void Pool.put(&pool, Slot* slot)
     // Accepted, and raised before the mutex is opened for `on_put` below. This
     // is the site the whole mechanism exists for: `:423` re-takes a mutex that
     // a release breaking Rule 1 would already have destroyed and freed.
-    // [3tk: Part 11.12]
+
     self._active++;
 
     Inner* inner = slot.peek();
@@ -456,45 +427,37 @@ fn void Pool.put(&pool, Slot* slot)
     mtk::@check(b != null, "Pool.put of an identity the pool was not created with");
     if (!b) { self._active--; self._mu.unlock(); return; }
 
-    // [3tk: Part 12.4]
     usz in_pool = b.free.len();
 
-    // [3tk: Part 9.4]
     Slot mine;
     mine.fill(slot.take());
 
     InnerQueue extra;
 
-    // [3tk: Part 12.3]
     self._mu.unlock();
     self._hooks.on_put(in_pool, &mine, &extra);
     self._mu.lock();
 
-    // [3tk: Part 11.8, Part 12.2, Part 12.3]
     if (self._closed)
     {
         InnerQueue stragglers;
         if (mine.is_full()) stragglers.push_back(mine.take());
         stragglers.append_queue(&extra);
 
-        // [3tk: Part 12.3]
         self._mu.unlock();
         if (!stragglers.is_empty()) self._hooks.on_close(stragglers.take());
 
         // Lowered after the straggler hook, not before it. A count that stopped
         // at `on_put` would leave application code running with pool-derived
         // outers while a release saw zero.
-        // [3tk: Part 11.12]
         self._mu.lock();
         self._active--;
         self._mu.unlock();
         return;
     }
 
-    // [3tk: Part 12.2]
     self.take_back(&mine);
 
-    // [3tk: Part 12.5]
     while (Inner* e = extra.pop_front()) self.take_back_inner(e);
 
     self._cv.broadcast();
@@ -525,7 +488,7 @@ fn void Pool.close(&pool)
     // Active for the whole of the call, hook included. `Pool.close` is the one
     // close in the toolkit that runs application code after publishing CLOSED,
     // and the port does not bound how long that hook takes.
-    // [3tk: Part 11.12]
+
     self._active++;
 
     // One flat queue, and no order is promised: the close hook never sees
@@ -535,10 +498,9 @@ fn void Pool.close(&pool)
 
     self._mu.unlock();
 
-    // [3tk: Part 12.2]
     self._hooks.on_close(remaining.take());
 
-    // [3tk: Part 11.12]
+
     self._mu.lock();
     self._active--;
     self._mu.unlock();
@@ -581,9 +543,6 @@ fn usz Pool.count_of(&pool, typeid t)
 }
 
 
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;
 import std::thread;
 import std::time;
@@ -592,81 +551,27 @@ import std::atomic::types;
 
 
 //==============================================================================
-// For internal usage - everything below this line.
-//
-// `PoolBucket`, `_Pool` and its methods are public, and the reason is now the
-// docs site rather than the compiler. C3 ignores `@private` and `@local` on a
-// method declaration, so the methods never could be hidden; 3TK-70 gave the
-// whole of the real pool a module of its own instead, because `c3c docgen`
-// groups by module and by nothing else and publishes a `@private` declaration
-// as public. A page of its own is the only thing that keeps it off the page a
-// user reads.
-//
-// `_Pool` LOST ITS `@private` here, and it had to: `mtk::pool` casts to
-// `_Pool*` on the first line of every public method, and a `@private` in a
-// submodule is not visible to its parent. The owner's ruling is that the intent
-// is visibility and not preventing use, so where an attribute and the split
-// disagree the split wins.
-//
-// `InnerStack` KEEPS ITS `@local`, because nothing obstructs it: the stack and
-// every caller of it are in this one section. The only enforcement there is is
-// still the grep in `run-builds.sh` that cuts at its banner.
+// For internal usage
 //==============================================================================
-<*
- The real pool, its buckets and its stack. Not the user surface.
-
- `Pool` is an empty typedef and this is what is behind it.
- Every public method of `mtk::pool` casts to `_Pool*` on its first line and works on this from there.
- The intrusive stack is here too: it is the storage container, private to the pool, and no 3tk signature passes one.
- It is a module of its own so that it is a page of its own.
-*>
 module mtk::pool::internal;
 
-<*
- For internal usage.
-*>
-// The free outers of one identity, as an `InnerStack`. A stack and not a queue,
-// and the reason is defect surfacing: the outer just given back is on top, so a
-// caller still writing through a stale pointer collides with the next owner at
-// once instead of much later. No order is promised.
+
 struct PoolBucket
 {
     typeid     tag;
     InnerStack free;
 }
 
-<*
- For internal usage.
-*>
-// Reads the closed flag before taking the lock. A hint: every caller that gets
-// false re-reads the flag under the lock. `is_closed` is the one to call.
 macro bool _Pool.@closed_fast(&self) => self._closed_fast.load(ACQUIRE);
 
-<*
- For internal usage.
-*>
-// The bucket for an identity, or null. Called under the lock.
+
 fn PoolBucket* _Pool.bucket_for(&self, typeid t)
 {
     foreach (&b : self._buckets) if (b.tag == t) return b;
     return null;
 }
 
-<*
- For internal usage.
-*>
-// The state change, with the mutex already held, and nothing else.
-// The only writer of `_closed`. It never takes or releases the mutex, calls no
-// hook, destroys nothing and frees nothing. Calling it twice is safe, and the
-// second call transfers nothing.
-//
-// The fast-path store is RELEASE and pairs with the ACQUIRE load in
-// `@closed_fast`: a thread that reads the flag set has also seen every write
-// made before the store, so the fast path can refuse without the mutex.
-//
-// `release` does not call it. Part 11.12 requires the pool to be closed before
-// it is released, and a release that closed first would pass its own check —
-// so the check comes first and nothing else runs when it fails.
+
 fn void _Pool._close(&self, InnerQueue* out)
 {
     if (self._closed) return;
@@ -682,19 +587,14 @@ fn void _Pool._close(&self, InnerQueue* out)
     self._cv.broadcast();
 }
 
-<*
- For internal usage.
-*>
-// Stores one outer the hook decided to keep. Called under the lock.
+
 fn void _Pool.take_back(&self, Slot* s)
 {
     if (s.is_empty()) return;
     self.take_back_inner(s.take());
 }
 
-<*
- For internal usage.
-*>
+
 fn void _Pool.take_back_inner(&self, Inner* inner)
 {
     PoolBucket* b = self.bucket_for(inner.link.type);
@@ -703,11 +603,6 @@ fn void _Pool.take_back_inner(&self, Inner* inner)
     b.free.push(inner);
 }
 
-<*
- For internal usage.
-*>
-// The real fields, behind the opaque `Pool`. Every public method casts on its
-// first line and works on this from there.
 struct _Pool
 {
     Inner inner;
@@ -726,62 +621,24 @@ struct _Pool
 }
 
 
-//==============================================================================
-// The intrusive stack — private to the pool. No module line: this is
-// `module mtk::pool::internal` still. `stack.c3` was deleted by 3TK-62,
-// reversing 3TK-45, and `InnerStack` stopped being a name a user can reach.
-//==============================================================================
-
-<*
- For internal usage.
-*>
-// The intrusive stack, last-in first-out: the storage container. Where the
-// queue carries outers across, the stack holds them still. The pool keeps one
-// per identity, it is the only stack 3tk owns, and no 3tk signature passes one
-// — the four that take a container take an `InnerQueue*`. Four operations: no
-// walker and no splice. The order is not promised, no caller is entitled to
-// which outer comes back, and nothing in the stack can fail. Every chain ends
-// at an inner pointing at itself, never at null. The count is kept, so `len` is
-// O(1); there is no tail, so flattening the stack is O(n).
-struct InnerStack  @local
+struct InnerStack
 {
     Inner* top;
     usz    count;
 }
 
-<*
- For internal usage.
-*>
-// The insert guard. A null inner is a defect, and so is an outer already on any
-// chain; both are gone from a fast build.
 macro InnerStack.@guard_insert(&self, Inner* inner)
 {
     mtk::@check(inner != null, "insert of a null inner");
-    // [3tk: Part 8.7]
     mtk::@check(!inner::internal::is_linked(inner), "the outer is already on a chain");
     inner::internal::check_stamped(inner, "the outer was never stamped: make it with `create`, or call `stamp` once");
 }
 
-// --- Questions ----------------------------------------------------------------
 
-<*
- For internal usage.
-*>
-// True if the stack holds nothing.
 fn bool InnerStack.is_empty(&self) @inline => self.count == 0;
 
-<*
- For internal usage.
-*>
-// How many outers the stack holds. O(1).
 fn usz InnerStack.len(&self) @inline => self.count;
 
-// --- Adding --------------------------------------------------------------------
-
-<*
- For internal usage.
-*>
-// Adds on top. There is no Slot-shaped insert.
 fn void InnerStack.push(&self, Inner* inner)
 {
     self.@guard_insert(inner);
@@ -790,13 +647,6 @@ fn void InnerStack.push(&self, Inner* inner)
     self.count++;
 }
 
-// --- Removing ---------------------------------------------------------------------
-
-<*
- For internal usage.
-*>
-// Takes the outer on top. Null on an empty stack, and the returned outer's
-// chain link is cleared.
 fn Inner* InnerStack.pop(&self)
 {
     Inner* inner = self.top;
@@ -808,9 +658,6 @@ fn Inner* InnerStack.pop(&self)
 }
 
 
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;
 import std::thread;
 import std::time;

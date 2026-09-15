@@ -104,7 +104,7 @@ fn void Mailbox.release(&mbox)
     // This is a check and not a wait. A release that waited would block on
     // application code the port does not control. What it catches, it catches
     // on the schedule it happens to see.
-    // [3tk: Part 11.12]
+
     self._mu.lock();
     always_assert(self._closed && self._active == 0,
                   "releasing a mailbox that is not quiet");
@@ -358,9 +358,6 @@ fn usz Mailbox.len(&mbox)
     return self._oob.len() + self._regular.len();
 }
 
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;
 import std::thread;
 import std::time;
@@ -369,76 +366,30 @@ import std::atomic::types;
 
 
 //==============================================================================
-// For internal usage - everything below this line.
-//
-// `_Mbox` and its methods are public, and the reason is now the docs site
-// rather than the compiler. C3 ignores `@private` and `@local` on a method
-// declaration, so the methods never could be hidden; 3TK-70 gave the whole of
-// the real mailbox a module of its own instead, because `c3c docgen` groups by
-// module and by nothing else and publishes a `@private` declaration as public.
-// A page of its own is the only thing that keeps it off the page a user reads.
-//
-// `_Mbox` LOST ITS `@private` here, and it had to: `mtk::mailbox` casts to
-// `_Mbox*` on the first line of every public method, and a `@private` in a
-// submodule is not visible to its parent. The owner's ruling is that the intent
-// is visibility and not preventing use, so where an attribute and the split
-// disagree the split wins.
+// For internal usage.
 //==============================================================================
-<*
- The real mailbox, behind the opaque `Mailbox`. Not the user surface.
-
- `Mailbox` is an empty typedef and this is what is behind it.
- Every public method of `mtk::mailbox` casts to `_Mbox*` on its first line and works on this from there.
- It is a module of its own so that it is a page of its own.
-*>
 module mtk::mailbox::internal;
 
-<*
- For internal usage.
-*>
-// Reads the closed flag before taking the lock. A hint: every caller that gets
-// false re-reads the flag under the lock. `is_closed` is the one to call.
+
 macro bool _Mbox.@closed_fast(&self) => self._closed_fast.load(ACQUIRE);
 
-<*
- For internal usage.
-*>
-// Puts the outer on the ordinary queue, or ahead of every ordinary outer.
-// O(1) in every build mode.
-fn void _Mbox.enqueue(&self, Inner* inner, bool oob)
+
+fn void _Mbox.enqueue(&self, Inner* inner, bool oob) @inline
 {
     if (oob) { self._oob.push_back(inner); } else { self._regular.push_back(inner); }
 }
 
-<*
- For internal usage.
-*>
-// Takes the next outer.
-// Out-of-band first, then ordinary, first-in first-out within each.
-fn Inner* _Mbox.dequeue(&self)
+fn Inner* _Mbox.dequeue(&self)  @inline
 {
     Inner* inner = self._oob.pop_front();
     return inner ? inner : self._regular.pop_front();
 }
 
-<*
- For internal usage.
-*>
-// True if anything is queued at all. Reads both queues.
+
 fn bool _Mbox.has_queued(&self) @inline
     => !self._oob.is_empty() || !self._regular.is_empty();
 
-<*
- For internal usage.
-*>
-// The state change, with the mutex already held, and nothing else.
-// The only writer of `_closed`. It never takes or releases the mutex, calls no
-// hook, destroys nothing and frees nothing. Calling it twice is safe, and the
-// second call transfers nothing.
-//
-// The fast-path store is RELEASE and pairs with the ACQUIRE load in
-// `@closed_fast`: a thread that reads the flag set has also seen every write
-// made before the store, so the fast path can refuse without the mutex.
+
 fn void _Mbox._close(&self, InnerQueue* out)
 {
     if (self._closed) return;
@@ -452,9 +403,7 @@ fn void _Mbox._close(&self, InnerQueue* out)
     self._cv.broadcast();
 }
 
-<*
- For internal usage.
-*>
+
 fn void? _Mbox.send_at(&self, Slot* slot, bool oob, usz limit)
 {
     mtk::@check(slot.is_full(), "Mailbox.send from an empty Slot");
@@ -465,13 +414,12 @@ fn void? _Mbox.send_at(&self, Slot* slot, bool oob, usz limit)
     self._mu.lock();
     defer self._mu.unlock();
 
-    // [3tk: Part 15.4]
     if (self._closed) return mtk::CLOSED~;
 
     self._active++;
     defer self._active--;
 
-    if ((!oob) && (limit > 0))
+    if ((!oob) && (limit > 0))  // "limited" send extension
     {
         typeid tid = slot.peek().outer_tid();
         InnerQueue* target = &self._regular;
@@ -492,12 +440,6 @@ fn void? _Mbox.send_at(&self, Slot* slot, bool oob, usz limit)
     self._cv.signal();
 }
 
-
-<*
- For internal usage.
-*>
-// The real fields, behind the opaque `Mailbox`. Every public method casts on
-// its first line and works on this from there.
 struct _Mbox
 {
     Inner inner;
@@ -518,9 +460,6 @@ struct _Mbox
 }
 
 
-//----------------------
-// Little-endian imports
-//----------------------
 import mtk;
 import std::thread;
 import std::time;
