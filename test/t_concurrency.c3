@@ -275,8 +275,8 @@ fn int short_waiter(void* arg)
 
  Part 12.3 MUST forces `Pool.put` to release the mutex across `on_put`, so a
  `Pool.close` can run to completion inside that window: it sets both flags,
- drains every bucket, and calls `on_close` — all before `put` relocks. A `put`
- that then stores what its hook kept pushes into a closed and already-drained
+ empties every bucket, and calls `on_close` — all before `put` relocks. A `put`
+ that then stores what its hook kept pushes into a closed and already-emptied
  pool, and the outer is with NOBODY. The caller's Slot was cleared before the
  hook ran, so Part 9.4 tells the caller truthfully that the pool has it; the
  close hook already ran, so the hook never sees it. Nothing releases it.

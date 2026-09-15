@@ -10,7 +10,7 @@
  - Checks that `self.live` is one.
  - Releases the remainder in `on_close`, through the same struct.
 *>
-module shc::h_pool::the_hook_object_is_the_context;
+module shc::h_pool::the_hooks_struct_is_the_context;
 import mtk;
 import mtk::pool;
 import shc::outers;

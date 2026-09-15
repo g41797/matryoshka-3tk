@@ -1,20 +1,17 @@
 <*
- Cleanup idioms, catalog entries 5 through 10.
+ Freeing an outer exactly once, on every path out of a function.
 
  An outer is always in one place: with the caller, in a `Slot`, on a queue, or inside a mailbox or pool.
- These examples free it exactly once on every path out of a function, fault paths included.
+ A fault path needs the same care as the normal path.
+ The `defer` that frees an outer comes before the call that fills its `Slot`.
+ A release on an empty `Slot` does nothing.
+ The `Slot` mechanics these build on are in `shc::a_slot_and_transfer`.
 
- - `005-null_safe_cleanup.c3` — a cleanup is safe on an empty `Slot`.
- - `006-defer_put_early.c3` — the `defer` comes before the `get`.
- - `007-defer_release_early.c3` — the same shape, with a release instead of a `put`.
- - `008-defer_for_received_outer.c3` — the receiver releases what it receives.
- - `009-refused_put_fallback.c3` — a refused transfer leaves the outer with the caller.
- - `010-no_raw_allocator_call.c3` — an outer is allocated and freed through the helper.
-
- The catalog lists these under "Slot and transfer idioms".
- They are a separate group here because cleanup is its own subject.
- The `Slot` mechanics they build on are in `shc::a_slot_and_transfer`.
-
- This module holds no code of its own.
+ - `shc::b_cleanup::null_safe_cleanup` — a cleanup is safe on an empty `Slot`.
+ - `shc::b_cleanup::defer_put_early` — the `defer` comes before the `get`.
+ - `shc::b_cleanup::defer_release_early` — the same shape, with a release instead of a `put`.
+ - `shc::b_cleanup::defer_for_received_outer` — the receiver releases what it receives.
+ - `shc::b_cleanup::refused_put_fallback` — a refused transfer leaves the outer with the caller.
+ - `shc::b_cleanup::no_raw_allocator_call` — an outer is allocated and freed through the helper.
 *>
 module shc::b_cleanup;

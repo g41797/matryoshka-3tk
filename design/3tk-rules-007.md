@@ -30,7 +30,7 @@ declares both hooks — and rewrote Rule 4's last paragraph, whose premise Rule 
 deletes. `004` is by `3TK-72`, which added the document-versioning rule. `003` is by
 `3TK-71`, which added Rule 6 — the test trees allocate their outers. `006`, `005`, `004`,
 `003`, `002` and `001` are in this repo's `backup/`, which is transient. Normative, like
-[3tk-example-rules-006.md](3tk-example-rules-006.md). A rule is changed here and
+[3tk-example-rules-007.md](3tk-example-rules-007.md). A rule is changed here and
 nowhere else, and where this file and a descriptive document disagree, this file
 wins.
 
@@ -47,7 +47,7 @@ a rule binds stages that never agreed to it; a rule filed as a decision is lost
 when the plan is spent.
 
 **It does not bind `3tk/examples/`**, which
-[3tk-example-rules-006.md](3tk-example-rules-006.md) already governs. Whether
+[3tk-example-rules-007.md](3tk-example-rules-007.md) already governs. Whether
 the two ever merge is not decided here.
 
 **It describes 3tk and rules for 3tk only.** It recommends nothing to dtk, otk
@@ -350,7 +350,7 @@ builds, so a `create` without its `release` fails the build rather than passing
 quietly.
 
 **It does not bind `examples/`**, which
-[3tk-example-rules-006.md](3tk-example-rules-006.md) governs with an absolute
+[3tk-example-rules-007.md](3tk-example-rules-007.md) governs with an absolute
 allocation MUST and no exemption at all. The two rules differ in kind — absolute
 there, defeasible-by-subject here — and neither is written in terms of the
 other.
@@ -479,7 +479,7 @@ enforcement.**
 
 **And `test/` keeps the five part-1 methods, which is a promise this file must
 not let a later stage break.**
-[3tk-example-rules-006.md](3tk-example-rules-006.md) allows an example to drop
+[3tk-example-rules-007.md](3tk-example-rules-007.md) allows an example to drop
 `Slot.to`, `Slot.must`, `Slot.move`, `Inner.to` and `Inner.as` **on the ground
 that the tests keep callers for all five.** Measured 2026-09-10: **all ten
 remaining callers are in `test/t_identity.c3`** — `.to(` 6, `.must(` 1, `.move(`

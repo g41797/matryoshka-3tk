@@ -1,21 +1,16 @@
 <*
- Crossing the border, catalog entries 11 through 16.
+ Giving up an outer's type, and recovering it.
 
  The border lies between the `Inner` the toolkit keeps and the outer the caller defines.
- These examples give up a type on the way in and recover it on the way out.
-
- - `011-embedding_the_inner.c3` — the field that makes a struct an outer.
- - `012-type_crossing.c3` — one crossing, written three ways.
- - `013-recovering_the_type.c3` — the checked and the asserting crossings.
- - `015-walk_a_batch.c3` — reading a queue without consuming it.
- - `016-reach_into_a_full_slot.c3` — looking into a `Slot` without taking.
-
- Entry 14, "Stack outers are illegal", is a prohibition with no code of its own.
- It is why every outer in this tree is allocated.
-
- `012` and `013` are the only examples allowed to name a crossing below the helper.
+ An outer is never on the stack.
+ Its address is computed from its `Inner` at every crossing, and a stack address goes stale.
+ Only `shc::c_crossing::type_crossing` and `shc::c_crossing::recovering_the_type` name a crossing below the helper.
  Every other example goes through `OuterHelper`.
 
- This module holds no code of its own.
+ - `shc::c_crossing::embedding_the_inner` — the field that makes a struct an outer.
+ - `shc::c_crossing::type_crossing` — one crossing, written three ways.
+ - `shc::c_crossing::recovering_the_type` — the checked and the asserting crossings.
+ - `shc::c_crossing::walk_a_batch` — reading a queue without consuming it.
+ - `shc::c_crossing::reach_into_a_full_slot` — looking into a `Slot` without taking.
 *>
 module shc::c_crossing;

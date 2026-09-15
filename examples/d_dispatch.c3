@@ -1,18 +1,16 @@
 <*
- Dispatch, catalog entries 17 through 20.
+ From an outer's identity to the code that handles it.
 
  An outer arrives with its identity and nothing else.
- These four shapes get from that identity to the code that handles it.
- They are ordered by how many identities make each one worth writing.
+ An identity names a type, not an instance.
+ A dispatch chain always ends with a final branch.
+ For a closed set of identities, that branch is `unreachable`.
+ For an open set, it counts, reports, or returns a fault.
+ It cannot release an outer of an unknown identity.
 
- - `017-dispatch_outer_first.c3` — cross first, then branch on the typed pointer.
- - `018-dispatch_identity_first.c3` — branch on the identity, then cross.
- - `019-dispatch_switch.c3` — a `switch` over identities.
- - `020-dispatch_table.c3` — a table of handlers, looked up by identity.
-
- Entry 21, the last branch of a chain, is a rule with no code of its own.
- Entry 22, an identity names a type and not an instance, is a rule with no code of its own.
-
- This module holds no code of its own.
+ - `shc::d_dispatch::dispatch_outer_first` — cross first, then branch on the typed pointer.
+ - `shc::d_dispatch::dispatch_identity_first` — branch on the identity, then cross.
+ - `shc::d_dispatch::dispatch_switch` — a `switch` over identities.
+ - `shc::d_dispatch::dispatch_table` — a table of handlers, looked up by identity.
 *>
 module shc::d_dispatch;

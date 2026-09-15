@@ -186,7 +186,7 @@ fn void send_one(Mailbox* mb, Msg* m, bool oob)
 <*
  Part 11.3: the anchor is cleared when the last out-of-band outer is taken.
 
- Drain the out-of-band run, then send another one. It must go to the front
+ Receive the whole out-of-band run, then send another one. It must go to the front
  again — if the anchor were left dangling, the new outer would be inserted after
  an outer that is no longer in the queue.
 *>
@@ -206,7 +206,7 @@ fn void the_anchor_is_cleared() @test
     if (catch mb.poll(&r)) { always_assert(false, "poll failed"); }
     always_assert(MSG.take(&r).id == 0, "the out-of-band outer did not come first");
 
-    // the out-of-band run is drained; the anchor must be gone
+    // the out-of-band run is received; the anchor must be gone
     send_one(mb, ms.at(2), true);
     if (catch mb.poll(&r)) { always_assert(false, "poll failed"); }
     always_assert(MSG.take(&r).id == 2, "the new out-of-band outer did not go to the front");
@@ -405,7 +405,7 @@ fn void a_closed_mailbox_is_empty() @test
     InnerQueue left;
     mb.close(&left);
 
-    // invariant 34: the close is the only drain, and it drained everything
+    // invariant 34: only the close empties the mailbox, and it returned everything
     always_assert(left.len() == 3, "the close did not hand back all three");
     always_assert(mb.len() == 0, "a closed mailbox still holds outers");
 
@@ -588,21 +588,21 @@ fn void send_limit_is_per_typeid() @test
     if (catch mb.send(&sj, 2)) { always_assert(false, "a different typeid was blocked by another type's limit"); }
     always_assert(sj.is_empty(), "the Job send did not go through");
 
-    // drain: two Msg, one Job, then release each by its own type, plus the
+    // take back: two Msg, one Job, then release each by its own type, plus the
     // Msg still held by the refused s2
     InnerQueue left;
     mb.close(&left);
-    usz drained = 0;
+    usz returned = 0;
     while (Inner* inner = left.pop_front())
     {
-        drained++;
+        returned++;
         Slot out;
         out.fill(inner);
         if (Msg* m = MSG.look(inner)) { MSG.release(mem, &out); }
         else if (Job* j = JOB.look(inner)) { JOB.release(mem, &out); }
         else { always_assert(false, "an unexpected type came back from the mailbox"); }
     }
-    always_assert(drained == 3, "the mailbox did not hold the three accepted sends");
+    always_assert(returned == 3, "the mailbox did not hold the three accepted sends");
 
     MSG.release(mem, &s2);
 }

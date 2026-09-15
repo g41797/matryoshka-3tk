@@ -39,7 +39,7 @@ fn void CountingHooks.on_close(&self, InnerQueue remaining) @dynamic
     }
 }
 
-fn usz drain(Allocator a, Pool* p)
+fn usz take_all_available(Allocator a, Pool* p)
 {
     usz taken;
     while (true)
@@ -71,7 +71,7 @@ fn void? drain_stops_at_not_available(Allocator a)
     }
     int seeded = hooks.created;
 
-    usz taken = drain(a, p);
-    shc::helpers::expect(AVAILABLE_ONLY_FAILED, taken == 2, "both kept outers must be drained")!;
+    usz taken = take_all_available(a, p);
+    shc::helpers::expect(AVAILABLE_ONLY_FAILED, taken == 2, "both pooled outers must be taken")!;
     shc::helpers::expect(AVAILABLE_ONLY_FAILED, hooks.created == seeded, "the hook must not run on this path")!;
 }

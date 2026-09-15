@@ -1,5 +1,5 @@
 <*
- A `switch` over a `typeid` is a dispatch shape ztk cannot write.
+ A `switch` over a `typeid` dispatches on identity, because a `typeid` is known at compile time.
 
  - Creates one outer of each identity in turn.
  - Switches on its identity and updates a field in the matching case.

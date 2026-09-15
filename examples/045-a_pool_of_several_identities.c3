@@ -1,7 +1,7 @@
 <*
  One set of hooks, and a separate free list per identity.
 
- - Reuses `CreateByIdentityHooks` from `018`, over the same three identities.
+ - Reuses `CreateByIdentityHooks` from `shc::d_dispatch::dispatch_identity_first`, over the same three identities.
  - Gets and puts back one outer of each identity.
  - Checks that each identity's free list has one outer.
 *>

@@ -47,5 +47,5 @@ fn void? walk_a_received_batch(Allocator a)
         s.fill(inner);
         HOLDER.release(a, &s);
     }
-    shc::helpers::expect(WALK_A_BATCH_FAILED, batch.is_empty(), "pop_front should have drained the queue")!;
+    shc::helpers::expect(WALK_A_BATCH_FAILED, batch.is_empty(), "pop_front should have emptied the queue")!;
 }

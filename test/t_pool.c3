@@ -615,7 +615,7 @@ fn void a_closed_pool_is_empty() @test
     TestHooks h;
     Pool* p = new_pool(&h);
 
-    // three outers in the pool, so the close has something real to drain
+    // three outers in the pool, so the close has something real to empty
     for (usz i = 0; i < 3; i++)
     {
         Slot s;
@@ -628,7 +628,7 @@ fn void a_closed_pool_is_empty() @test
 
     // invariant 34: nothing is left behind
     always_assert(p.count_of(Holder::typeid) == 0, "a closed pool still holds outers");
-    always_assert(h.closed_with.load() == 3, "the drain did not hand over everything");
+    always_assert(h.closed_with.load() == 3, "the close did not give back everything");
 
     // and so the outcome is CLOSED rather than one of the three it used to hold
     Slot s;
@@ -711,7 +711,7 @@ fn void the_pool_closed_then_idle_then_freed() @test
  it can be freed.
 
  The pool's close gives nothing back to the caller, so unlike the mailbox's
- shape there is no queue to drain here. What the caller owes is the join.
+ shape there is no queue to empty here. What the caller owes is the join.
 *>
 fn void the_pool_close_then_join_then_release() @test
 {

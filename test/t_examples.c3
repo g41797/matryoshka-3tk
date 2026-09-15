@@ -233,9 +233,9 @@ fn void test_example_seeding_a_fixed_size_pool() @test
     if (catch f = shc::h_pool::seeding_a_fixed_size_pool::seed_caps_the_pool(mem)) always_assert(false, "seeding_a_fixed_size_pool example failed");
 }
 
-fn void test_example_the_hook_object_is_the_context() @test
+fn void test_example_the_hooks_struct_is_the_context() @test
 {
-    if (catch f = shc::h_pool::the_hook_object_is_the_context::no_cast_needed(mem)) always_assert(false, "the_hook_object_is_the_context example failed");
+    if (catch f = shc::h_pool::the_hooks_struct_is_the_context::no_cast_needed(mem)) always_assert(false, "the_hooks_struct_is_the_context example failed");
 }
 
 fn void test_example_a_pool_of_several_identities() @test

@@ -1,15 +1,12 @@
 <*
- Topology patterns, catalog entries 33 through 36.
+ Several mailboxes and threads, arranged.
 
- Each one combines the mailbox calls in `shc::f_mailbox`.
+ Each shape combines the mailbox calls in `shc::f_mailbox`.
  None adds a new mechanism.
- They differ only in how mailboxes and threads are arranged.
 
- - `033-request_response.c3` — one side asks, the other answers.
- - `034-pipeline.c3` — each stage receives, transforms and sends on.
- - `035-fan_in.c3` — many senders, one mailbox.
- - `036-fan_out.c3` — one mailbox, many workers receiving from it.
-
- This module holds no code of its own.
+ - `shc::g_topology::request_response` — one side asks, the other answers.
+ - `shc::g_topology::pipeline` — each stage receives, transforms and sends on.
+ - `shc::g_topology::fan_in` — many senders, one mailbox.
+ - `shc::g_topology::fan_out` — one mailbox, many workers receiving from it.
 *>
 module shc::g_topology;

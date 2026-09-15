@@ -1,21 +1,19 @@
 <*
- Pool patterns, catalog entries 37 through 45.
+ Keeping outers, and giving them back.
 
  The pool keeps outers the caller is finished with and gives them back on `get`.
- It has no policy of its own.
+ The pool has no policy of its own, so a pool cannot exist without hooks.
  When nothing is pooled, the caller's mode and the hooks decide what happens.
+ A hook runs outside the pool's lock, and several hooks may run at once.
+ A hook never calls back into the pool.
+ When the pool closes, `on_close` gets every pooled outer.
+ `on_close` may be called more than once.
 
- - `037-available_or_new.c3` — reuse if possible, otherwise call `on_get`.
- - `038-new_only.c3` — always call `on_get`.
- - `039-available_only.c3` — never call `on_get`.
- - `040-seeding_a_fixed_size_pool.c3` — hooks that stop creating.
- - `042-the_hook_object_is_the_context.c3` — the hooks carry their own state.
- - `045-a_pool_of_several_identities.c3` — one pool, one free list per identity.
-
- Entry 41, the pool has no policy, has no code of its own.
- Entry 43, a hook runs outside the lock, has no code of its own.
- Entry 44, the `on_close` hook, has no code of its own.
-
- This module holds no code of its own.
+ - `shc::h_pool::available_or_new` — reuse if possible, otherwise call `on_get`.
+ - `shc::h_pool::new_only` — always call `on_get`.
+ - `shc::h_pool::available_only` — never call `on_get`.
+ - `shc::h_pool::seeding_a_fixed_size_pool` — hooks that stop creating.
+ - `shc::h_pool::the_hooks_struct_is_the_context` — the hooks carry their own state.
+ - `shc::h_pool::a_pool_of_several_identities` — one pool, one free list per identity.
 *>
 module shc::h_pool;

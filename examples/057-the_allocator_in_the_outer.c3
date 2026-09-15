@@ -3,7 +3,7 @@
 
  The toolkit never stores one.
  `release` takes the allocator as an argument.
- Nothing in 3tk reads the stored field.
+ Nothing in the toolkit reads the stored field.
 
  - Creates a `Holder`, whose `init` stores the allocator.
  - Checks that the `Holder` kept the allocator.
