@@ -4,9 +4,10 @@
 <*
  The intrusive queue and its walker.
 
- One type to carry outers from one place to another, and one to walk what it holds.
+ One type carries outers from one place to another.
+ One walks what it holds.
  It is a module of its own so that it is a page of its own.
- A user reaches it through `import mtk;` and writes `InnerQueue` unqualified, as before.
+ A user reaches it through `import mtk;` and writes `InnerQueue` unqualified.
 *>
 module mtk::queue;
 
@@ -14,7 +15,7 @@ module mtk::queue;
  The intrusive queue. First-in first-out.
 
  The transfer container.
- Nothing here allocates, and every operation is O(1).
+ Nothing here allocates. Every operation is O(1).
  Every chain ends at an inner pointing at itself, never at null.
  Nothing in the queue can fail.
  The count is kept, so `len` is O(1).
@@ -92,7 +93,7 @@ fn void InnerQueue.push_back_slot(&self, Slot* s)
 <*
  Takes the outer at the front.
 
- Null on an empty queue, which is an answer and not a fault.
+ Null on an empty queue. That is an answer, not a fault.
  The returned outer's chain link is cleared.
 *>
 fn Inner* InnerQueue.pop_front(&self)

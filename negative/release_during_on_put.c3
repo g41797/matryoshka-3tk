@@ -1,5 +1,5 @@
 <*
- Part 11.12 MUST — closed is not quiet, at the pool's worst site. **Tier 1.**
+ Part 11.12 MUST — closed does not mean idle, at the pool's worst site. **Tier 1.**
 
  Part 12.3 forbids holding the mutex across a call into application code, so
  `Pool.put` opens it around `on_put`. A release that runs in that window
@@ -84,7 +84,7 @@ fn int main()
 	p.close(); // CLOSED, and the put is still in its hook
 	hooks.go.store(1, RELEASE);
 
-	p.release(); // <-- the violation: closed, not quiet
+	p.release(); // <-- the violation: closed, with a call still running on it
 
 	io::printn("SOFTENED: a pool was released while a put was inside on_put");
 	t.join()!!;

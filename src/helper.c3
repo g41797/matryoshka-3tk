@@ -6,7 +6,8 @@
 
  `alias MSG = helper::OF{Msg};` — and that is the whole ceremony.
  Nine members: four crossings, `inner`, `stamp`, `linked`, `create` and `release`.
- It is a module of its own so that it is a page of its own, and so that nothing else in the core reads as parameterized by `Outer`.
+ It is a module of its own so that it is a page of its own.
+ It also keeps `Outer` out of the rest of the core: nothing else reads as parameterized.
 
  EVERY OUTER THIS HELPER CREATES DECLARES TWO HOOKS, and the helper is where they run.
  `fn void? Outer.init(&self, Allocator a)` is called by `create`, after the allocation and before the stamp.
@@ -14,22 +15,28 @@
  Neither is optional and AN EMPTY BODY IS FINE — that is how a type says it has nothing to do.
 
  Why you must write two methods that may do nothing.
- A per-type fact with no default should be stated rather than inferred from absence, and absence was the ambiguity: no `init` used to mean either this type needs none or you spelled the name wrong, and nothing could tell the two apart.
- The hooks are found on the type by name, at compile time, so a wrong name used to make the branch vanish silently.
- Requiring the declaration is what makes the misspelling loud, and `initialize` or `deinit` where `init` belongs is now a compile error naming your line.
+ A per-type fact with no default is stated, not inferred from absence.
+ Absence was the ambiguity. No `init` meant one of two things: this type needs none, or you spelled the name wrong.
+ Nothing could tell the two apart.
+ The hooks are found on the type by name, at compile time. A wrong name used to make the branch vanish silently.
+ The required declaration makes the misspelling loud.
+ `initialize` or `deinit` where `init` belongs is now a compile error naming your line.
  (`Init` is not among the near misses: C3 refuses a method name that begins with a capital.)
 
  Nothing is registered, and there is no interface to implement.
  A hook with the wrong signature or the wrong return type is loud as well: the branch compiles and then fails.
- `finish` returns plain `void`, so it cannot fail — `release` returns `void` deliberately, and a fault no caller can act on is not worth declaring.
+ `finish` returns plain `void`, so it cannot fail.
+ `release` also returns plain `void`. A fault no caller can act on is not worth declaring.
 
  THE CONTAINERS ARE OUTSIDE THIS.
- `Mailbox` and `Pool` bind the helper for crossing and never call `create`: they allocate themselves, because they hold a mutex and a condition variable whose teardown order is the whole of their release.
- The rule binds every outer the helper creates, and an outer bound only for crossing is not making `create`'s contract.
+ `Mailbox` and `Pool` bind the helper for crossing. They never call `create`.
+ They allocate themselves. Each holds a mutex and a condition variable, and their teardown order is the whole of `release`.
+ The two-hook rule binds every outer the helper creates.
+ An outer bound only for crossing makes no `create` contract.
 
- The pool's hooks are a different shape and the difference is worth one sentence, because both are inversions and the confusion is a fair one.
- A pool's hooks are POLICY: one answer per pool, chosen when you create it, so you pass them in as a `PoolHooks` implementation.
- An outer's hooks are the TYPE'S OWN: one answer per type, fixed forever at compile time, so you declare them on the type.
+ A pool's hooks are a different shape. Both are inversions, so the two get confused.
+ A pool's hooks are POLICY. One answer per pool, chosen when you create it. You pass them in as a `PoolHooks` implementation.
+ An outer's hooks are the TYPE'S OWN. One answer per type, fixed at compile time. You declare them on the type.
 *>
 module mtk::helper <Outer>;
 
@@ -58,14 +65,17 @@ const OuterHelper OF = {};
  Allocates the outer, initializes it, stamps it, and fills the Slot.
 
  Four steps in this order: allocate zeroed, call your `init(a)` hook, stamp the inner, fill the Slot.
- `Outer` must declare `fn void? Outer.init(&self, Allocator a)` and `fn void Outer.finish(&self, Allocator a)`, and an empty body is fine — a type with neither to write declares both and leaves them empty.
- That is checked at compile time, here and in `release`, so a misspelled hook names your line instead of vanishing.
- If `init` fails the outer was never stamped, so a pointer that escaped a failed creation can never be mistaken for a live outer.
+ `Outer` must declare `fn void? Outer.init(&self, Allocator a)` and `fn void Outer.finish(&self, Allocator a)`.
+ An empty body is fine. A type with neither to write declares both and leaves them empty.
+ Checked at compile time, here and in `release`. A misspelled hook names your line instead of vanishing.
+ If `init` fails the outer was never stamped.
+ So a pointer that escaped a failed creation can never be mistaken for a live outer.
  On a hook failure the allocation is freed and the fault is propagated unchanged.
  On an allocation failure the Slot is untouched and the fault is returned.
 
  The toolkit reads and writes no field of your outer except the `Inner`.
- An outer that wants to keep its allocator stores this argument in its own field, under any name, in its own `init`.
+ An outer that wants to keep its allocator stores this argument in its own `init`.
+ Its own field, under any name.
 
  @param a : "the allocator; it is passed to your `init` hook and it is not stored"
  @param slot : "an empty Slot, filled on success"
@@ -90,8 +100,10 @@ macro void? OuterHelper.create(self, Allocator a, Slot* slot)
  Calls your `finish(a)` hook, empties the Slot, and frees the outer.
 
  A no-op on an empty Slot, so a `defer` registered before the acquisition is safe.
- It returns `void`, so it needs no `!` in a `defer`, and `finish` returns `void` for the same reason: a fault raised there would reach no caller who could act on it.
- `finish` is not `destroy`, and the name is the warning — do not tear the outer down here. `release` frees it the moment your hook returns.
+ It returns `void`, so it needs no `!` in a `defer`.
+ `finish` returns `void` for the same reason. A fault raised there would reach no caller who could act on it.
+ `finish` is not `destroy`. The name is the warning: do not tear the outer down here.
+ `release` frees it the moment your hook returns.
  Give up what the outer acquired and leave the memory alone.
  The same compile-time check as `create`: both hooks must be declared, and an empty body is fine.
 
@@ -113,9 +125,10 @@ macro void OuterHelper.release(self, Allocator a, Slot* slot)
 // --- The four crossings ------------------------------------------------------
 //
 // Two independent axes, so the names are derivable rather than memorised.
-// `must_` aborts on a mismatch, plain returns null; `take` empties the Slot on
-// success, `look` leaves it alone. `look` and `must_look` accept a `Slot*` or
-// an `Inner*`, dispatched at compile time on `$Typeof`.
+// `must_` aborts on a mismatch. Plain returns null.
+// `take` empties the Slot on success. `look` leaves it alone.
+// `look` and `must_look` accept a `Slot*` or an `Inner*`, dispatched at compile
+// time on `$Typeof`.
 
 <*
  From a Slot or an inner back to `Outer*`, without disturbing the Slot.
@@ -197,8 +210,10 @@ macro Outer* OuterHelper.must_take(self, Slot* slot)
 <*
  From your pointer to the `Inner*`. This door only reads.
 
- The identity is yours to write: `create` stamps what it makes, and `stamp` is the door for an outer you allocated by hand.
- In a safe build this one verifies that identity, and names your line when it is missing or when it names another type.
+ The identity is yours to write.
+ `create` stamps what it makes. `stamp` is the door for an outer you allocated by hand.
+ In a safe build this one verifies that identity.
+ It names your line when the identity is missing, or when it names another type.
  Under `--safe=no` it verifies nothing and the crossing is the address arithmetic alone.
  Null passes through and answers null.
 
@@ -226,7 +241,8 @@ macro void OuterHelper.stamp(self, Outer* outer) => inner::internal::stamp(outer
  True when the outer is on some chain.
 
  Exact, and O(1).
- It accepts an `Outer*` or an `Inner*`, dispatched at compile time on `$Typeof`, the way `look` and `must_look` do: a caller who has just taken one off a queue holds the inner and has nothing to cross back for.
+ It accepts an `Outer*` or an `Inner*`, dispatched at compile time on `$Typeof`, the way `look` and `must_look` do.
+ A caller who has just taken one off a queue holds the inner. There is nothing to cross back for.
 
  @param from : "an `Outer*` or an `Inner*`"
 *>

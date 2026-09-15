@@ -7,9 +7,9 @@
  outers, and the close has not returned while it runs. A release that ran there
  would free the block under it.
 
- So the closing thread is not the releasing thread here: `on_close` parks, and
- a second thread releases. The pool is closed — `is_closed` says so — and it is
- not quiet.
+ So the closing thread is not the releasing thread here: `on_close` waits, and
+ a second thread releases. The pool is closed — `is_closed` says so — and a
+ call is still running on it.
 
  Like every tier 1 program it must abort in all four builds, including
  `--safe=no -O3`. If it ever prints its last line, the port has softened a MUST.
@@ -65,7 +65,7 @@ fn int main()
 	while (hooks.inside.load(ACQUIRE) == 0) thread::sleep(time::ms(1))!!;
 	hooks.go.store(1, RELEASE);
 
-	p.release(); // <-- the violation: closed, not quiet
+	p.release(); // <-- the violation: closed, with a call still running on it
 
 	io::printn("SOFTENED: a pool was released while its close hook was running");
 	t.join()!!;

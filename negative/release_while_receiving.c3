@@ -1,16 +1,17 @@
 <*
- Part 11.12 MUST — closed is not quiet. **Tier 1, the same as its neighbour.**
+ Part 11.12 MUST — closed does not mean idle. **Tier 1, the same as its neighbour.**
 
  `release_open_mailbox.c3` proves that an OPEN mailbox cannot be released. This
  one proves the harder half: a mailbox that has been closed properly can still
  not be released, while a call on it is in flight.
 
- A receiver is parked inside `receive`, which waits with the mutex released. The
- main thread closes — which wakes it — and releases without waiting for it to
- come back. The tool is closed. It is not quiet, and `release` says so.
+ A receiver is waiting inside `receive`, which waits with the mutex released.
+ The main thread closes — which wakes it — and releases without waiting for it
+ to come back. The tool is closed. A call is still running on it, and `release`
+ says so.
 
  This is deterministic rather than a race: the receiver publishes that it is
- about to park, and the main thread gives it time to get inside `wait_until`
+ about to wait, and the main thread gives it time to get inside `wait_until`
  before closing. There is no interleaving in which the receiver has returned.
 
  Like every tier 1 program it must abort in all four builds, including
@@ -25,7 +26,7 @@ import std::time;
 import std::core::mem::alloc;
 import std::atomic::types;
 
-struct Parked
+struct Waiting
 {
 	Mailbox* mb;
 	Atomic{usz} waiting;
@@ -33,7 +34,7 @@ struct Parked
 
 fn int receiver(void* arg)
 {
-	Parked* p = (Parked*)arg;
+	Waiting* p = (Waiting*)arg;
 	Slot got;
 	p.waiting.store(1, RELEASE);
 	if (catch f = p.mb.receive(&got, time::sec(30)))
@@ -47,7 +48,7 @@ fn int main()
 {
 	Mailbox* mb = mailbox::create(mem)!!;
 
-	Parked p;
+	Waiting p;
 	p.mb = mb;
 
 	Thread t;
@@ -59,9 +60,9 @@ fn int main()
 	InnerQueue left;
 	mb.close(&left); // CLOSED, and the receiver is woken
 
-	mb.release(); // <-- the violation: closed, not quiet
+	mb.release(); // <-- the violation: closed, with a call still running on it
 
-	io::printn("SOFTENED: a mailbox that was not quiet was released");
+	io::printn("SOFTENED: a mailbox with a call still running on it was released");
 	t.join()!!;
 	return 0;
 }

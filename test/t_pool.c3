@@ -646,34 +646,34 @@ struct PoolLifetime
     Atomic{usz} returned;
 }
 
-fn int parked_getter(void* arg)
+fn int waiting_getter(void* arg)
 {
     PoolLifetime* lf = (PoolLifetime*)arg;
     Slot got;
     lf.waiting.store(1, RELEASE);
     bool closed = @catch_is(lf.p.get_wait(Holder::typeid, &got, time::sec(30)), mtk::CLOSED);
-    always_assert(closed, "the close did not wake the parked getter with CLOSED");
+    always_assert(closed, "the close did not wake the waiting getter with CLOSED");
     always_assert(got.is_empty(), "a refused get filled the Slot");
     lf.returned.store(1, RELEASE);
     return 0;
 }
 
 <*
- **Part 11.12 — CLOSED, then QUIET, then FREED, with an assertion at each step.**
+ **Part 11.12 — CLOSED, then IDLE, then FREED, with an assertion at each step.**
 
  The positive counterpart of the pool's four tier 1 negatives. Those programs
  prove the port stops when the rule is broken; this one proves what the caller
  is supposed to do instead, and runs it rather than reasoning about it.
 
- A worker parks in `get_wait`. The close publishes CLOSED and wakes it. The
- worker reports `CLOSED` and finishes. Only then is the pool quiet, and only
- then may it be released.
+ A worker is waiting in `get_wait`. The close publishes CLOSED and wakes it. The
+ worker reports `CLOSED` and finishes. Only then does no call still run on the
+ pool, and only then may it be released.
 
- `is_quiet()` reads the closed-and-active predicate itself, under the mutex —
- the public way to ask whether a tool is quiet, added by 3TK-58 for exactly
- this.
+ `is_idle()` reads the closed-and-active predicate itself, under the mutex —
+ the public way to ask whether a tool is closed with no call still running on
+ it, added by 3TK-58 for exactly this.
 *>
-fn void the_pool_closed_then_quiet_then_freed() @test
+fn void the_pool_closed_then_idle_then_freed() @test
 {
     TestHooks h;
     Pool* p = new_pool(&h);
@@ -682,7 +682,7 @@ fn void the_pool_closed_then_quiet_then_freed() @test
     lf.p = p;
 
     Thread worker;
-    worker.create(&parked_getter, &lf)!!;
+    worker.create(&waiting_getter, &lf)!!;
 
     while (lf.waiting.load(ACQUIRE) == 0) thread::sleep(time::ms(1))!!;
     thread::sleep(time::ms(50))!!;             // it is inside wait_until by now
@@ -692,10 +692,10 @@ fn void the_pool_closed_then_quiet_then_freed() @test
     always_assert(p.is_closed(), "the close did not close the pool");
     always_assert(h.closes.load() == 1, "the close hook did not run exactly once");
 
-    // QUIET. This is the step the rule is about, and joining is how to get it.
+    // IDLE. This is the step the rule is about, and joining is how to get it.
     worker.join()!!;
     always_assert(lf.returned.load(ACQUIRE) == 1, "the getter did not return");
-    always_assert(p.is_quiet(), "the pool is closed but not quiet after the join");
+    always_assert(p.is_idle(), "the pool is closed but has a call still running after the join");
 
     // FREED.
     p.release();
@@ -707,7 +707,8 @@ fn void the_pool_closed_then_quiet_then_freed() @test
  Three workers, each getting an outer and giving it back, twice. They are joined
  first, so every `get` and every `put` — hooks included — has returned before
  the close runs. The close hands everything the pool still held to `on_close`,
- which frees it. Then, and only then, the pool is quiet and can be freed.
+ which frees it. Then, and only then, does no call still run on the pool, and
+ it can be freed.
 
  The pool's close gives nothing back to the caller, so unlike the mailbox's
  shape there is no queue to drain here. What the caller owes is the join.
@@ -728,12 +729,12 @@ fn void the_pool_close_then_join_then_release() @test
 
     // every call has returned, and the pool is still open. There is no
     // black-box way to check the active count alone while still open —
-    // `is_quiet()` requires closed too — so this step trusts the join and
+    // `is_idle()` requires closed too — so this step trusts the join and
     // moves straight to close.
     always_assert(!p.is_closed(), "the workers closed the pool");
 
     p.close();
-    always_assert(p.is_quiet(), "the close left the pool active after it returned");
+    always_assert(p.is_idle(), "the close left the pool with a call still running after it returned");
 
     p.release();
 }

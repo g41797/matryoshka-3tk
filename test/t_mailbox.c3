@@ -430,34 +430,34 @@ struct Lifetime
     Atomic{usz} returned;
 }
 
-fn int parked_receiver(void* arg)
+fn int waiting_receiver(void* arg)
 {
     Lifetime* lf = (Lifetime*)arg;
     Slot got;
     lf.waiting.store(1, RELEASE);
     bool closed = @catch_is(lf.mb.receive(&got, time::sec(30)), mtk::CLOSED);
-    always_assert(closed, "the close did not wake the parked receiver with CLOSED");
+    always_assert(closed, "the close did not wake the waiting receiver with CLOSED");
     always_assert(got.is_empty(), "a refused receive filled the Slot");
     lf.returned.store(1, RELEASE);
     return 0;
 }
 
 <*
- **Part 11.12 — CLOSED, then QUIET, then FREED, with an assertion at each step.**
+ **Part 11.12 — CLOSED, then IDLE, then FREED, with an assertion at each step.**
 
  The positive counterpart of `negative/release_while_receiving.c3`. That program
  proves the port stops when the rule is broken; this one proves what the caller
  is supposed to do instead, and runs it rather than reasoning about it.
 
- A worker parks in `receive`. The close publishes CLOSED and wakes it. The
- worker reports `CLOSED` and finishes. Only then is the mailbox quiet, and only
- then may it be released.
+ A worker is waiting in `receive`. The close publishes CLOSED and wakes it. The
+ worker reports `CLOSED` and finishes. Only then does no call still run on the
+ mailbox, and only then may it be released.
 
- `is_quiet()` reads the closed-and-active predicate itself, under the mutex —
- the public way to ask whether a tool is quiet, added by 3TK-58 for exactly
- this.
+ `is_idle()` reads the closed-and-active predicate itself, under the mutex —
+ the public way to ask whether a tool is closed with no call still running on
+ it, added by 3TK-58 for exactly this.
 *>
-fn void closed_then_quiet_then_freed() @test
+fn void closed_then_idle_then_freed() @test
 {
     Mailbox* mb = new_mailbox();
 
@@ -465,7 +465,7 @@ fn void closed_then_quiet_then_freed() @test
     lf.mb = mb;
 
     Thread worker;
-    worker.create(&parked_receiver, &lf)!!;
+    worker.create(&waiting_receiver, &lf)!!;
 
     while (lf.waiting.load(ACQUIRE) == 0) thread::sleep(time::ms(1))!!;
     thread::sleep(time::ms(50))!!;             // it is inside wait_until by now
@@ -476,10 +476,10 @@ fn void closed_then_quiet_then_freed() @test
     always_assert(mb.is_closed(), "the close did not close the mailbox");
     always_assert(left.is_empty(), "an empty mailbox handed something back");
 
-    // QUIET. This is the step the rule is about, and joining is how to get it.
+    // IDLE. This is the step the rule is about, and joining is how to get it.
     worker.join()!!;
     always_assert(lf.returned.load(ACQUIRE) == 1, "the receiver did not return");
-    always_assert(mb.is_quiet(), "the mailbox is closed but not quiet after the join");
+    always_assert(mb.is_idle(), "the mailbox is closed but has a call still running after the join");
 
     // FREED.
     mb.release();
@@ -491,7 +491,7 @@ fn void closed_then_quiet_then_freed() @test
  Three senders, three outers each. The senders are joined first, so every send
  has returned before the close runs; the close hands back all nine; releasing
  those outers is the caller's work and it is done before the release rather than
- after it. Then, and only then, the mailbox is quiet and can be freed.
+ after it. Then, and only then, does no call still run on the mailbox, and it can be freed.
 
  This is the shape the reference tells a caller to write, run rather than
  reasoned about.
@@ -525,7 +525,7 @@ fn void close_then_join_then_release() @test
     // every one of them has come back out of the mailbox
     foreach (&one : sd) one.outers.release();
 
-    always_assert(mb.is_quiet(), "a joined mailbox is not quiet");
+    always_assert(mb.is_idle(), "a joined mailbox has a call still running on it");
     mb.release();
 }
 

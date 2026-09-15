@@ -12,16 +12,19 @@
 
  The allocator is kept for life.
  Nothing partially constructed is ever returned.
- On send the Slot is the answer: cleared means the mailbox has the outer, untouched means the mailbox is closed and you still have the outer.
+ On send the Slot is the answer.
+ Cleared: the mailbox has the outer.
+ Untouched: the mailbox is closed and you still have the outer.
  On receive an empty Slot goes in, and a full Slot comes back on success.
  Every other outcome is a fault, and the Slot stays empty.
  On close what was left comes back to you, as one queue.
  Releasing those outers is your work.
  The mailbox never knew what they were.
  Close it first. Releasing an open mailbox aborts in every build mode.
- Closing does not make a mailbox quiet: release it only after every call on it has returned.
+ A closed mailbox can still have calls running on it. Release only after every call on it has returned.
 
- The mailbox and the pool use only the public surface of the core, and `run-builds.sh` tests that.
+ The mailbox and the pool use only the public surface of the core.
+ `run-builds.sh` tests that.
  The fields named with a leading underscore are internal. Do not read them.
 *>
 module mtk::mailbox;
@@ -41,9 +44,9 @@ typedef Mailbox = void;
 *>
 const typeid TYPE = _Mbox::typeid;
 
-// Part 4.6: `_Mbox` is an Outer, and the mailbox is an ordinary client of the
-// helper. One `@private` alias, exactly as an application writes one, and every
-// crossing below goes through it.
+// Part 4.6: `_Mbox` is an Outer. The mailbox is an ordinary client of the helper.
+// One `@private` alias, the same line an application writes. Every crossing below
+// goes through it.
 alias MBOX @private = helper::OF{_Mbox};
 
 <*
@@ -86,34 +89,33 @@ fn Mailbox*? create(Allocator a)
 
  Close it first. Releasing an open mailbox aborts in every build mode.
  It takes no allocator.
- The mailbox must be closed and quiet.
- Quiet means no call on the mailbox is still running.
- Closing does not make a mailbox quiet: a receiver parked in `receive` is woken by the close and has not yet returned.
- The usual way to get quiet is to join the threads that touch the mailbox.
- Releasing a mailbox that is not quiet aborts in every build mode.
+ Release needs the mailbox closed, with no call on it still running.
+ Close alone is not enough. A receiver waiting in `receive` is woken by the close and has not returned yet.
+ Join the threads that touch the mailbox. That is how you get there.
+ Releasing a mailbox with a call still running on it aborts in every build mode.
 *>
 fn void Mailbox.release(&mbox)
 {
     _Mbox* self = (_Mbox*)mbox;
 
-    // Rule 1 of the lifetime contract, and the whole of what `_active` is for.
-    // Closed is state; quiet is that state and an empty active set together.
-    // The predicate is read UNDER the mutex, never before taking it, and
-    // `release` is never counted itself: it would then assert against itself.
+    // Rule 1 of the lifetime contract. This is the whole of what `_active` is for.
+    // Closed is one fact. No call still running is a second, separate fact.
+    // Read the predicate UNDER the mutex, never before taking it.
+    // `release` is never counted itself. It would then assert against itself.
     //
-    // This is a check and not a wait. A release that waited would block on
-    // application code the port does not control. What it catches, it catches
-    // on the schedule it happens to see.
+    // A check, not a wait. A release that waited would block on application code
+    // the port does not control. What it catches, it catches on the schedule it
+    // happens to see.
 
     self._mu.lock();
     always_assert(self._closed && self._active == 0,
-                  "releasing a mailbox that is not quiet");
+                  "releasing a mailbox with a call still running on it");
     self._mu.unlock();
 
     // The order is established against the real structs, not assumed. C3's
     // `Mutex.destroy` is `pthread_mutex_destroy`, which aborts on the EBUSY a
-    // held mutex returns, so the unlock above must precede it. The condition
-    // variable is destroyed first because no waiter can remain: quiet says so.
+    // held mutex returns, so the unlock above must precede it. No call is still
+    // running, so no waiter can remain either.
     self._cv.destroy()!!;
     self._mu.destroy();
     Allocator a = self._alloc;
@@ -204,9 +206,9 @@ fn void? Mailbox.receive(&mbox, Slot* slot, Duration timeout)
     // [3tk: Part 2.4]
     if (self._closed) return mtk::CLOSED~;
 
-    // Raised before the wait can release the mutex, and lowered with the mutex
-    // held again. A receiver parked in `wait_until` below is the one mailbox
-    // call a release can overlap, and the count is all that sees it.
+    // Raised before the wait can release the mutex. Lowered with the mutex held
+    // again. A receiver waiting in `wait_until` below is the one mailbox call a
+    // release can overlap. The count is all that sees it.
     self._active++;
     defer self._active--;
 
@@ -298,8 +300,9 @@ fn void? Mailbox.wake_all(&mbox)
 
  Callable more than once. The second call takes nothing.
  The queue is in the order `receive` would have taken them out.
- Discarding that queue drops the outers, and a later send refuses them.
- Closing does not make a mailbox quiet.
+ Discard that queue and the outers are dropped.
+ A later send is refused.
+ The mailbox can still have calls running on it after this returns.
 
  @param out : "an empty queue; the remainder is moved onto it, in receive order"
 *>
@@ -313,10 +316,10 @@ fn void Mailbox.close(&mbox, InnerQueue* out)
     self._mu.lock();
     defer self._mu.unlock();
 
-    // Active for its whole body. The mailbox holds the mutex throughout, so a
-    // release cannot observe this raise; it is raised anyway, because what
-    // decides is whether the memory can still be touched and not whether this
-    // particular tool happens to leave the mutex.
+    // Active for its whole body. The mailbox holds the mutex throughout, so no
+    // release can observe this raise. It is raised anyway. What decides is
+    // whether the memory can still be touched, not whether this one tool
+    // happens to leave the mutex.
     self._active++;
     defer self._active--;
 
@@ -332,10 +335,10 @@ fn bool Mailbox.is_closed(&mbox) => ((_Mbox*)mbox).@closed_fast();
 <*
  True when it is closed and no call on it is still running.
 
- The same predicate `release()` asserts, read under the mutex. The usual way
- to reach this state is to join the threads that touch the mailbox.
+ The same predicate `release()` asserts, read under the mutex.
+ Join the threads that touch the mailbox. That is how you reach this state.
 *>
-fn bool Mailbox.is_quiet(&mbox)
+fn bool Mailbox.is_idle(&mbox)
 {
     _Mbox* self = (_Mbox*)mbox;
     self._mu.lock();

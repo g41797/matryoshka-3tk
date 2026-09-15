@@ -12,10 +12,9 @@
 
  `Inner` is the field you embed.
  The chain link and the identity, in one.
- The identity sits in the same field as the chain link.
  The identity says what the outer type is.
  A pointer to an embedded `Inner` is one outer, with the type forgotten.
- It is spelled `Inner*`, because that is all it is, and 3tk transports nothing else.
+ 3tk transports `Inner*` and nothing else.
  `Slot` is a box that holds one `Inner*`, or nothing.
  A Slot starts empty.
 
@@ -36,7 +35,8 @@
  A mismatch is an answer, not a failure.
  `must_from_inner` is the same, and it aborts on a mismatch.
  The abort names your line.
- The same three take the outer from a Slot, and five of them appear again as methods.
+ The same three take the outer from a Slot.
+ Five of them appear again as methods.
  `from_slot` looks, and the Slot is unchanged.
  `move_from_slot` takes, and on success the Slot is left empty.
  None of these moves an outer.
@@ -44,7 +44,7 @@
  No alias to declare, no instantiation, no registration.
 
  It is a module of its own so that it is a page of its own.
- A user reaches it through `import mtk;` and writes `Inner` and `Slot` unqualified, as before.
+ A user reaches it through `import mtk;` and writes `Inner` and `Slot` unqualified.
 *>
 module mtk::inner;
 
@@ -52,8 +52,10 @@ module mtk::inner;
  `Inner` is the field you embed.
  The chain link and the identity, in one.
 
- A small part of this module is yours to call directly: the Slot's five operations, the identity, and the five crossings written as methods.
- Everything else goes through the helper, and says so with `For internal usage.` at the head of its doc block.
+ Part of this module is yours to call directly.
+ The Slot's five operations. The identity. The five crossings written as methods.
+ Everything else goes through the helper.
+ Those carry `For internal usage.` at the head of the doc block.
 *>
 struct Inner
 {

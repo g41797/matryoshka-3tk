@@ -20,13 +20,23 @@
  That gives a concurrent program with no lock around application data.
 
  Not a container library, though `InnerQueue` is public and yours to use.
- The queue and the stack exist because the mailbox and the pool need them, and a caller may use the queue directly.
+ The queue and the stack exist because the mailbox and the pool need them.
+ A caller may use the queue directly.
  The stack is private to the pool.
  Not an allocator.
  Every outer is allocated and freed by your code, or by your hooks.
  Not a garbage collector.
  The toolkit never frees an outer you gave it, except through a hook you wrote.
  Not a coordinator.
+ There is no `Master` type.
+
+ One import gives the toolkit.
+ `import mtk;` gives this module and every submodule of it.
+ This module holds `VERSION`, the faults, `@check` and `CHECKED`.
+ They are the vocabulary every submodule and every user shares.
+ Each subject is on the page of the module that holds it.
+
+ We present you [[LOC]] lines of source.
  *>
 module mtk;
 import std::core::env;
@@ -47,12 +57,52 @@ const String VERSION = "0.0.1";
 *>
 const String LOC = "[[LOC]]";
 
-<*
- 3tk faults, returned via `void?`.
+// 3tk faults, returned via `void?`. Only `UNKNOWN_IDENTITY` causes abort in a
+// safe build.
 
- Only `UNKNOWN_IDENTITY` causes abort in safe build.
+<*
+ The mailbox or pool is closed. The call is refused.
 *>
-faultdef CLOSED, TIMEOUT, NOT_AVAILABLE, NOT_CREATED, EMPTY, WOKEN, UNKNOWN_IDENTITY, LIMIT;
+faultdef CLOSED;
+
+<*
+ A wait on the mailbox or the pool ran out its whole timeout and found nothing.
+*>
+faultdef TIMEOUT;
+
+<*
+ `Pool.get` asked for a free outer only, and none was free.
+*>
+faultdef NOT_AVAILABLE;
+
+<*
+ The pool's `on_get` hook was asked to make an outer, and left the Slot empty.
+*>
+faultdef NOT_CREATED;
+
+<*
+ `Mailbox.poll` found nothing queued.
+*>
+faultdef EMPTY;
+
+<*
+ `Mailbox.wake_all` woke a receiver that was waiting.
+*>
+faultdef WOKEN;
+
+<*
+ The pool was asked for a `typeid` it was not created with.
+
+ The one fault that aborts in a safe build. Asking for an identity outside the
+ pool's own set is a defect in the caller, not a runtime outcome to handle.
+*>
+faultdef UNKNOWN_IDENTITY;
+
+<*
+ `Mailbox.send` refused the outer: that many of the sender's own `typeid` are
+ already queued.
+*>
+faultdef LIMIT;
 
 <*
  Aborts in a safe build.

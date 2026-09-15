@@ -95,7 +95,7 @@ fn int main()
 	while (hooks.straggling.load(ACQUIRE) == 0) thread::sleep(time::ms(1))!!;
 	hooks.go.store(1, RELEASE);
 
-	p.release(); // <-- the violation: closed, not quiet
+	p.release(); // <-- the violation: closed, with a call still running on it
 
 	io::printn("SOFTENED: a pool was released while a straggler hook was running");
 	t.join()!!;

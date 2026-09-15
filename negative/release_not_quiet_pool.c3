@@ -1,5 +1,5 @@
 <*
- Part 11.12 MUST — closed is not quiet, the parked-getter half. **Tier 1.**
+ Part 11.12 MUST — closed does not mean idle, the waiting-getter half. **Tier 1.**
 
  `release_open_pool.c3` proves that an OPEN pool cannot be released. This one
  proves the harder half, and it is the pool's counterpart to
@@ -8,7 +8,7 @@
  back to its caller.
 
  This is deterministic rather than a race: the getter publishes that it is about
- to park, and the main thread gives it time to get inside `wait_until` before
+ to wait, and the main thread gives it time to get inside `wait_until` before
  closing. There is no interleaving in which the getter has returned.
 
  Like every tier 1 program it must abort in all four builds, including
@@ -23,7 +23,7 @@ import std::time;
 import std::core::mem::alloc;
 import std::atomic::types;
 
-struct Parked
+struct Waiting
 {
 	Pool* p;
 	Atomic{usz} waiting;
@@ -31,7 +31,7 @@ struct Parked
 
 fn int getter(void* arg)
 {
-	Parked* k = (Parked*)arg;
+	Waiting* k = (Waiting*)arg;
 	Slot got;
 	k.waiting.store(1, RELEASE);
 	if (catch f = k.p.get_wait(Msg::typeid, &got, time::sec(30)))
@@ -47,7 +47,7 @@ fn int main()
 	typeid[1] tags = { Msg::typeid };
 	Pool* p        = pool::create(mem, &tags, &hooks)!!;
 
-	Parked k;
+	Waiting k;
 	k.p = p;
 
 	Thread t;
@@ -58,9 +58,9 @@ fn int main()
 
 	p.close(); // CLOSED, and the getter is woken
 
-	p.release(); // <-- the violation: closed, not quiet
+	p.release(); // <-- the violation: closed, with a call still running on it
 
-	io::printn("SOFTENED: a pool that was not quiet was released");
+	io::printn("SOFTENED: a pool with a call still running on it was released");
 	t.join()!!;
 	return 0;
 }

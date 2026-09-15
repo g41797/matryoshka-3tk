@@ -242,8 +242,31 @@ A 3tk call that can fail returns `void?`.
 The faults are outcomes a correct program reaches.
 
 ```c3
-faultdef CLOSED, TIMEOUT, NOT_AVAILABLE, NOT_CREATED, EMPTY, WOKEN, UNKNOWN_IDENTITY, LIMIT;
+faultdef CLOSED;
+faultdef TIMEOUT;
+faultdef NOT_AVAILABLE;
+faultdef NOT_CREATED;
+faultdef EMPTY;
+faultdef WOKEN;
+faultdef UNKNOWN_IDENTITY;
+faultdef LIMIT;
 ```
+
+- `CLOSED` — the mailbox or pool is closed. The call is refused.
+- `TIMEOUT` — a wait on the mailbox or the pool ran out its whole timeout and
+  found nothing.
+- `NOT_AVAILABLE` — `Pool.get` asked for a free outer only, and none was free.
+- `NOT_CREATED` — the pool's `on_get` hook was asked to make an outer, and left
+  the Slot empty.
+- `EMPTY` — `Mailbox.poll` found nothing queued.
+- `WOKEN` — `Mailbox.wake_all` woke a receiver that was waiting.
+- `UNKNOWN_IDENTITY` — the pool was asked for a `typeid` it was not created
+  with.
+  - The one fault that aborts in a safe build. Asking for an identity outside
+    the pool's own set is a defect in the caller, not a runtime outcome to
+    handle.
+- `LIMIT` — `Mailbox.send` refused the outer: that many of the sender's own
+  `typeid` are already queued.
 
 - `!` propagates the fault to the caller.
 - `catch f = ...` names the fault and handles it.
@@ -541,7 +564,8 @@ macro bool   OuterHelper.linked(self, from)          // an `Outer*` or an `Inner
 
 - `inner` — from your pointer to the `Inner*`. This door only reads.
   - The identity is yours to write: `create` stamps what it makes, and `stamp` is the door for an outer you allocated by hand.
-  - In a safe build this one verifies that identity, and names your line when it is missing or when it names another type.
+  - In a safe build this one verifies that identity.
+  - It names your line when the identity is missing, or when it names another type.
   - Under `--safe=no` it verifies nothing and the crossing is the address arithmetic alone.
   - Null passes through and answers null.
 - `stamp` — writes the identity into the embedded `Inner`, and nothing else.
@@ -589,7 +613,8 @@ four negative programs are `negative/unstamped_insert`,
 `negative/wrong_type_inner`, and no one of them can reach another's site.
 - `linked` — true when the outer is on some chain.
   - Exact, and O(1).
-  - It accepts an `Outer*` or an `Inner*`, dispatched at compile time on `$Typeof`, the way `look` and `must_look` do: a caller who has just taken one off a queue holds the inner and has nothing to cross back for.
+  - It accepts an `Outer*` or an `Inner*`, dispatched at compile time on `$Typeof`, the way `look` and `must_look` do.
+  - A caller who has just taken one off a queue holds the inner. There is nothing to cross back for.
 
 #### Allocating and freeing
 
@@ -608,7 +633,7 @@ macro void  OuterHelper.release(self, Allocator a, Slot* slot)
 - On an allocation failure the Slot is untouched and the fault is returned.
 - It returns `void?` because its caller has a real decision to make.
 - The toolkit reads and writes no field of your outer except the `Inner`.
-- An outer that wants to keep its allocator stores this argument in its own field, under any name, in its own `init`.
+- An outer that wants to keep its allocator stores this argument in its own `init`. Its own field, under any name.
 
 `release` calls your `finish(a)` hook, empties the Slot, and frees the outer.
 
@@ -620,7 +645,7 @@ macro void  OuterHelper.release(self, Allocator a, Slot* slot)
 - The same compile-time check as `create`: both hooks must be declared, and an empty body is fine.
 - A failing teardown is a defect, not an outcome.
 
-`finish` is not `destroy`, and the name is the warning — do not tear the outer down here.
+`finish` is not `destroy`. The name is the warning: do not tear the outer down here.
 `destroy` is C3's own word for tearing a thing down — `_cv.destroy()`, `_mu.destroy()` in this very port — and that is the one thing you must not do to your outer.
 `release` frees it the moment your hook returns.
 `finish` says *wind up your business*.
@@ -722,8 +747,10 @@ computed and nothing is allocated.
 
 **Ruled by the owner, 2026-09-07, and it is what `inner.c3` is now ordered by.**
 
-- A small part of this module is yours to call directly: the Slot's five operations, the identity, and the five crossings written as methods.
-- Everything else goes through the helper, and says so with `For internal usage.` at the head of its doc block.
+- Part of this module is yours to call directly.
+- The Slot's five operations. The identity. The five crossings written as methods.
+- Everything else goes through the helper.
+- Those carry `For internal usage.` at the head of the doc block.
 
 The test is whether the helper can do it for you. It cannot embed the field, it
 cannot read the Slot, and it cannot read an identity before the type is known —
@@ -955,7 +982,7 @@ fn Inner* InnerQueueIterator.next(&self)
   - The Slot is empty afterwards.
   - An empty Slot is a defect, not a no-op.
 - `pop_front` — takes the outer at the front.
-  - Null on an empty queue, which is an answer and not a fault.
+  - Null on an empty queue. That is an answer, not a fault.
   - The returned outer's chain link is cleared.
 - `take` — takes everything the queue holds, as one flat queue.
   - The queue is empty afterwards.
@@ -1152,7 +1179,8 @@ mb.release();
 5. **Release.**
 
    - Close it first. Releasing an open mailbox aborts in every build mode.
-   - Then let every thread that touches it finish. Closed is not quiet.
+   - Then let every thread that touches it finish. A closed mailbox can still
+     have calls running on it.
 
 ### The API — create and destroy
 
@@ -1165,12 +1193,12 @@ fn void Mailbox.release(&mbox)
   - Every step undoes what succeeded before it.
 - `release` — frees the mailbox, with the allocator it kept.
   - It takes no allocator.
-  - The mailbox must be closed and quiet.
-  - Quiet means no call on the mailbox is still running.
-  - Closing does not make a mailbox quiet: a receiver parked in `receive` is
-    woken by the close and has not yet returned.
-  - The usual way to get quiet is to join the threads that touch the mailbox.
-  - Releasing a mailbox that is not quiet aborts in every build mode.
+  - Release needs the mailbox closed, with no call on it still running.
+  - Close alone is not enough. A receiver waiting in `receive` is woken by the
+    close and has not returned yet.
+  - Join the threads that touch the mailbox. That is how you get there.
+  - Releasing a mailbox with a call still running on it aborts in every build
+    mode.
 
 ### The API — send
 
@@ -1225,7 +1253,7 @@ Out-of-band first, then ordinary, first-in first-out within each.
 fn void? Mailbox.wake_all(&mbox)
 fn void  Mailbox.close(&mbox, InnerQueue* out)
 fn bool  Mailbox.is_closed(&mbox)
-fn bool  Mailbox.is_quiet(&mbox)
+fn bool  Mailbox.is_idle(&mbox)
 fn usz   Mailbox.len(&mbox)
 ```
 
@@ -1234,13 +1262,14 @@ fn usz   Mailbox.len(&mbox)
   - A thread that starts waiting afterwards is unaffected.
 - `close` — closes the mailbox and gives back what was left. Cannot fail.
   - Callable more than once. The second call takes nothing.
-  - Discarding that queue drops the outers, and a later send refuses them.
-  - Closing does not make a mailbox quiet.
+  - Discard that queue and the outers are dropped. A later send is refused.
+  - The mailbox can still have calls running on it after this returns.
 - `is_closed` — true when it is closed.
-- `is_quiet` — true when it is closed and no call on it is still running.
-  - The same predicate `release()` asserts, read under the mutex. The usual way
-    to reach this state is to join the threads that touch the mailbox.
-  - Added by 3TK-58, the public way to ask what three test files used to read
+- `is_idle` — true when it is closed and no call on it is still running.
+  - The same predicate `release()` asserts, read under the mutex.
+  - Join the threads that touch the mailbox. That is how you reach this state.
+  - Added by 3TK-58 as `is_quiet`, renamed to `is_idle` by 3TK-79, the public
+    way to ask what three test files used to read
     off the internal `_active` count directly, before `Mailbox` was opaque.
 - `len` — how many outers are queued.
   - A hint. It is stale by the time you read it.
@@ -1275,7 +1304,7 @@ None of them is a defect. A correct program reaches all four.
 - `3tk/test/t_concurrency.c3` — many producers and many consumers.
 - `3tk/negative/release_open_mailbox.c3` — the abort that never goes away.
 - `3tk/negative/release_while_receiving.c3` — the same abort, for a mailbox
-  that is closed but not yet quiet.
+  that is closed but still has a call running on it.
 
 ---
 
@@ -1419,7 +1448,8 @@ p.release();
 6. **Release.**
 
    - Close it first. Releasing an open pool aborts in every build mode.
-   - Then let every thread that touches it finish. Closed is not quiet.
+   - Then let every thread that touches it finish. A closed pool can still have
+     calls running on it.
 
 ### The API — create and destroy
 
@@ -1434,13 +1464,14 @@ fn void Pool.release(&pool)
   - Every step undoes what succeeded before it.
 - `release` — frees the pool, with the allocator it kept.
   - It takes no allocator.
-  - The pool must be closed and quiet.
-  - Quiet means no call on the pool is still running.
-  - Closing does not make a pool quiet: a hook the pool called is application
-    code that has not returned, and a getter parked in `get_wait` is woken by
-    the close and has not yet returned either.
-  - The usual way to get quiet is to join the threads that touch the pool.
-  - Releasing a pool that is not quiet aborts in every build mode.
+  - Release needs the pool closed, with no call on it still running.
+  - Close alone is not enough. A hook the pool called is application code that
+    has not returned.
+  - A getter waiting in `get_wait` is woken by the close and has not returned
+    either.
+  - Join the threads that touch the pool. That is how you get there.
+  - Releasing a pool with a call still running on it aborts in every build
+    mode.
 
 ### The API — get
 
@@ -1450,9 +1481,12 @@ fn void? Pool.get_wait(&pool, typeid want, Slot* slot, Duration timeout)
 ```
 
 - `get` — takes a free outer, or has the hook make one. Never waits.
-  - `AVAILABLE_OR_NEW` — take a free one, and ask the hook if there is none.
-  - `NEW_ONLY` — do not take a free one. Ask the hook.
-  - `AVAILABLE_ONLY` — take a free one, or report `NOT_AVAILABLE`.
+  - `AVAILABLE_OR_NEW` — take a free outer if there is one. If there is none,
+    ask the hook to make one.
+  - `NEW_ONLY` — do not take a free outer, even if one is there. Always ask
+    the hook.
+  - `AVAILABLE_ONLY` — take a free outer, or report `NOT_AVAILABLE`. Never ask
+    the hook.
 - `get_wait` — takes a free outer, waiting up to the timeout.
   - It never creates. No hook is called on this path.
   - The deadline is anchored once. A spurious wakeup does not restart it.
@@ -1505,7 +1539,7 @@ while (Inner* inner = batch.pop_front())
 ```c3
 fn void Pool.close(&pool)
 fn bool Pool.is_closed(&pool)
-fn bool Pool.is_quiet(&pool)
+fn bool Pool.is_idle(&pool)
 fn usz  Pool.count_of(&pool, typeid t)
 ```
 
@@ -1516,13 +1550,14 @@ fn usz  Pool.count_of(&pool, typeid t)
   - The hook is called outside the mutex, after the closed flag is set.
   - Called once by `close`, and possibly once more with stragglers from a
     concurrent `put`.
-  - Closing does not make a pool quiet.
+  - The pool can still have calls running on it after this returns.
 - `is_closed` — true when it is closed.
-- `is_quiet` — true when it is closed and no call on it is still running.
-  - The same predicate `release()` asserts, read under the mutex. The usual way
-    to reach this state is to join the threads that touch the pool.
-  - Added by 3TK-58, the public way to ask what test files used to read off
-    the internal `_active` count directly, before `Pool` was opaque.
+- `is_idle` — true when it is closed and no call on it is still running.
+  - The same predicate `release()` asserts, read under the mutex.
+  - Join the threads that touch the pool. That is how you reach this state.
+  - Added by 3TK-58 as `is_quiet`, renamed to `is_idle` by 3TK-79, the public
+    way to ask what test files used to read off the internal `_active` count
+    directly, before `Pool` was opaque.
 - `count_of` — how many of one identity are free.
   - A hint. It is stale by the time you read it.
 
@@ -1552,7 +1587,7 @@ fn void on_close(InnerQueue remaining);
 - The Slot is empty on entry. Fill it, or leave it.
 - An empty Slot afterwards becomes `NOT_CREATED`.
 - An outer of a different identity is a defect of your application.
-- That is a checking-build check, and a fast build cannot catch it.
+- Only a checking build catches it. A fast build cannot.
 - `in_pool` is how many of this identity remain, after the removal. A hint, and
   stale.
 
@@ -1562,8 +1597,8 @@ fn void on_close(InnerQueue remaining);
 - Freed with nothing kept: empty the Slot.
 - Kept as it is, or kept after a reset: leave it full.
 - Freed with a different outer put back: replace the contents.
-- A full Slot on return means one thing — an outer is kept, original or
-  replacement.
+- A full Slot on return means one thing. An outer is kept: the original, or
+  the replacement.
 - `extra` starts empty. Outers added there are taken the same way, with the same
   checks.
 - `in_pool` is how many of this identity are held, before the addition. A hint.
@@ -1782,39 +1817,39 @@ Where the outers go.
 - It wakes the current waiters and each one reports `WOKEN`.
 - The mailbox stays open.
 
-Closed is not quiet, and it is the mistake this section exists for.
+Closed does not mean idle, and it is the mistake this section exists for.
 
 A mailbox and a pool pass through four conditions, in this order:
 
 ```text
-    OPEN -> CLOSED -> QUIET -> FREED
+    OPEN -> CLOSED -> IDLE -> FREED
 ```
 
 - `close` performs the transition to CLOSED. It refuses every call that has not
   started yet, and it wakes every thread that is waiting.
-- **Quiet is a different condition.** A tool is quiet when it is closed and no
-  call on it is still running. A receiver parked in `receive` has been woken by
+- **Idle is a different condition.** A tool is idle when it is closed and no
+  call on it is still running. A receiver waiting in `receive` has been woken by
   the close and has not yet returned to its caller: the tool is closed, and it
-  is not quiet.
-- **The pool has a second way to be closed and not quiet, and it is the one to
+  is not idle.
+- **The pool has a second way to be closed and not idle, and it is the one to
   watch.** A hook runs outside the pool's mutex, so a `put` that is inside
   `on_put` is a call still running with the mutex free, and `Pool.close` itself
   runs `on_close` after the closed flag is set. A pool can be closed, hold
   nothing, answer every new call with `CLOSED` — and still have application
   code inside it.
-- `release` is legal only when the tool is quiet, and it checks that it is.
-  Releasing a mailbox or a pool that is not quiet aborts in every build mode,
-  the same way releasing an open one does.
+- `release` is legal only when the tool is idle, and it checks that it is.
+  Releasing a mailbox or a pool with a call still running on it aborts in every
+  build mode, the same way releasing an open one does.
 
-The toolkit does not wait for quiet, and that is a decision rather than a gap.
-A release that waited would block on application code the toolkit does not
-control — a hook that never returns would be a release that never returns —
-which trades one defect for a worse one. **Getting to quiet is the caller's
+The toolkit does not wait to become idle, and that is a decision rather than a
+gap. A release that waited would block on application code the toolkit does
+not control — a hook that never returns would be a release that never returns
+— which trades one defect for a worse one. **Getting to idle is the caller's
 work, and the usual way to do it is to join the threads.**
 
 ```c3
 mb.close(&left);        // CLOSED: no new call is accepted, every waiter woken
-foreach (&t : workers) t.join()!!;   // QUIET: every accepted call has returned
+foreach (&t : workers) t.join()!!;   // IDLE: every accepted call has returned
 mb.release();           // FREED
 ```
 
@@ -2061,7 +2096,8 @@ One place has the outer at a time.
 That gives a concurrent program with no lock around application data.
 
 Not a container library, though `InnerQueue` is public and yours to use.
-The queue and the stack exist because the mailbox and the pool need them, and a caller may use the queue directly.
+The queue and the stack exist because the mailbox and the pool need them.
+A caller may use the queue directly.
 The stack is private to the pool.
 Not an allocator.
 Every outer is allocated and freed by your code, or by your hooks.
@@ -2111,7 +2147,8 @@ The helper, bound once per outer type.
 
 `alias MSG = helper::OF{Msg};` — and that is the whole ceremony.
 Nine members: four crossings, `inner`, `stamp`, `linked`, `create` and `release`.
-It is a module of its own so that it is a page of its own, and so that nothing else in the core reads as parameterized by `Outer`.
+It is a module of its own so that it is a page of its own.
+It also keeps `Outer` out of the rest of the core: nothing else reads as parameterized.
 
 EVERY OUTER THIS HELPER CREATES DECLARES TWO HOOKS, and the helper is where they run.
 `fn void? Outer.init(&self, Allocator a)` is called by `create`, after the allocation and before the stamp.
@@ -2119,22 +2156,28 @@ EVERY OUTER THIS HELPER CREATES DECLARES TWO HOOKS, and the helper is where they
 Neither is optional and AN EMPTY BODY IS FINE — that is how a type says it has nothing to do.
 
 Why you must write two methods that may do nothing.
-A per-type fact with no default should be stated rather than inferred from absence, and absence was the ambiguity: no `init` used to mean either this type needs none or you spelled the name wrong, and nothing could tell the two apart.
-The hooks are found on the type by name, at compile time, so a wrong name used to make the branch vanish silently.
-Requiring the declaration is what makes the misspelling loud, and `initialize` or `deinit` where `init` belongs is now a compile error naming your line.
+A per-type fact with no default is stated, not inferred from absence.
+Absence was the ambiguity. No `init` meant one of two things: this type needs none, or you spelled the name wrong.
+Nothing could tell the two apart.
+The hooks are found on the type by name, at compile time. A wrong name used to make the branch vanish silently.
+The required declaration makes the misspelling loud.
+`initialize` or `deinit` where `init` belongs is now a compile error naming your line.
 (`Init` is not among the near misses: C3 refuses a method name that begins with a capital.)
 
 Nothing is registered, and there is no interface to implement.
 A hook with the wrong signature or the wrong return type is loud as well: the branch compiles and then fails.
-`finish` returns plain `void`, so it cannot fail — `release` returns `void` deliberately, and a fault no caller can act on is not worth declaring.
+`finish` returns plain `void`, so it cannot fail.
+`release` also returns plain `void`. A fault no caller can act on is not worth declaring.
 
 THE CONTAINERS ARE OUTSIDE THIS.
-`Mailbox` and `Pool` bind the helper for crossing and never call `create`: they allocate themselves, because they hold a mutex and a condition variable whose teardown order is the whole of their release.
-The rule binds every outer the helper creates, and an outer bound only for crossing is not making `create`'s contract.
+`Mailbox` and `Pool` bind the helper for crossing. They never call `create`.
+They allocate themselves. Each holds a mutex and a condition variable, and their teardown order is the whole of `release`.
+The two-hook rule binds every outer the helper creates.
+An outer bound only for crossing makes no `create` contract.
 
-The pool's hooks are a different shape and the difference is worth one sentence, because both are inversions and the confusion is a fair one.
-A pool's hooks are POLICY: one answer per pool, chosen when you create it, so you pass them in as a `PoolHooks` implementation.
-An outer's hooks are the TYPE'S OWN: one answer per type, fixed forever at compile time, so you declare them on the type.
+A pool's hooks are a different shape. Both are inversions, so the two get confused.
+A pool's hooks are POLICY. One answer per pool, chosen when you create it. You pass them in as a `PoolHooks` implementation.
+An outer's hooks are the TYPE'S OWN. One answer per type, fixed at compile time. You declare them on the type.
 <!-- /3tk:module -->
 
 #### `mtk::inner`
@@ -2155,10 +2198,9 @@ It moves `Inner*`, intrusively and with the type erased.
 
 `Inner` is the field you embed.
 The chain link and the identity, in one.
-The identity sits in the same field as the chain link.
 The identity says what the outer type is.
 A pointer to an embedded `Inner` is one outer, with the type forgotten.
-It is spelled `Inner*`, because that is all it is, and 3tk transports nothing else.
+3tk transports `Inner*` and nothing else.
 `Slot` is a box that holds one `Inner*`, or nothing.
 A Slot starts empty.
 
@@ -2179,7 +2221,8 @@ Null in, null out.
 A mismatch is an answer, not a failure.
 `must_from_inner` is the same, and it aborts on a mismatch.
 The abort names your line.
-The same three take the outer from a Slot, and five of them appear again as methods.
+The same three take the outer from a Slot.
+Five of them appear again as methods.
 `from_slot` looks, and the Slot is unchanged.
 `move_from_slot` takes, and on success the Slot is left empty.
 None of these moves an outer.
@@ -2187,7 +2230,7 @@ Reading an identity and casting a pointer leave every container alone.
 No alias to declare, no instantiation, no registration.
 
 It is a module of its own so that it is a page of its own.
-A user reaches it through `import mtk;` and writes `Inner` and `Slot` unqualified, as before.
+A user reaches it through `import mtk;` and writes `Inner` and `Slot` unqualified.
 <!-- /3tk:module -->
 
 
@@ -2218,9 +2261,10 @@ repeated it would say the same thing twice on the same page.
 <!-- 3tk:module mtk::queue -->
 The intrusive queue and its walker.
 
-One type to carry outers from one place to another, and one to walk what it holds.
+One type carries outers from one place to another.
+One walks what it holds.
 It is a module of its own so that it is a page of its own.
-A user reaches it through `import mtk;` and writes `InnerQueue` unqualified, as before.
+A user reaches it through `import mtk;` and writes `InnerQueue` unqualified.
 <!-- /3tk:module -->
 
 #### `mtk::queue::internal`
@@ -2256,16 +2300,19 @@ A mailbox is itself an outer: it can travel through another mailbox.
 
 The allocator is kept for life.
 Nothing partially constructed is ever returned.
-On send the Slot is the answer: cleared means the mailbox has the outer, untouched means the mailbox is closed and you still have the outer.
+On send the Slot is the answer.
+Cleared: the mailbox has the outer.
+Untouched: the mailbox is closed and you still have the outer.
 On receive an empty Slot goes in, and a full Slot comes back on success.
 Every other outcome is a fault, and the Slot stays empty.
 On close what was left comes back to you, as one queue.
 Releasing those outers is your work.
 The mailbox never knew what they were.
 Close it first. Releasing an open mailbox aborts in every build mode.
-Closing does not make a mailbox quiet: release it only after every call on it has returned.
+A closed mailbox can still have calls running on it. Release only after every call on it has returned.
 
-The mailbox and the pool use only the public surface of the core, and `run-builds.sh` tests that.
+The mailbox and the pool use only the public surface of the core.
+`run-builds.sh` tests that.
 The fields named with a leading underscore are internal. Do not read them.
 <!-- /3tk:module -->
 
@@ -2303,7 +2350,7 @@ A hook that touches shared state protects it itself.
 A hook does not call back into the pool.
 A hook does not block and does not wait.
 It is a module of its own so that it is a page of its own.
-A user reaches it through `import mtk;` and writes `PoolHooks` unqualified, as before.
+A user reaches it through `import mtk;` and writes `PoolHooks` unqualified.
 <!-- /3tk:module -->
 
 #### `mtk::pool`
@@ -2334,15 +2381,17 @@ A pool is itself an outer: it can travel through a mailbox.
 One bucket per identity, in a flat slice allocated once at creation.
 The identity set is fixed at creation.
 It is not empty, and it has no duplicate. Both are checked.
-A stack and not a queue, and the reason is defect surfacing.
+A stack, not a queue. The reason is defect surfacing.
 The hooks are a parameter of creation. A pool cannot exist without them.
 `mtk::pool::hooks` is what you implement; this module is what you call.
 On get an empty Slot goes in, and a full Slot comes back on success.
 A free outer is taken, or `on_get` is asked to make one.
-On put the Slot is the answer: cleared means the pool took the outer, unchanged means it was refused and you still have the outer.
+On put the Slot is the answer.
+Cleared: the pool took the outer.
+Unchanged: the pool refused it and you still have the outer.
 On close nothing comes back to you. Everything goes to `on_close`.
 Close it first. Releasing an open pool aborts in every build mode.
-Closing does not make a pool quiet: release it only after every call on it has returned.
+A closed pool can still have calls running on it. Release only after every call on it has returned.
 The mailbox gives everything back to a caller.
 The pool's close gives nothing back at all.
 
@@ -2358,7 +2407,8 @@ while (Inner* inner = batch.pop_front())
 }
 ```
 
-The mailbox and the pool use only the public surface of the core, and `run-builds.sh` tests that.
+The mailbox and the pool use only the public surface of the core.
+`run-builds.sh` tests that.
 <!-- /3tk:module -->
 
 #### `mtk::pool::internal`
