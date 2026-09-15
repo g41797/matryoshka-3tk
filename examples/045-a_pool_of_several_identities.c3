@@ -1,8 +1,9 @@
 <*
- One reuse policy, and a separate free list per identity.
+ One set of hooks, and a separate free list per identity.
 
- - Reuse entry 18's `CreateByIdentityHooks`, over the same three identities.
- - Get and put each identity; each keeps to its own list.
+ - Reuses `CreateByIdentityHooks` from `018`, over the same three identities.
+ - Gets and puts back one outer of each identity.
+ - Checks that each identity's free list has one outer.
 *>
 module shc::h_pool::a_pool_of_several_identities;
 import mtk;

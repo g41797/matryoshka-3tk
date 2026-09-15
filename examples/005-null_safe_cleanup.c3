@@ -1,9 +1,12 @@
 <*
- A cleanup on an empty Slot does nothing.
+ A cleanup on an empty `Slot` does nothing.
 
- - Acquire a pooled `Holder` and a heaped one.
- - Move the pooled one onto a queue, so its Slot is empty by the time cleanup runs.
- - Let both deferred cleanups run: one has nothing to do, one does.
+ - Gets a pooled `Holder` into a `Slot`, with the `put` deferred first.
+ - Pushes it onto a queue, so its `Slot` is empty when cleanup runs.
+ - Checks that the pooled `Slot` is empty.
+ - Creates a second `Holder`, with the release deferred first.
+ - Releases the second `Holder` on scope exit.
+ - Runs the deferred `put` on the empty `Slot`, which does nothing.
 *>
 module shc::b_cleanup::null_safe_cleanup;
 import mtk;

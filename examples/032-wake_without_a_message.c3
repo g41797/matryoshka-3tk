@@ -1,11 +1,16 @@
 <*
- A wake is not a close and not a send. Nothing is queued, so a blocked
- receiver that wakes for it has nothing to release — it goes back to check
- the flag that changed, not to an outer.
+ A wake is not a close and not a send.
 
- - A receiver blocks on `receive` with a long timeout.
- - The main thread flips a flag and calls `wake_all`.
- - The receiver sees `WOKEN`, reads the flag, and returns.
+ Nothing is queued, so a woken receiver has no outer to release.
+ It checks the flag that changed instead.
+
+ - Starts a receiver thread that waits in `receive` with a long timeout.
+ - Sets the stop flag.
+ - Calls `wake_all`.
+ - In the receiver, returns on `WOKEN` once the flag is set.
+ - Joins the receiver thread.
+ - Checks that the receiver saw `WOKEN`.
+ - Checks that the mailbox is still open.
 *>
 module shc::f_mailbox::wake_without_a_message;
 import mtk;

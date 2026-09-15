@@ -1,9 +1,14 @@
 <*
- The hook object is the context: no `ctx: *anyopaque`, no cast. The struct
- implementing `PoolHooks` reaches its own fields as `self.field`.
+ The hooks struct is the context, with no untyped context pointer and no cast.
 
- - `on_get` reads `self.cap` and `self.live` with no cast.
- - `on_close` gives the remainder back to the same object.
+ The struct that implements `PoolHooks` reads its own fields through `self`.
+
+ - Creates a pool whose hooks have a cap of one.
+ - Gets a `Holder`, so `on_get` reads `self.cap` and `self.live` directly.
+ - Sets a field and puts the `Holder` back.
+ - Resets the field in `on_put`.
+ - Checks that `self.live` is one.
+ - Releases the remainder in `on_close`, through the same struct.
 *>
 module shc::h_pool::the_hook_object_is_the_context;
 import mtk;
@@ -33,7 +38,7 @@ fn void CappedHooks.on_get(&self, typeid want, usz in_pool, Slot* slot) @dynamic
 fn void CappedHooks.on_put(&self, usz in_pool, Slot* slot, InnerQueue* extra) @dynamic
 {
     Holder* outer = HOLDER.must_look(slot);
-    outer.id = 0; // cleaned, and kept
+    outer.id = 0; // reset, and kept in the pool
 }
 
 fn void CappedHooks.on_close(&self, InnerQueue remaining) @dynamic

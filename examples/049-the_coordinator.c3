@@ -1,10 +1,11 @@
 <*
- A coordinator sequences discrete steps, and its own body says so in one
- glance — no step reaches around another to touch a `Slot` or an inner.
+ A coordinator runs discrete steps, and its `run` body shows them at a glance.
 
- - Seed the work: pull outers from the pool and send them to the mailbox.
- - Process the work: receive each outer, put it back, and count it.
- - Shut down: close the mailbox, put back what it kept, then close the pool.
+ No step reaches around another to touch a `Slot` or an `Inner*`.
+
+ - `seed_the_work` gets outers from the pool and sends them.
+ - `process_the_work` receives each outer and puts it back.
+ - `shut_down` closes the mailbox, then closes the pool.
 *>
 module shc::j_coordinator::the_coordinator;
 import mtk;

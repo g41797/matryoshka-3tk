@@ -1,11 +1,11 @@
 <*
- A transfer leaves the Slot empty, whichever way the outer went.
+ A transfer leaves the `Slot` empty, whichever way the outer goes.
 
- - Send a `Holder` through a mailbox.
- - Put a `Holder` into a pool.
- - Move a `Holder` out of a Slot by hand.
- - Push a `Holder` onto a queue from a Slot.
- - Each Slot is empty right after its transfer.
+ - Sends a `Holder` through a mailbox.
+ - Puts a `Holder` into a pool.
+ - Takes a `Holder` out of a `Slot` with `take`.
+ - Pushes a `Holder` onto a queue from a `Slot`.
+ - Checks after each transfer that its `Slot` is empty.
 *>
 module shc::a_slot_and_transfer::transfer_empties_slot;
 import mtk;

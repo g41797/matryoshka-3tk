@@ -1,11 +1,12 @@
 <*
- The mailbox does the distribution. No round-robin in application code.
+ The mailbox spreads outers across workers, with no round-robin in application code.
 
- - Several worker threads compete on one mailbox, each looping until it is
-   closed.
- - The caller sends more outers than it lets the workers claim, then closes.
- - `close` gives back whatever no worker claimed, and the closer releases it
-   — every time.
+ - Sends six `Holder`s.
+ - Starts three workers that receive and release until the mailbox is closed.
+ - Closes the mailbox after a short sleep.
+ - Joins the workers.
+ - Releases every outer that `close` returned.
+ - Checks that every outer was either received by a worker or returned by `close`.
 *>
 module shc::g_topology::fan_out;
 import mtk;

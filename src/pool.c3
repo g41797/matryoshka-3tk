@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 <*
- Thread-safe object pool managing outer structures grouped by `typeid`.
+ Thread-safe pool managing outer structures grouped by `typeid`.
  Delegates allocation and recycling rules to user-supplied `PoolHooks`.
 *>
 module mtk::pool;
@@ -349,12 +349,12 @@ import std::atomic::types;
 
 <*
  User-defined policy hooks invoked by `mtk::pool::Pool`.
- Handles outer object allocation, recycling reset, and pool closure cleanup.
+ Handles outer allocation, recycling reset, and pool closure cleanup.
 *>
 module mtk::pool::hooks;
 
 <*
- Policy interface for custom object allocation, recycling, and teardown.
+ Policy interface for custom outer allocation, recycling, and teardown.
 *>
 interface PoolHooks
 {
@@ -377,7 +377,7 @@ interface PoolHooks
     fn void on_put(usz in_pool, Slot* slot, InnerQueue* extra);
 
     <*
-     Invoked when the pool is closing to drain remaining pooled structures.
+     Invoked when the pool is closing to empty remaining pooled structures.
 
      @param remaining : "everything the pool still held, flattened across every identity, by value. No order is promised"
     *>
@@ -389,6 +389,10 @@ import mtk;
 //==============================================================================
 // Internal Implementation Details
 //==============================================================================
+<*
+ The real pool (`_Pool`), its buckets, and the intrusive free stack
+ (`InnerStack`). Not part of the public API.
+*>
 module mtk::pool::internal;
 
 

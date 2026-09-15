@@ -109,6 +109,10 @@ import mtk;
 //==============================================================================
 // Internal Implementation Details
 //==============================================================================
+<*
+ Internal crossing macros, chain-link primitives, and the compile-time
+ field-offset macro. Not part of the public API.
+*>
 module mtk::inner::internal;
 
 

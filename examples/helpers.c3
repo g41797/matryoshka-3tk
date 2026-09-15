@@ -2,13 +2,13 @@
  The one check an example is allowed to make.
 
  `expect` takes the fault to return, the condition, and the message.
- It survives all four builds, unlike `assert`.
+ Unlike `assert`, it works in all four builds.
 *>
 module shc::helpers;
 import std::io;
 
 <*
- Returns `f` when `cond` is false, and reports `msg` first.
+ Returns `f` if `cond` is false, after printing `msg`.
 
  @param f : "the fault to return on failure"
  @param cond : "the condition that must hold"

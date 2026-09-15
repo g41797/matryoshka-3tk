@@ -1,10 +1,12 @@
 <*
- `receive_all` takes one lock instead of one per outer, and the outers it
- hands back belong to the caller from that moment on.
+ `receive_all` takes the lock once for the whole batch.
 
- - Send three `Holder`s.
- - Drain them all in one call.
- - Release each one.
+ After it returns, the outers are the caller's.
+
+ - Sends three `Holder`s.
+ - Receives all of them in one call.
+ - Releases each `Holder` from the batch.
+ - Checks that all three came back.
 *>
 module shc::f_mailbox::receive_all;
 import mtk;

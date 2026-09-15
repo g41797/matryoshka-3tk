@@ -1,10 +1,12 @@
 <*
- A step is one thing, and the name is the documentation. Everything it
- needs is on `self` or in its parameters — a step reaches for no global.
+ A step does one thing, and its name is its documentation.
 
- - `seed_the_work` sends four `Event`s, a loop that is one unit at its level.
- - `process_the_work` is `wake_all` and nothing else.
- - Confirm all four crossed, in order.
+ A step reaches everything through `self` or its parameters, never through a global.
+
+ - `seed_the_work` sends four `Event`s.
+ - `process_the_work` calls `wake_all` and nothing else.
+ - Receives the batch and releases each `Event`.
+ - Checks that all four arrived.
 *>
 module shc::j_coordinator::the_step;
 import mtk;

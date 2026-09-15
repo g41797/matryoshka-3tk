@@ -1,9 +1,11 @@
 <*
- Cleanup for a received outer covers the fault path and the normal one alike.
+ A deferred release covers both the normal path and the fault path of a receive.
 
- - Send a `Holder` to a mailbox.
- - Receive it into a Slot, with the release deferred first.
- - A closed mailbox reaches the same defer through the fault path.
+ - Sends a `Holder` to a mailbox.
+ - Receives it into a `Slot`, with the release deferred first.
+ - Releases the received `Holder` on scope exit.
+ - Receives again and gets `TIMEOUT`.
+ - Runs the deferred release on the empty `Slot`, which does nothing.
 *>
 module shc::b_cleanup::defer_for_received_outer;
 import mtk;

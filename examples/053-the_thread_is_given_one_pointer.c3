@@ -1,12 +1,14 @@
 <*
- `Thread.create` takes a `void*`, and one pointer is enough: the context
- struct is the single source of truth, reachable through the one pointer
- the thread was given. Anything the thread and the joiner both touch is
- atomic.
+ A thread gets one `void*`, and one pointer is enough.
 
- - A worker receives outers from a mailbox and counts each one, through one
-   `WorkerCtx` pointer.
- - The caller sends three, closes the mailbox, and joins.
+ The context struct has everything the thread needs.
+ Any field the thread and the joiner both touch is atomic.
+
+ - Starts a worker with one `WorkerCtx` pointer.
+ - Sends three `Holder`s.
+ - In the worker, receives, releases and counts each `Holder`.
+ - Joins the worker.
+ - Checks that the worker counted three.
 *>
 module shc::j_coordinator::the_thread_is_given_one_pointer;
 import mtk;

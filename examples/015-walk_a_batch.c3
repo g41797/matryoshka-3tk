@@ -1,10 +1,12 @@
 <*
  `InnerQueue` is the one list type, walked two ways.
 
- - Send three `Holder` outers into a mailbox.
- - Receive them all at once into an `InnerQueue`.
- - Walk it with an iterator, without consuming it.
- - Walk it again with `pop_front`, releasing each outer.
+ - Sends three `Holder`s into a mailbox.
+ - Receives them all at once into an `InnerQueue`.
+ - Walks the queue with an iterator, which leaves it intact.
+ - Checks that the queue still has all three.
+ - Walks it again with `pop_front`, releasing each outer.
+ - Checks that the queue is empty.
 *>
 module shc::c_crossing::walk_a_batch;
 import mtk;

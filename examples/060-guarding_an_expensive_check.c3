@@ -1,10 +1,14 @@
 <*
- `mtk::CHECKED` is the same question `@check` asks, as a value — for a block
- too expensive to write inside the argument itself.
+ `mtk::CHECKED` is the `@check` condition as a value.
 
- - Send one `Holder` into a mailbox and receive it back as a batch of one.
- - Take its inner and run a guarded check that only walks the queue when
-   the build is checking anything at all.
+ It guards a block too expensive to write inside a `@check` argument.
+
+ - Sends one `Holder` into a mailbox.
+ - Receives it back as a batch of one.
+ - Pops its `Inner*`.
+ - Runs a queue walk that happens only when `mtk::CHECKED` is true.
+ - Fills a `Slot` with the `Inner*`.
+ - Checks that the `Slot` is full.
 *>
 module shc::k_new_in_3tk::guarding_an_expensive_check;
 import mtk;

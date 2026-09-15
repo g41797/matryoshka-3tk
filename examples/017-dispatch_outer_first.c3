@@ -1,9 +1,10 @@
 <*
- An outer-first dispatch chain frees a Slot whatever identity it holds.
+ An outer-first dispatch chain releases a `Slot` of any identity it knows.
 
- - Declare the chain once, closed over the three demo identities.
- - Create one outer of each identity in turn.
- - Release each through the chain and confirm the Slot ends empty.
+ - Declares the chain once, over the three demo identities.
+ - Creates one outer of each identity in turn.
+ - Releases each one through the chain.
+ - Checks after each release that the `Slot` is empty.
 *>
 module shc::d_dispatch::dispatch_outer_first;
 import mtk;

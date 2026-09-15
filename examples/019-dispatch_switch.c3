@@ -1,9 +1,10 @@
 <*
- A `switch` over a `typeid` is the one dispatch shape ztk cannot write.
+ A `switch` over a `typeid` is a dispatch shape ztk cannot write.
 
- - Create one outer of each identity, in a Slot.
- - Take the inner and switch on its identity, asserting the prong's type.
- - Release the outer once the switch has touched it.
+ - Creates one outer of each identity in turn.
+ - Switches on its identity and updates a field in the matching case.
+ - Checks that the matching case ran.
+ - Releases the outer.
 *>
 module shc::d_dispatch::dispatch_switch;
 import mtk;

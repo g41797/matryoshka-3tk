@@ -1,11 +1,14 @@
 <*
- CLOSED, WOKEN and TIMEOUT are three different reasons `receive` returned
- empty-handed, and a worker that treats one as another leaves work behind
- or spins forever.
+ `CLOSED`, `WOKEN` and `TIMEOUT` are three different reasons `receive` returned without an outer.
 
- - An empty, open mailbox with a short window reports TIMEOUT.
- - `wake_all` on a mailbox with nothing queued reports WOKEN.
- - A closed mailbox reports CLOSED.
+ A worker that mixes them up leaves work behind or loops forever.
+
+ - Receives on an empty, open mailbox with a short timeout.
+ - Checks that the fault is `TIMEOUT`.
+ - Calls `wake_all` while a receiver waits.
+ - Checks that the receiver got `WOKEN`.
+ - Closes the mailbox and receives.
+ - Checks that the fault is `CLOSED`.
 *>
 module shc::i_shutdown::reading_the_fault_on_a_receive;
 import mtk;
@@ -25,7 +28,7 @@ fn void? p46_receive_faults(Mailbox* mb)
         if (catch f = mb.receive(&s, time::ms(250)))
         {
             if (f == mtk::CLOSED)  return;            // end of stream — leave cleanly
-            if (f == mtk::WOKEN)   continue;          // a poke — look at the state and keep waiting
+            if (f == mtk::WOKEN)   continue;          // a wake — check the state and keep waiting
             if (f == mtk::TIMEOUT) continue;          // the window passed — your domain decides
             return f~;
         }

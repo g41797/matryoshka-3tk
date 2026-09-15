@@ -1,9 +1,13 @@
 <*
- An out-of-band outer goes before every ordinary one, and there is one level,
- not a priority queue.
+ An out-of-band outer is received before every regular one.
 
- - Send an ordinary `Holder`, then an out-of-band `Sensor`.
- - Receive twice and see the `Sensor` first.
+ There is one out-of-band level, not a priority queue.
+
+ - Sends a `Holder` with `send`.
+ - Sends a `Sensor` with `send_oob`.
+ - Receives twice.
+ - Checks that the `Sensor` arrives first.
+ - Checks that the `Holder` arrives second.
 *>
 module shc::f_mailbox::out_of_band;
 import mtk;

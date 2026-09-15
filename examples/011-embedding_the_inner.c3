@@ -1,8 +1,10 @@
 <*
  One `Inner` field, anywhere in the struct, makes it an outer.
 
- - Embed exactly one `Inner` in `Sensor`.
- - Confirm the crossing works from a field that is not at offset zero.
+ - Creates a `Sensor`, whose `Inner` is not at offset zero.
+ - Looks up the `Sensor` from its `Slot`.
+ - Checks that the lookup found it.
+ - Sets a field.
 *>
 module shc::c_crossing::embedding_the_inner;
 import mtk;

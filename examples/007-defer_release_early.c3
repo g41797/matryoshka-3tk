@@ -1,9 +1,12 @@
 <*
- Creating an outer on the heap: the defer goes before the create.
+ When creating an outer, the `defer` goes before the `create`.
 
- - Register the release first.
- - Create a `Holder`.
- - Send it on. The defer finds nothing to do.
+ - Defers the release first.
+ - Creates a `Holder`.
+ - Sets a field.
+ - Sends the `Holder`, which empties the `Slot`.
+ - Runs the deferred release on the empty `Slot`, which does nothing.
+ - Closes the mailbox and releases the `Holder` that `close` returns.
 *>
 module shc::b_cleanup::defer_release_early;
 import mtk;

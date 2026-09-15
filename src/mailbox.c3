@@ -214,7 +214,7 @@ fn void? Mailbox.wake_all(&mbox)
 }
 
 <*
- Closes the mailbox and drains remaining items into `out`.
+ Closes the mailbox and moves remaining items into `out`.
 
  @param out : "an empty queue; the remainder is moved onto it, in receive order"
 *>
@@ -272,6 +272,10 @@ import std::atomic::types;
 //==============================================================================
 // Internal Implementation Details
 //==============================================================================
+<*
+ The real mailbox (`_Mbox`) behind the opaque `Mailbox` handle. Not part of
+ the public API.
+*>
 module mtk::mailbox::internal;
 
 

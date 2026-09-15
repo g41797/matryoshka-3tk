@@ -1,10 +1,12 @@
 <*
- The mailbox does the merging. There is no separate synchronization to write.
+ The mailbox merges the senders, with no extra synchronization.
 
- - Three sender threads, two identities between them, send to one mailbox.
- - `receive_all` plus an outer-first chain empties it in one pass, mixed
-   identities and all.
- - Count each identity that arrived.
+ - Starts two threads that send an `Event` each.
+ - Starts a third thread that sends a `Holder`.
+ - Joins the senders.
+ - Receives everything with `receive_all`.
+ - Releases each outer through an outer-first chain, counting each identity.
+ - Checks that two `Event`s and one `Holder` arrived.
 *>
 module shc::g_topology::fan_in;
 import mtk;

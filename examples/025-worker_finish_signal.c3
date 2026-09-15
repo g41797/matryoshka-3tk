@@ -1,10 +1,15 @@
 <*
- A worker signals it has finished by sending its own mailbox back; the
- master closes and releases it, then would join the thread.
+ A worker sends its own mailbox to signal that it has finished.
 
- - The worker sends its mailbox to the master's inbox.
- - The master receives it and checks the instance, a real pointer compare.
- - The master drains, closes and releases the worker's mailbox.
+ A real program joins the worker thread after this.
+
+ - Queues a `Holder` on the worker's mailbox.
+ - Sends the worker's mailbox to the inbox.
+ - Receives the worker's mailbox from the inbox.
+ - Checks that the pointer matches.
+ - Closes the worker's mailbox.
+ - Releases each outer that `close` returns.
+ - Releases the worker's mailbox.
 *>
 module shc::e_infrastructure::worker_finish_signal;
 import mtk;

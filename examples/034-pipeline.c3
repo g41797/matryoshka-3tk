@@ -1,12 +1,14 @@
 <*
- Each stage has one outer at a time, so the Slot idiom holds at every hop.
+ Each stage has one outer at a time, so the `Slot` rules hold at every stage.
 
- - A stage thread loops on an input mailbox, doubling each value and passing
-   it on.
- - An end-of-stream marker travels the chain like anything else, and the
-   stage that receives it forwards it once and stops.
- - The caller sends three values and the marker, then drains the output
-   mailbox.
+ - Starts a stage thread that doubles each value and sends it on.
+ - Sends three values.
+ - Sends an end-of-stream marker, which travels like any other outer.
+ - In the stage, forwards the marker once and stops.
+ - Receives four outers from the output mailbox.
+ - Joins the stage thread.
+ - Checks that every value arrived doubled.
+ - Checks that the marker arrived.
 *>
 module shc::g_topology::pipeline;
 import mtk;

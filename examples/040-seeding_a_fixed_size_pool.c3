@@ -1,9 +1,12 @@
 <*
- The seed count becomes the backpressure limit: an `on_get` that leaves the
- Slot empty once the seed is exhausted makes the pool never grow past it.
+ The seed count caps the pool.
 
- - Seed a fixed size.
- - `AVAILABLE_OR_NEW` past the seed reports `NOT_CREATED`.
+ Once the cap is reached, `on_get` leaves the `Slot` empty and the pool does not grow.
+
+ - Seeds the pool with two `Holder`s.
+ - Gets both with `AVAILABLE_OR_NEW`.
+ - Gets a third.
+ - Checks that the third `get` fails with `NOT_CREATED`.
 *>
 module shc::h_pool::seeding_a_fixed_size_pool;
 import mtk;

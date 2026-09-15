@@ -1,10 +1,14 @@
 <*
- A refused `send` did not happen — `send` returns `CLOSED` before it empties
- the Slot, so the outer is still the caller's to release.
+ A refused `send` did not happen, so the outer is still the caller's to release.
 
- - Close a mailbox.
- - Try to send a `Holder` into it and see the send refused.
- - Release the Holder, since the mailbox never took it.
+ `send` returns `CLOSED` before it empties the `Slot`.
+
+ - Closes a mailbox.
+ - Creates a `Holder`.
+ - Sends the `Holder` into the closed mailbox.
+ - Checks that the fault is `CLOSED`.
+ - Checks that the `Slot` is still full.
+ - Releases the `Holder`.
 *>
 module shc::f_mailbox::release_a_refused_transfer;
 import mtk;

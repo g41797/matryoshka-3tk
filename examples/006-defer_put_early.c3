@@ -1,10 +1,11 @@
 <*
- Acquiring from a pool: the defer goes before the get.
+ When getting from a pool, the `defer` goes before the `get`.
 
- - Register the return-to-pool cleanup first.
- - Get a `Holder` from the pool.
- - Set a field.
- - Let the deferred `put` give it back.
+ - Defers the `put` first.
+ - Gets a `Holder` from the pool.
+ - Sets a field.
+ - Returns the `Holder` to the pool on scope exit.
+ - Checks that the pool has the `Holder` back.
 *>
 module shc::b_cleanup::defer_put_early;
 import mtk;

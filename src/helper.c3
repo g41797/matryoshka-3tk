@@ -6,7 +6,7 @@
 
  Typical usage: `alias MSG = helper::OF{Msg};`
 
- Handles type allocation, lifecycle hooks (`init` and `finish`), type stamping,
+ Handles type allocation, the `init` and `finish` hooks, type stamping,
  and identity checking when converting between typeless `Inner` pointers / `Slot` instances
  and the typed user structure.
 

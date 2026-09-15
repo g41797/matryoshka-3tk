@@ -1,9 +1,12 @@
 <*
- A new outer type costs two lines: the struct, and the calls that use it.
- No alias, no helper instantiation, no registration list.
+ A new outer type needs only the struct and the calls that use it.
 
- - Create an `Event`, set its field, and send it.
- - Receive it back and confirm the field crossed unchanged.
+ There is no registration list.
+
+ - Creates an `Event` and sets a field.
+ - Sends it.
+ - Receives it back.
+ - Checks that the field arrived unchanged.
 *>
 module shc::k_new_in_3tk::identity_costs_nothing;
 import mtk;

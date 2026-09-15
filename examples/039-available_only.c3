@@ -1,10 +1,13 @@
 <*
- `AVAILABLE_ONLY` consumes only what is kept, and `NOT_AVAILABLE` is the
- normal end, not a failure.
+ `AVAILABLE_ONLY` takes only pooled outers.
 
- - Seed two kept outers.
- - Drain with `AVAILABLE_ONLY` until `NOT_AVAILABLE`.
- - The hook never ran on this path.
+ `NOT_AVAILABLE` is the normal end, not a failure.
+
+ - Creates two `Holder`s with `NEW_ONLY` and puts both back.
+ - Gets with `AVAILABLE_ONLY` until the pool returns `NOT_AVAILABLE`.
+ - Releases each outer it gets.
+ - Checks that both pooled outers were taken.
+ - Checks that `on_get` did not run.
 *>
 module shc::h_pool::available_only;
 import mtk;

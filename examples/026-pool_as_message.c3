@@ -1,9 +1,9 @@
 <*
- A pool is an outer too: sharing its pointer shares the reuse policy that
- was set up at creation.
+ A pool is an outer too, and sending it shares the hooks it was created with.
 
- - Send a pool's identity through a mailbox.
- - Receive it and confirm the pointer matches, hooks and all.
+ - Sends a pool through a mailbox.
+ - Receives it back.
+ - Checks that the received pointer is the pool that was sent.
 *>
 module shc::e_infrastructure::pool_as_message;
 import mtk;

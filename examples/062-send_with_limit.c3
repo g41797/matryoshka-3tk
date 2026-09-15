@@ -1,10 +1,14 @@
 <*
- `send`'s `limit` bounds how many outers of the same typeid may already be
- queued. `limit == 0`, the default, is the unbounded call every other example
- uses.
+ `send`'s `limit` caps how many outers of the same `typeid` may already be queued.
 
- - Send two `Holder`s with `limit = 1` and see the second refused with
-   `LIMIT`, the Slot still full.
+ `limit == 0` is the default and means no cap.
+
+ - Sends a `Holder` with `limit = 1`.
+ - Sends a second `Holder` with `limit = 1`.
+ - Checks that the second send fails with `LIMIT`.
+ - Checks that the second `Slot` is still full.
+ - Releases the second `Holder`.
+ - Polls the first `Holder` and releases it.
 *>
 module shc::f_mailbox::send_with_limit;
 import mtk;

@@ -1,10 +1,13 @@
 <*
- The declaration is the condition: an `Inner*` bound in a `while` is in scope
- inside the body and nowhere else, so there is no variable left over to use
- by mistake after the loop.
+ A `while` that declares its `Inner*` keeps the variable inside the loop body.
 
- - Send three `Holder` outers into a mailbox and receive them as a batch.
- - Walk the batch with the one loop shape, releasing each as it goes.
+ No variable is left over to misuse after the loop.
+
+ - Sends three `Holder`s into a mailbox.
+ - Receives them as a batch.
+ - Walks the batch with `while (Inner* inner = q.pop_front())`, releasing each outer.
+ - Checks that the walk saw three.
+ - Checks that the batch is empty.
 *>
 module shc::k_new_in_3tk::the_optional_declaration_walk;
 import mtk;

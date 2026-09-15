@@ -137,6 +137,9 @@ import mtk;
 // Internal Implementation Details
 //==============================================================================
 
+<*
+ The insert guard shared by the intrusive containers. Not part of the public API.
+*>
 module mtk::queue::internal;
 
 macro InnerQueue.@guard_insert(&self, Inner* inner)

@@ -1,9 +1,12 @@
 <*
- A refused `put` leaves the outer with the caller. Read the Slot.
+ A refused `put` leaves the outer with the caller.
 
- - Close a pool.
- - Try to put a `Holder` back into it.
- - The primary defer runs first and does nothing; the fallback releases it.
+ - Creates a `Holder` into a `Slot`.
+ - Closes the pool.
+ - Defers a release, then defers a `put`.
+ - Runs the deferred `put` first, which the closed pool refuses.
+ - Runs the deferred release, which frees the `Holder`.
+ - Checks that the `Slot` is empty.
 *>
 module shc::b_cleanup::refused_put_fallback;
 import mtk;

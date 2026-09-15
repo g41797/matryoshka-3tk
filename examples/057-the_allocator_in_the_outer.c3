@@ -1,10 +1,14 @@
 <*
- An outer keeps the allocator only if it says so, in an `init` hook of its own.
- The toolkit never stores one, and `release` is told which allocator to use.
+ An outer keeps its allocator only if its own `init` hook stores it.
 
- - Create a `Holder`, whose `init` hook keeps the allocator it was given.
- - Release it, naming the same allocator at the call.
- - The kept field is the outer's business, and nothing in 3tk reads it.
+ The toolkit never stores one.
+ `release` takes the allocator as an argument.
+ Nothing in 3tk reads the stored field.
+
+ - Creates a `Holder`, whose `init` stores the allocator.
+ - Checks that the `Holder` kept the allocator.
+ - Releases it, passing the same allocator.
+ - Checks that the `Slot` is empty.
 *>
 module shc::k_new_in_3tk::the_allocator_in_the_outer;
 import mtk;

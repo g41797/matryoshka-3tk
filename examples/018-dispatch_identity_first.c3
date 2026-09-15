@@ -1,9 +1,11 @@
 <*
- Identity-first dispatch answers a bare `typeid`, with no outer to cross with.
+ Identity-first dispatch works from a bare `typeid`, with no outer to cross.
 
- - Build a pool hook object that creates by identity alone.
- - Get one outer of each identity the pool was created with.
- - Close the pool and let `on_close` release what is left through the outer-first chain.
+ - Declares pool hooks whose `on_get` creates by identity alone.
+ - Gets one outer of each identity and puts it back.
+ - Checks that each `get` returned the identity asked for.
+ - Closes the pool.
+ - Releases the pooled outers in `on_close`, through the outer-first chain.
 *>
 module shc::d_dispatch::dispatch_identity_first;
 import mtk;

@@ -1,17 +1,16 @@
 <*
- Slot and transfer idioms — catalog entries 1 through 4.
+ Slot and transfer idioms, catalog entries 1 through 4.
 
- The `Slot` is how an outer is handed over, and these three examples are the
- mechanics every later group builds on: a Slot starts empty, a transfer leaves
- it empty, and a Slot is what an insert reads from.
+ A `Slot` is how an outer moves from one place to another.
+ Every later group builds on these examples.
 
- - `001-empty_slot.c3` — a Slot needs no initializer.
- - `003-transfer_empties_slot.c3` — the Slot says where the outer went.
- - `004-insert_from_slot.c3` — putting an outer on a queue.
+ - `001-empty_slot.c3` — a `Slot` starts empty.
+ - `003-transfer_empties_slot.c3` — a transfer leaves the `Slot` empty.
+ - `004-insert_from_slot.c3` — an insert reads from a `Slot`.
 
- Entry 2, "The Slot is never overwritten", is a rule with no code shape of its
- own and has no file. The cleanup idioms that the catalog files under this
- section are their own group, `shc::b_cleanup`.
+ Entry 2, "The Slot is never overwritten", is a rule with no code of its own, so it has no file.
+ The catalog lists the cleanup idioms under this section.
+ Here they are a group of their own, `shc::b_cleanup`.
 
  This module holds no code of its own.
 *>

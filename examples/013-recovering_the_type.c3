@@ -1,16 +1,20 @@
 <*
- The helper's four crossings, and the four methods they forward to.
+ The helper's crossings, and the methods they forward to.
 
- `HOLDER.look`, `must_look`, `take` and `must_take` are the spellings to reach
- for: two axes, so the names are derivable rather than memorised. `must_`
- aborts on a mismatch and plain returns null; `take` empties the Slot and
- `look` leaves it alone. The `Inner` and `Slot` methods below are the layer
- beneath, shown once so the forwarding is visible.
+ `HOLDER.look`, `must_look`, `take` and `must_take` are the forms to use.
+ A `must_` form aborts on a mismatch.
+ A plain form returns `null` on a mismatch.
+ `take` empties the `Slot`.
+ `look` leaves the `Slot` full.
+ The `Inner` and `Slot` methods are the layer beneath, shown once.
 
- - Cross an inner with `look`, which is null on a mismatch, and with `to`.
- - Cross an inner with `must_look`, which asserts, and with `as`.
- - Peek through the Slot with `look`, leaving it full, and with `to`.
- - Take through the Slot with `take`, leaving it empty, and with `move`.
+ - Crosses an `Inner*` with `look` and with `Inner.to`.
+ - Crosses an `Inner*` with `must_look` and with `Inner.as`.
+ - Crosses a `Slot` with `look` and with `Slot.to`.
+ - Checks that the `Slot` is still full.
+ - Takes from the `Slot` with `take`.
+ - Checks that the `Slot` is empty.
+ - Refills the `Slot` for the deferred release.
 *>
 module shc::c_crossing::recovering_the_type;
 import mtk;

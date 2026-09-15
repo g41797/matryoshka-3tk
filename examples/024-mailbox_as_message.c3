@@ -1,10 +1,10 @@
 <*
- A mailbox travels the same way any outer does, and travelling does not
- close it.
+ A mailbox is sent like any other outer, and sending it does not close it.
 
- - Send a second mailbox's identity through a first.
- - Receive it and confirm the pointer matches.
- - Confirm the travelling mailbox is still open.
+ - Sends a second mailbox through a carrier mailbox.
+ - Receives it back.
+ - Checks that the received pointer is the one that was sent.
+ - Checks that the received mailbox is still open.
 *>
 module shc::e_infrastructure::mailbox_as_message;
 import mtk;

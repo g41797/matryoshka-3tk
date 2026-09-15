@@ -1,9 +1,11 @@
 <*
- `mailbox::create` and `pool::create` return a pointer, not a Slot. There is
- no acquisition Slot, no detach line, and no window between them to guard.
+ `mailbox::create` and `pool::create` return plain pointers, not `Slot`s.
 
- - Build a `Master` whose fields are plain `Mailbox*` and `Pool*`.
- - Confirm neither is an optional and neither needs unwrapping.
+ There is no acquisition `Slot` and no gap between the two calls to guard.
+
+ - Creates a `Master` whose fields are a `Mailbox*` and a `Pool*`.
+ - Checks that both pointers are set.
+ - Closes and releases both, then frees the `Master`.
 *>
 module shc::j_coordinator::acquiring_the_resources;
 import mtk;

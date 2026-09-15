@@ -1,10 +1,15 @@
 <*
- `close` and `release` are two calls in 3tk, and the pool's `close` gives
- nothing back — `on_close` gets everything kept.
+ `close` and `release` are two separate calls.
 
- - Build a `Master` that owns an allocation, a mailbox and a pool.
- - Take it down in reverse acquisition order, walking the mailbox's
-   remainder itself and leaving the pool's to its hook.
+ The pool's `close` returns nothing.
+ `on_close` gets every pooled outer instead.
+
+ - Creates a `Master` with an allocation, a mailbox and a pool.
+ - Leaves one `Holder` in the pool and one in the mailbox.
+ - Shuts down in reverse order of creation.
+ - Releases the mailbox's remainder in `shut_down`.
+ - Leaves the pool's remainder to `on_close`.
+ - Checks that `on_close` released one outer.
 *>
 module shc::j_coordinator::releasing_the_resources;
 import mtk;

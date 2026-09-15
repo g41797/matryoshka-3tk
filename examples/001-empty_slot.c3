@@ -1,9 +1,11 @@
 <*
- An empty `Slot` needs no initializer.
+ A declared `Slot` starts empty and needs no initializer.
 
- - Declare it.
- - Acquire a `Holder` into it.
- - Release it.
+ - Declares a `Slot` with no initializer.
+ - Checks that the `Slot` is empty.
+ - Creates a `Holder` into the `Slot`.
+ - Checks that the `Slot` is full.
+ - Releases the `Holder` on scope exit.
 *>
 module shc::a_slot_and_transfer::empty_slot;
 import mtk;

@@ -1,10 +1,12 @@
 <*
- Inspection leaves the Slot full, ready for the next line.
+ Looking into a full `Slot` leaves it full.
 
- - Create a `Holder` into a Slot.
- - Reach in with `must` and set a field.
- - Send it from the same, still-full Slot.
- - Receive it back and release it.
+ - Creates a `Holder` into a `Slot`.
+ - Sets a field through `must_look`.
+ - Checks that the `Slot` is still full.
+ - Sends the `Holder` from the same `Slot`.
+ - Receives the `Holder` back.
+ - Releases it.
 *>
 module shc::c_crossing::reach_into_a_full_slot;
 import mtk;

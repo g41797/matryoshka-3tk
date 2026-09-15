@@ -1,9 +1,9 @@
 <*
- Never a raw allocator call on an outer.
+ An outer is never allocated with a raw allocator call.
 
- - The wrong shape is commented out: it would skip the stamp and the hook.
- - The right shape goes through `HOLDER.create`, which runs your `init` hook
-   and writes the identity.
+ - Shows the wrong shape as a commented-out line.
+ - Creates a `Holder` with `HOLDER.create`, which runs `init` and stamps the identity.
+ - Checks that the `Holder` carries its identity.
 *>
 module shc::b_cleanup::no_raw_allocator_call;
 import mtk;
@@ -16,7 +16,7 @@ faultdef NO_RAW_ALLOCATOR_CALL_FAILED;
 
 fn void? never_a_raw_allocator_call(Allocator a)
 {
-    // WRONG — a raw allocator call on an outer skips the hook and the stamp:
+    // Wrong: a raw allocator call skips the `init` hook and the stamp.
     // Holder* outer = a.new(Holder);
 
     Slot s;

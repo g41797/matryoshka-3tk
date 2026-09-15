@@ -1,8 +1,12 @@
 <*
- `NEW_ONLY` never takes a kept outer, even when one is free.
+ `NEW_ONLY` always calls `on_get`, even when a pooled outer is available.
 
- - Put one `Holder` back into the pool.
- - Get with `NEW_ONLY`: the hook runs, and the pool now holds two.
+ - Gets a `Holder` with `NEW_ONLY`.
+ - Puts it back, so the pool has one.
+ - Checks that `on_get` ran once.
+ - Gets again with `NEW_ONLY`.
+ - Checks that `on_get` ran a second time.
+ - Puts the second `Holder` back on scope exit.
 *>
 module shc::h_pool::new_only;
 import mtk;

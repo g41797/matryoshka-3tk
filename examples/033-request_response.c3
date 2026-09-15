@@ -1,11 +1,14 @@
 <*
- Two mailboxes, never one. On one mailbox the caller could receive its own
- request back.
+ Request and response use two mailboxes, never one.
 
- - A worker loops on the request mailbox until it is closed.
- - The caller sends a request and blocks on the response mailbox, with a
-   timeout.
- - The worker answers on the response mailbox, and the caller reads it.
+ On one mailbox, the caller could receive its own request.
+
+ - Starts a worker that waits for one request.
+ - Sends a request `Event` with a value.
+ - Waits on the response mailbox, with a timeout.
+ - In the worker, doubles the value and sends the `Event` to the response mailbox.
+ - Joins the worker.
+ - Checks that the response carries the doubled value.
 *>
 module shc::g_topology::request_response;
 import mtk;

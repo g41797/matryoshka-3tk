@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 <*
- Matryoshka Toolkit (3tk) for non-blocking concurrent architecture in C3.
-
- Shared error definitions, safe-mode verification macros, and version metadata.
+ Matryoshka Toolkit (3tk) for building background processing in C3.
 *>
 module mtk;
 import std::core::env;

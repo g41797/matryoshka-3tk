@@ -1,10 +1,11 @@
 <*
- `push_back_slot` empties the Slot itself, so there is no line to forget.
+ `push_back_slot` empties the `Slot` itself, so no line has to clear it.
 
- - Create a `Holder` into a Slot.
- - Set a field.
- - Push it onto a queue straight from the Slot.
- - Drain the queue and release what was pushed.
+ - Creates a `Holder` into a `Slot`.
+ - Sets a field.
+ - Pushes the `Holder` onto a queue from the `Slot`.
+ - Checks that the `Slot` is empty.
+ - Pops each outer off the queue and releases it.
 *>
 module shc::a_slot_and_transfer::insert_from_slot;
 import mtk;

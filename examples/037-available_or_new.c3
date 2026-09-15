@@ -1,10 +1,12 @@
 <*
- `AVAILABLE_OR_NEW` reuses a kept outer, and only asks the hook when none is
- kept.
+ `AVAILABLE_OR_NEW` reuses a pooled outer, and calls `on_get` only when none is pooled.
 
- - Seed the pool with one `Holder` and put it back.
- - Get with `AVAILABLE_OR_NEW`: the kept outer comes back, the hook does not run.
- - Put it back, get again: still the same outer, the hook still has not run.
+ - Gets a `Holder` from an empty pool, so `on_get` creates it.
+ - Checks that `on_get` ran once.
+ - Puts the `Holder` back.
+ - Gets again with `AVAILABLE_OR_NEW`.
+ - Checks that `on_get` did not run again.
+ - Puts the `Holder` back.
 *>
 module shc::h_pool::available_or_new;
 import mtk;

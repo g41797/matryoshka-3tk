@@ -1,10 +1,16 @@
 <*
- The mailbox never touches an outer, so everything it kept comes back to the
- closer. Run the loop unconditionally — it is right whether the mailbox held
- something, held nothing, or was already closed.
+ `close` returns every outer the mailbox kept.
 
- - Send a `Holder`, then close and drain what comes back.
- - Close a second time and drain an empty queue the same way.
+ The mailbox never touches an outer.
+ Run the release loop every time.
+ It is correct whether the mailbox kept outers, kept none, or was already closed.
+
+ - Sends a `Holder`.
+ - Closes the mailbox and releases what `close` returns.
+ - Checks that the `Holder` came back.
+ - Closes the mailbox again.
+ - Runs the same release loop on the empty queue.
+ - Checks that nothing came back.
 *>
 module shc::f_mailbox::close_recovery;
 import mtk;

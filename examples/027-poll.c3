@@ -1,9 +1,11 @@
 <*
- `poll` never waits. `EMPTY` says there was nothing there, not that anything
- went wrong.
+ `poll` never waits, and `EMPTY` means only that nothing is queued.
 
- - Poll an empty mailbox and see `EMPTY`.
- - Send a `Holder`, then poll again and receive it.
+ - Polls an empty mailbox.
+ - Checks that the fault is `EMPTY`.
+ - Sends a `Holder`.
+ - Polls again and receives the `Holder`.
+ - Releases it.
 *>
 module shc::f_mailbox::poll;
 import mtk;

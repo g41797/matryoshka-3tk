@@ -1,9 +1,13 @@
 <*
- A dispatch table hands the same identity to different handlers.
+ A dispatch table maps the same identity to different handlers.
 
- - Declare a table of identity-to-handler rows.
- - Build two tables that disagree about what an `Event` means.
- - Dispatch the same outer through both and confirm each ran its own handler.
+ - Declares a table of identity-to-handler rows.
+ - Builds two tables that map `Event` to different handlers.
+ - Dispatches an `Event` through the log table.
+ - Checks that the log handler ran.
+ - Checks that the `Slot` is still full.
+ - Dispatches the same `Event` through the count table.
+ - Checks that the count handler ran.
 *>
 module shc::d_dispatch::dispatch_table;
 import mtk;

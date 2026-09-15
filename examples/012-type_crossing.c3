@@ -1,14 +1,15 @@
 <*
- The layer beneath the helper: the same crossing, spelled three ways.
+ One crossing, written three ways.
 
- `EVENT.look(inner)` is the spelling to reach for. The other two are what it
- forwards to, shown here so that the forwarding is visible and so that code
- with no helper bound has a way across.
+ `EVENT.look(inner)` is the form to use.
+ The other two are what it forwards to.
+ Code with no helper bound uses them directly.
 
- - Create an `Event` and take its inner.
- - Cross back with the helper member.
- - Cross back with the free-function form, and get the same answer.
- - Cross back with the method form, and get the same answer again.
+ - Creates an `Event` and peeks at its `Inner*`.
+ - Crosses back with `EVENT.look`.
+ - Crosses back with `inner::internal::from_inner` and checks that it matches.
+ - Crosses back with `Inner.to` and checks that it matches.
+ - Checks that all three reached the same `Event`.
 *>
 module shc::c_crossing::type_crossing;
 import mtk;

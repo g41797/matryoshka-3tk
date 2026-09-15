@@ -1,10 +1,11 @@
 <*
- A wrapper carries what the endpoint alone cannot: a job id beside the
- mailbox.
+ A wrapper outer carries what a mailbox alone cannot, such as a job id.
 
- - Wrap an inbox mailbox with a job id in a `WorkerInbox`.
- - Send the wrapper.
- - Receive it back and confirm both the endpoint and the job id crossed.
+ - Creates a `WorkerInbox`.
+ - Sets its mailbox and its job id.
+ - Sends the `WorkerInbox`.
+ - Receives it back.
+ - Checks that the mailbox pointer and the job id arrived unchanged.
 *>
 module shc::e_infrastructure::infrastructure_wrapper;
 import mtk;
@@ -24,9 +25,9 @@ struct WorkerInbox
     int         job_id;
 }
 
-// The two hooks every outer the helper creates declares. `WorkerInbox` fills
-// its fields at the call site, right after `create`, and owns nothing that
-// outlives it — so both bodies are empty, and that is the answer.
+// Both hooks are required.
+// The fields are set after `create`, so `init` has nothing to do.
+// Nothing is acquired, so `finish` has nothing to free.
 fn void? WorkerInbox.init(&self, Allocator a) { return; }
 fn void  WorkerInbox.finish(&self, Allocator a) { }
 

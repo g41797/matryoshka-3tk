@@ -1,11 +1,14 @@
 <*
- `extra` is taken the same way the `Slot` is, with the same checks, so a
- composite outer's parts go back to their own free lists without a second
- call into the pool — a hook must never call back into the pool itself.
+ `on_put` can return extra outers through `extra`.
 
- - Get a `Holder` from a pool whose hooks track `on_put`.
- - Put it back and confirm the hook ran, with `extra` left empty because
-   this outer carries no parts of its own.
+ The pool takes them the same way as the `Slot`, with the same checks.
+ A composite outer returns its parts to their free lists this way.
+ A hook never calls back into the pool.
+ Here `extra` stays empty, because a `Holder` has no parts.
+
+ - Gets a `Holder` from a pool whose hooks count `on_put` calls.
+ - Puts it back.
+ - Checks that `on_put` ran once.
 *>
 module shc::k_new_in_3tk::composite_outer_gives_back;
 import mtk;
@@ -29,8 +32,8 @@ fn void PartHooks.on_put(&self, usz in_pool, Slot* slot, InnerQueue* extra) @dyn
     Holder* outer = HOLDER.must_look(slot);
     outer.id = 0;
     self.on_put_calls++;
-    // a composite outer would push its parts onto `extra` here; this one
-    // carries none, so `extra` stays empty.
+    // A composite outer pushes its parts onto `extra` here.
+    // A `Holder` has no parts, so `extra` stays empty.
 }
 
 fn void PartHooks.on_close(&self, InnerQueue remaining) @dynamic
