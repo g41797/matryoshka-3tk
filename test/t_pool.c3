@@ -135,7 +135,7 @@ fn void a_pool_is_an_item() @test
     defer { p.close(); p.release(); }
 
     Inner* ph = pool::to_inner(p);
-    always_assert(ph.link.type == pool::TYPE, "the pool carries no identity");
+    always_assert(ph.outer_tid() == pool::TYPE, "the pool carries no identity");
     always_assert(pool::of(ph) == p, "the pool did not survive the round trip");
     always_assert(pool::TYPE != mailbox::TYPE, "the two containers share an identity");
 }

@@ -14,11 +14,12 @@ import mtk;
  linux-x64, down from 24. Every outer in the program pays for this struct, and
  a word is added to it only with a reason written down.
 
- Since 3TK-21 the two parts live in ONE field — `Inner.link`, a C3 `any`,
- whose `ptr` is the linkage and whose `type` is the identity. The parts did
- not move and the 16 bytes did not move; only where they are stored did. That
- is why the assertions below read `.link.type` where they used to read
- `.type`.
+ The two parts are two named fields: `Inner.link` is the linkage and
+ `Inner.otrtypeid` is the identity. 3TK-21 packed them into one C3 `any` and
+ INTR 12 unpacked them again, at 16 bytes throughout. `any` is a border type
+ now: it belongs at the crossing into C3's own containers, not inside the
+ inner. The assertions below read `outer_tid()`, which has always been the
+ way to ask.
 *>
 fn void inner_is_two_parts() @test
 {
@@ -85,8 +86,8 @@ fn void identity_is_per_type() @test
 
     always_assert(Msg::size == Twin::size, "the test types are no longer twins");
     always_assert(Msg::typeid != Twin::typeid, "Part 5.1: two identically-shaped types share an identity");
-    always_assert(a.inner.link.type == b.inner.link.type, "Part 5.1: two outers of one type differ");
-    always_assert(a.inner.link.type == Msg::typeid, "Part 5.4: the identity is not the stored one");
+    always_assert(a.inner.outer_tid() == b.inner.outer_tid(), "Part 5.1: two outers of one type differ");
+    always_assert(a.inner.outer_tid() == Msg::typeid, "Part 5.4: the identity is not the stored one");
 }
 
 <*
@@ -101,7 +102,7 @@ fn void identity_is_stored() @test
     if (catch MSG.create(mem, &s)) { always_assert(false, "create failed"); }
 
     Inner* inner = MSG.inner(MSG.must_look(&s));
-    always_assert(inner.link.type == Msg::typeid, "the identity is not in the inner");
+    always_assert(inner.outer_tid() == Msg::typeid, "the identity is not in the inner");
 }
 
 <*

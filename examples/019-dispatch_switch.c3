@@ -19,7 +19,7 @@ faultdef DISPATCH_SWITCH_FAILED;
 
 fn void touch_by_switch(Inner* inner)
 {
-    switch (inner.link.type)
+    switch (inner.outer_tid())
     {
         case Event::typeid:
             EVENT.must_look(inner).code++;

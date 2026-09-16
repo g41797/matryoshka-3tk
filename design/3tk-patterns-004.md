@@ -829,7 +829,7 @@ struct Table { Row[] rows; }
 fn void? Table.dispatch(&self, Counter* c, Slot* s)
 {
     if (s.is_empty()) return;
-    typeid have = s.peek().link.type;
+    typeid have = s.peek().outer_tid();
     foreach (row : self.rows)
     {
         if (row.id == have) { row.handler(c, s); return; }
@@ -2184,7 +2184,7 @@ entry dropped; the thing it was for did not.**
 - **It does not assign a pattern to a file.** The mapping comes after the
   catalog, which is the owner's ruling of 2026-08-26.
 - **It does not restate the reference.** A pattern is an assembly of the
-  surface; `3tk-api-006.md` is the verification table.
+  surface; `3tk-api-007.md` is the verification table.
 - **It does not invent a pattern 3tk cannot support.** Every shape here
   compiles.
 - **It changed nothing in `3tk/src`.**

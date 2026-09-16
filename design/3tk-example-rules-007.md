@@ -204,7 +204,7 @@ in the middle of its name.**
 - **Why.** The helper is the surface; the macros are the layer beneath. An
   example is what a reader copies, and 52 files copying the lower layer taught
   the wrong one. See *What is deliberately absent* in
-  [3tk-reference-012.md](3tk-reference-012.md).
+  [3tk-reference-013.md](3tk-reference-013.md).
 
 ## Allocation — every outer is heap-allocated, never stack — MUST
 

@@ -2,6 +2,17 @@
 
 **Description and reasoning. Not recommendations.**
 
+> **Note, INTR 12, 2026-09-16 — `Inner` no longer holds an `any`.** Where this
+> file describes the inner as a single C3 `any`, with `link.ptr` the chain link
+> and `link.type` the identity, it is describing the port **as measured on
+> 2026-08-24 and after**. The shape is now two named fields, `Inner* link` and
+> `typeid otrtypeid`, at the same 16 bytes. **The measurement text below is left
+> exactly as it was taken** — this file is the argument the port made, not the
+> registry of what stands. **The registry is
+> [3tk-decisions-008.md](3tk-decisions-008.md)**, and it is what to read for the
+> current shape. Nothing else here is affected: the two meanings, the self-link
+> invariant and the 16 bytes are the same facts under both layouts.
+
 Written by 3TK-20 on 2026-08-24 and grown by 3TK-22, 3TK-24 and 3TK-56.
 **3TK-73 crossed it into this repository on 2026-09-09** — this is where a
 reader of the port lands. `001` to `004` are in `matryoshka-ztk`'s
@@ -1107,7 +1118,7 @@ added or removed.**
 core redesign proposal for `R1` to `R15`, the porting proposal for `D1` to
 `D16`, and the 96-element audit that produced `V1` to `V19` and `P1` to `P6` —
 were retired by 3TK-73 on 2026-09-09, spent. What each ruled that still stands
-is in this file and in [3tk-decisions-007.md](3tk-decisions-007.md), which is
+is in this file and in [3tk-decisions-008.md](3tk-decisions-008.md), which is
 the registry of what the port decided and where it lives in the code. **What is
 current, and what has not run, is `3tk-status.md` in `matryoshka-ztk`.**
 

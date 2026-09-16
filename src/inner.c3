@@ -12,17 +12,21 @@ module mtk::inner;
 
 <*
  Intrusive header embedded within user structures (`outer`).
- Holds intrusive links and type identity metadata (`typeid`).
+
+ `link` is the chain link: the next inner on the chain, itself when it is the
+ last, or `null` when the outer is on no chain.
+ `otrtypeid` is the `typeid` of the outer it sits in, written once by `stamp`.
 *>
 struct Inner
 {
-    any link;
+    Inner* link;
+    typeid otrtypeid;
 }
 
 <*
  Returns the `typeid` of the enclosing outer structure.
 *>
-fn typeid Inner.outer_tid(&self) @inline => self.link.type;
+fn typeid Inner.outer_tid(&self) @inline => self.otrtypeid;
 
 <*
  Converts `Inner*` to `$Type*`. Returns `null` if types do not match.
@@ -116,7 +120,7 @@ import mtk;
 module mtk::inner::internal;
 
 
-macro bool is_mine(Inner* inner, $Type) => inner != null && inner.link.type == $Type::typeid;
+macro bool is_mine(Inner* inner, $Type) => inner != null && inner.otrtypeid == $Type::typeid;
 
 <*
  @require $defined($Typeof(*outer)::members) : "not a struct that embeds an Inner"
@@ -124,7 +128,7 @@ macro bool is_mine(Inner* inner, $Type) => inner != null && inner.link.type == $
 macro void stamp(outer)
 {
     Inner* inner = (Inner*)((char*)outer + inner_offset($Typeof(*outer)));
-    inner.link = any_make(inner.link.ptr, $Typeof(*outer)::typeid);
+    inner.otrtypeid = $Typeof(*outer)::typeid;
 }
 
 
@@ -168,10 +172,10 @@ macro move_from_slot(Slot* s, $Type)
 
 
 fn void Inner.repoint_to(&self, Inner* to) @inline
-    => self.link = any_make(to, self.link.type);
+    => self.link = to;
 
 
-fn Inner* Inner.points_to(&self) @inline => (Inner*)self.link.ptr;
+fn Inner* Inner.points_to(&self) @inline => self.link;
 
 
 fn bool is_linked(Inner* inner) @inline => inner != null && inner.points_to() != null;

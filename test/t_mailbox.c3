@@ -45,7 +45,7 @@ fn void a_mailbox_is_an_item() @test
 
     Inner* inner = mailbox::to_inner(mb);
     always_assert(inner != null, "the mailbox has no inner");
-    always_assert(inner.link.type == mailbox::TYPE, "the mailbox carries no identity");
+    always_assert(inner.outer_tid() == mailbox::TYPE, "the mailbox carries no identity");
     always_assert(mailbox::of(inner) == mb, "the mailbox did not survive the round trip");
 
     // and it sits on a list, beside an outer of another type

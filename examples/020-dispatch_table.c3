@@ -28,7 +28,7 @@ struct Table { Row[] rows; }
 fn void? Table.dispatch(&self, Counter* c, Slot* s)
 {
     if (s.is_empty()) return;
-    typeid have = s.peek().link.type;
+    typeid have = s.peek().outer_tid();
     foreach (row : self.rows)
     {
         if (row.id == have) { row.handler(c, s); return; }

@@ -109,7 +109,7 @@ An internal declaration keeps its `<* *>` block. It carries one:
  For internal usage.
 
  @param [&in] inner
- @require inner.link.type != null : "unstamped inner"
+ @require inner.otrtypeid != null : "unstamped inner"
 *>
 ```
 
