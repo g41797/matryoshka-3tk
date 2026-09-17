@@ -345,7 +345,7 @@ plain `mv`.**
 
 **Edited in place:** `3tk-patterns-004.md` (one code line),
 `3tk-rules-007.md` (one `@require` in Rule 1's example),
-`3tk-readme-creation-001.md` (its `Inner` facts and `F-1`).
+`3tk-readme-creation-002.md` (its `Inner` facts and `F-1`).
 
 **`3tk-port-findings-005.md` gained a dated note and kept its measurements.**
 It is the argument the port made, not the registry of what stands.

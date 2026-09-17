@@ -63,31 +63,44 @@ not reopen it.**
 
 ## What is open
 
-**One question is open, and it is the owner's: `O-4`, the voice.**
+**Revision 1, 2026-09-17, the owner's.** The owner removed *Examples* and wrote
+"700+ lines of code" into the opening line; 746 was measured. **`O-1` is changed by
+the owner:** a second C3 block shows the per-type helper, since `create` is
+not honest without the alias and both methods, and this block shows all three.
+Added: *One helper per type does the boring part*; *How to start*, four steps,
+each one a place to stop; the naming reasons in *Matryoshka*, with the doll
+reason kept. Taken from a Gemini revision: the link diagram with the inner
+inside each request, and labels on the slot diagram. Not taken: its
+`link = null` for the last inner (`inner.c3`: the last links to itself), its
+pointer arithmetic, and its bullet reformatting. 216 prose lines.
+**Open, not blocking:** step 2 of *How to start* has no example behind it
+until the `l_` group exists.
 
-| | what it asks | state |
-|---|---|---|
-| **O-4** | does the problem half of `README.md`, written by `3TK-85`, set the voice the rest follows | **open.** `3TK-86` waits on it |
+**Nothing is open.** `O-4`, the voice, was accepted by the owner on 2026-09-16
+by running `3TK-86` on the problem half as written.
 
-**What `3TK-85` wrote.** Eight sections, everything before the first Matryoshka
-term. 80 prose lines, fenced blocks and badges excluded. Three diagrams: the
-opening system, the reply path, the per-client allocation.
+**The whole README exists after `3TK-86`.** 192 prose lines, fenced blocks and
+badges excluded. The next stage is a revision, on the owner's reading.
 
-- **The disclaimer sits under the first diagram**, where the picture raises it.
-- **The shared queue is called a queue.** *Mailbox* is a term; it is named in
-  the solution half.
-- **The reply path is a second queue.** The other shape, the request carrying
-  where to answer, is not drawn.
-- **The half ends on reuse.** *The pieces are separable* and the model by name
-  are `3TK-86`'s, as the required order puts them.
-- **`<!-- 3TK-86: the solution half starts here. -->`** marks the join.
+**Choices `3TK-86` made that the owner may overrule.**
 
-**Closed, 2026-09-16, all three on the day they were asked.**
+- **One bridging section**, *The same process, with this toolkit*, joins the
+  two halves.
+- **Terms arrive one per section**, bold, at the problem each answers:
+  mailbox, inner, outer, slot, pool, hooks.
+- **The `l_` examples are not named.** The group does not exist yet. The
+  closing section lists the ten examples that use neither mailbox nor pool.
+- **No link to the docs site.** Its URL was not measured.
+- **`receive` on a full slot is called a checked error**, since
+  `mailbox.c3:130` is an `@check`.
+
+**Closed, 2026-09-16, all on the day they were asked.**
 
 | | what it asked | how it went |
 |---|---|---|
 | **O-1** | how much C3 the README shows | **one block and one note** — the outer struct, and that the outer's address is found from the inner's |
 | **O-2** | whether the print server appears | **it does not**, ruled out with the transcoder |
+| **O-4** | whether `3TK-85`'s problem half sets the voice | **yes** — accepted by running `3TK-86` |
 | **O-3** | whether Reader B gets a closing section | **yes** — one arc plus a closing section, with a note on what the mailbox adds. The README does not open on the channel |
 
 **What a later stage may still have to decide**, none of it blocking:
@@ -680,12 +693,12 @@ carry.
 
 | module | source passage | the deep dive owes |
 |---|---|---|
-| `mtk` | — | the eight faults as one outcome set; `@check` and what safe mode means |
-| `mtk::inner` | — | `Inner` is one `any` and why; the full `Slot` surface; `to` vs `as` vs `must` |
-| `mtk::helper` | — | the two required hooks and the empty body; `look`/`take`/`must_*`; `stamp` for hand-made outers |
-| `mtk::mailbox` | — | the fixed outcome set per call; `limit` and `send_oob`; what `close` gives back |
-| `mtk::pool` | — | `GetMode`'s three policies; the three hooks and their real signatures; `in_pool` is a stale hint |
-| `mtk::queue` | — | where a reader meets it: `close`, `receive_all`, `on_close` |
+| `mtk` | *Matryoshka* — the six modules, the eight faults | the eight faults as one outcome set; `@check` and what safe mode means |
+| `mtk::inner` | *The request carries its own type*, *The one struct you write*, *Only the address moves* | `Inner`'s two fields and why `any` stays outside; the full `Slot` surface; `to` vs `as` vs `must` |
+| `mtk::helper` | *The request carries its own type* — `look`, `must_look`; the closing section's rules |  the two required hooks and the empty body; `look`/`take`/`must_*`; `stamp` for hand-made outers |
+| `mtk::mailbox` | *A queue that answers the hard questions*; *What the mailbox adds to a channel* | the fixed outcome set per call; `limit` and `send_oob`; what `close` gives back |
+| `mtk::pool` | *Requests come from a pool*, *The rules of reuse are yours* | `GetMode`'s three policies; the three hooks and their real signatures; `in_pool` is a stale hint |
+| `mtk::queue` | *If you already have a channel* — one line | where a reader meets it: `close`, `receive_all`, `on_close` |
 
 **A row's *source* stays empty until a README passage exists for it.** An empty
 source with a non-empty debt means **the whole subject is deep-dive only** —
@@ -698,6 +711,7 @@ crossings.
 
 | version | stage | date | what changed |
 |---|---|---|---|
+| `001` | `3TK-86` | 2026-09-16 | Revised in place. The README's solution half written; `O-4` closed; the mapping table's *source* column filled; `mtk::inner`'s debt corrected to the two-field `Inner`. |
 | `001` | `3TK-85` | 2026-09-16 | Revised in place. The README's problem half written; `O-4`, the voice, opened for the owner. |
 | `001` | INTR 12 | 2026-09-16 | Revised in place, same day. `O-1` and `O-3` closed; *What the mailbox adds* measured against `std::thread::channel`; the channel-first opening refused and why. `Inner` facts re-measured after INTR 12; `F-1` reframed; the print server and the transcoder ruled out; *The pieces are separable*, *The floor*, *Rules for type-erased data*, *Two readers* and *The examples order* added; `O-1` closed — one block and one note; `O-3` opened. |
 | `001` | `3TK-84` | 2026-09-16 | Created. The reader, the required order, the two tiers, the size budget, both rejections with `src/` citations, the measured inventory, the opening system, the sources, the mapping table. |
