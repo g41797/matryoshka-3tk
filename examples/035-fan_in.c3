@@ -70,8 +70,8 @@ fn void? three_senders_one_mailbox(Allocator a, Mailbox* mbx)
     {
         Slot s;
         s.fill(inner);
-        if (EVENT.look(&s))  { EVENT.release(a, &s);  events++;  continue; }
-        if (HOLDER.look(&s)) { HOLDER.release(a, &s); holders++; continue; }
+        if (EVENT.is(&s))  { EVENT.release(a, &s);  events++;  continue; }
+        if (HOLDER.is(&s)) { HOLDER.release(a, &s); holders++; continue; }
         unreachable("fan-in met an identity it was not written for");
     }
 

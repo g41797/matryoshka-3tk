@@ -25,7 +25,7 @@ faultdef WORKER_FINISH_SIGNAL_FAILED;
 fn void free_outer(Allocator a, Slot* s)
 {
     if (s.is_empty()) return;
-    if (HOLDER.look(s)) { HOLDER.release(a, s); return; }
+    if (HOLDER.is(s)) { HOLDER.release(a, s); return; }
     unreachable("free_outer met an identity it was not written for");
 }
 

@@ -734,7 +734,14 @@ Rules for data whose type has been erased:
     - at the boundary
     - on arrival
 - Never cast.
-    - Use `look`, `must_look`, `take`, `must_take`.
+    - An outer leaves with `to_any`.
+    - It comes back with `to_slot`.
+    - `is`, `look` and `take` also accept an `any`.
+    - `must_to_any`, `must_to_slot`, `must_look` and `must_take` abort instead of returning `null`.
+- Your own data can share the channel.
+    - `is` says no to it and leaves it untouched.
+    - `shc::l_bridge::io_and_outers_share_a_channel` shows it.
+- An outer crosses unlinked.
 - An outer whose type was never written is refused.
 - 3tk is responsible for its side of the boundary.
     - What happens to an `any` on the C3 side is up to you.
@@ -795,7 +802,10 @@ Go step by step.
     - Take them out.
 2. **Add a thread.**
     - Send your outers over C3's `UnboundedChannel(<any>)`.
-    - On arrival, `look` checks what arrived.
+    - Before `push`, `to_any` moves the outer from its slot into an `any`.
+    - After `pop`, `to_slot` moves it back into a slot.
+        - It checks what arrived.
+    - `shc::l_bridge::from_a_channel_to_a_mailbox` shows it.
 3. **Add a pool.**
     - Do it when repeated allocation becomes a problem.
     - Write the three hooks.

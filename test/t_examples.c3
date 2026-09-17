@@ -320,3 +320,17 @@ fn void test_example_a_composite_outer_gives_back_its_parts() @test
 {
     if (catch f = shc::k_new_in_3tk::composite_outer_gives_back::extra_is_taken_the_same_way_as_the_slot(mem)) always_assert(false, "a_composite_outer_gives_back_its_parts example failed");
 }
+
+fn void test_example_from_a_channel_to_a_mailbox() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer { InnerQueue left; mb.close(&left); mb.release(); }
+    if (catch f = shc::l_bridge::from_a_channel_to_a_mailbox::outers_cross_from_a_channel_to_a_mailbox(mem, mb)) always_assert(false, "from_a_channel_to_a_mailbox example failed");
+}
+
+fn void test_example_io_and_outers_share_a_channel() @test
+{
+    Mailbox* mb = mtk::mailbox::create(mem)!!;
+    defer mb.release();
+    if (catch f = shc::l_bridge::io_and_outers_share_a_channel::io_side_serves_both_kinds(mem, mb)) always_assert(false, "io_and_outers_share_a_channel example failed");
+}

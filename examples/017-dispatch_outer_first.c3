@@ -20,9 +20,9 @@ faultdef DISPATCH_OUTER_FIRST_FAILED;
 fn void free_outer(Allocator a, Slot* s)
 {
     if (s.is_empty()) return;
-    if (EVENT.look(s))  { EVENT.release(a, s);  return; }
-    if (SENSOR.look(s)) { SENSOR.release(a, s); return; }
-    if (HOLDER.look(s)) { HOLDER.release(a, s); return; }
+    if (EVENT.is(s))  { EVENT.release(a, s);  return; }
+    if (SENSOR.is(s)) { SENSOR.release(a, s); return; }
+    if (HOLDER.is(s)) { HOLDER.release(a, s); return; }
     unreachable("free_outer met an identity it was not written for");
 }
 

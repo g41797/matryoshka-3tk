@@ -1,6 +1,19 @@
 # 3tk — the book
 
-**012 replaces 011, revised by 3TK-78 on 2026-09-14**, which added `Mailbox.send`'s
+**This is 014**, by `3TK-88`, 2026-09-17: **the `any` border is built.**
+`OuterHelper` gains five members and widens three.
+
+- `is(from)` — new. A yes/no answer for a `Slot*`, an `Inner*` or an `any*`.
+- `look`, `must_look` — accept an `any*`.
+- `take`, `must_take` — accept an `any*`, and clear both of its fields.
+- `to_any`, `must_to_any` — new. Slot → `any`, before a C3 container sends it.
+- `to_slot`, `must_to_slot` — new. `any` → Slot, after it arrives from a C3 container.
+
+Ruled by the owner, 2026-09-17, in `3tk-any-border-001.md`. Part 3's
+*The API — the helper* carries it, in *The four crossings* and in the new
+*The border — Slot and any*. **`013` is in this repo's `backup/`.**
+
+**012 replaced 011, revised by 3TK-78 on 2026-09-14**, which added `Mailbox.send`'s
 `limit` parameter and the `LIMIT` fault. `011` is in `backup/`.
 
 Matryoshka in C3.
@@ -20,13 +33,18 @@ A part learned once is a part learned everywhere.
 Deep dive is not this book's job. For that the reader goes to `3tk/src` or to a
 test under `3tk/test`.
 
-**This is 011.** It carries all of `010` and records 3TK-75, 2026-09-10: **the
+**This is 013**, by INTR 12, 2026-09-16: **`any` left the inner.** `Inner` is
+two named fields — `link`, the chain link, and `otrtypeid`, the identity — where
+`012` and every version before it had one C3 `any` carrying both halves. Sixteen
+bytes either way, measured. **`any` is a border type now**: it belongs at the
+crossing into C3's own containers and not inside the toolkit.
+**A stamp is no longer a read-modify-write**, so the caution that guarded it is
+retired: `stamp` writes `otrtypeid` and never touches the chain.
+
+It carries all of `012`, which recorded 3TK-75, 2026-09-10: **the
 reading door stopped writing.** `OuterHelper.inner` used to stamp the identity on
-the way out; it now **verifies** one in a safe build and writes nothing. `Inner`
-is a single `any` whose pointer half is the chain link and whose typeid half is
-the identity, so a stamp is a read-modify-write of the whole field — safe at
-construction, where nobody else holds the outer, and not safe on an outer another
-thread may be relinking. **`stamp` itself is unchanged**: its three callers are
+the way out; it now **verifies** one in a safe build and writes nothing.
+**`stamp` itself is unchanged**: its three callers are
 all construction-time. The identity is now asserted at **three** boundaries
 rather than two, `linked` accepts an `Inner*` as well as an `Outer*`, and the two
 `src/` sites that kept a raw `to_inner` to step around the write go through the
@@ -76,7 +94,7 @@ void`, with the fields in `@private` `_Mbox`/`_Pool` structs — and added
 `005` carried all of `004` and fixed one example: Part 1's *Usual
 flow* walkthrough created its demo outer on the stack. The owner ruled a stack
 outer illegal, in every case, not only across a mailbox or thread boundary —
-see [3tk-patterns-004.md](3tk-patterns-004.md) entry 14. The walkthrough now
+see [3tk-patterns-005.md](3tk-patterns-005.md) entry 14. The walkthrough now
 creates the outer on the heap. Nothing else changed. **`004` is in
 `matryoshka-ztk`'s `backup/`, and this version lives in `matryoshka-3tk/design/`,
 not in that repo's `ref/`.**
@@ -146,7 +164,8 @@ Plain scope limits.
 ### What the reader needs before starting
 
 - C3, and the `c3c` compiler.
-- `any` — the built-in pair of a pointer and a `typeid`. Part 2 gives it.
+- `any` — the built-in pair of a pointer and a `typeid`. Part 2 gives it. The
+  toolkit uses it at the border with C3's own containers, not inside itself.
 - Compile-time members reflection, `$Type::members`. Part 2 gives it.
 - A fault, and the `!` and `?` in a signature. Part 2 gives it.
 - `std::thread`, for mailbox and pool. Only the basics.
@@ -161,7 +180,7 @@ The toolkit stands on four C3 features.
 
 A reader who knows them reads Parts 3 to 5 without stopping.
 
-- `any` — a pointer and a `typeid`, as one built-in value.
+- `any` — a pointer and a `typeid`, as one built-in value. A border type.
 - Compile-time reflection over a struct's members.
 - The fault, and the optional return.
 - The contract, `@require`, and what the compiler does with it.
@@ -182,31 +201,34 @@ struct Msg
 }
 ```
 
-- `Inner` is one field. Sixteen bytes.
-- That field is the chain link and the identity, together.
+- `Inner` is two fields. Sixteen bytes.
+- `link` is the chain link. `otrtypeid` is the identity.
 - The container writes the link. It never allocates.
 
-### `any` — the pointer and the type, in one value
+### The two fields — the link and the identity
 
-C3's `any` is a built-in fat pointer.
+`Inner` carries exactly two things, and each has one job.
 
-- `.ptr` — where the value is.
-- `.type` — the `typeid` of the value.
-
-3tk uses both halves for two different jobs.
-
-- `.ptr` carries the chain link — the next outer, or the outer itself at the end
-  of a chain.
-- `.type` carries the identity — which outer type this outer really is.
-
-One field does the work of two, and the `typeid` is written once.
+- `link` is the chain link: the next inner on the chain, itself when it is the
+  last, or `null` when the outer is on no chain.
+- `otrtypeid` is the `typeid` of the outer it sits in, written once by `stamp`.
 
 ```c3
 struct Inner
 {
-    any link;
+    Inner* link;
+    typeid otrtypeid;
 }
 ```
+
+**Read the identity through `outer_tid()`, not the field.** It is what every
+call site in the toolkit does.
+
+**Until INTR 12 these were one C3 `any`**, its pointer half the link and its
+typeid half the identity. Sixteen bytes then, sixteen bytes now. **The packing
+was undone because `any` is C3's, not Matryoshka's.** An `any` whose `.ptr` is
+not an instance of its `.type` is a value the rest of C3 will misread, and the
+toolkit now builds a real one only at the border, on demand.
 
 ### Compile-time reflection — finding the embedded field
 
@@ -308,7 +330,7 @@ abort in every build mode.
 
 ### Where to go deeper
 
-- `3tk/src/inner.c3` — `any`, the offset macros, `@check`.
+- `3tk/src/inner.c3` — the two fields, the offset macros, `@check`.
 - `3tk/negative/nocompile_no_inner.c3` — the type that does not compile.
 - `3tk/negative/nocompile_two_inners.c3` — the other one.
 
@@ -332,7 +354,7 @@ writes that inner.
 ### Participants
 
 ```c3
-struct Inner { any link; }
+struct Inner { Inner* link; typeid otrtypeid; }
 
 typedef Slot = Inner*;
 
@@ -462,7 +484,7 @@ Msg* back = MSG.take(&got);
      identity, and fills the Slot. **Never on the stack** — 3tk computes the
      outer's address from the embedded `Inner` at every crossing, and a stack
      address is only valid for one lexical instance of one frame. See
-     [3tk-patterns-004.md](3tk-patterns-004.md) entry 14.
+     [3tk-patterns-005.md](3tk-patterns-005.md) entry 14.
    - `push_back_slot` reaches the field and empties the Slot in the same call.
    - The inner travels. The identity travels with it.
 
@@ -507,7 +529,7 @@ while (Inner* inner = q.pop_front())
 ### The API — the helper
 
 **This is the first API section of the book, and that is deliberate.** `OuterHelper` is the
-whole user surface for an outer: nine members, one alias to bind them, and no
+whole user surface for an outer: fourteen members, one alias to bind them, and no
 registration. The sections after it — the identity, the crossings, the Slot,
 the link, the queue and the stack — are the layer beneath, and they are here so
 that you can read what the helper does rather than trust it. **Reach for the
@@ -541,40 +563,133 @@ read, as a number or as anything else.
 - `OF` — compile-time constant used to alias helper instances. Example:
   `alias MSG = helper::OF{Msg};`
 
-#### The four crossings
+#### The four crossings, and `is`
 
 ```c3
-macro Outer* OuterHelper.look(self, from)
-macro Outer* OuterHelper.must_look(self, from)
-macro Outer* OuterHelper.take(self, Slot* slot)
-macro Outer* OuterHelper.must_take(self, Slot* slot)
+macro bool   OuterHelper.is(self, from)          // a `Slot*`, an `Inner*` or an `any*`
+macro Outer* OuterHelper.look(self, from)        // a `Slot*`, an `Inner*` or an `any*`
+macro Outer* OuterHelper.must_look(self, from)   // a `Slot*`, an `Inner*` or an `any*`
+macro Outer* OuterHelper.take(self, from)        // a `Slot*` or an `any*`
+macro Outer* OuterHelper.must_take(self, from)   // a `Slot*` or an `any*`
 ```
 
 Two independent axes, so the names are derivable rather than memorised. `must_`
-aborts on a mismatch and plain returns null; `take` empties the Slot and `look`
+aborts on a mismatch and plain returns null; `take` empties the holder and `look`
 leaves it alone.
 
-- `look` — from a Slot or an inner back to `Outer*`, without disturbing the Slot.
+**A holder is a `Slot`, an `Inner*`, or an `any`.** An `any` is a kind of Slot:
+
+- it is handled by address, `&a`
+- it is empty when `.ptr == null`, whatever `.type` says
+
+- `is` — answers whether the holder has an outer of this type.
+  - `false` is a normal answer: an empty holder, another type, an io event.
+  - There is no `must_is`. A `must_` form returns something usable, and `is` returns nothing.
+  - Use it where the pointer is not needed.
+  - Returns `true` if the holder has an outer of type `Outer`.
+    Returns `false` for an empty holder, and for any other type.
+    An `any` whose `.type` is not `Outer` is not an outer of this type: an io event passes untouched.
+    Aborts on an unstamped outer, and on an `any` whose `.type` and `otrtypeid` disagree.
+- `look` — from a holder back to `Outer*`, without disturbing it.
   - Null on an identity mismatch.
   - A mismatch is an answer, not a failure.
-  - Retrieves an `Outer*` from a `Slot*` or `Inner*` without modifying the slot.
+  - Retrieves an `Outer*` from a `Slot*`, `Inner*` or `any*` without modifying the holder.
     Returns `null` if the identity does not match `Outer`.
 - `must_look` — same as `look`, and it aborts on a mismatch.
   - Use it where a mismatch would be your own defect.
   - The abort names your line.
   - Under `--safe=no` the check is gone.
-  - Retrieves an `Outer*` from a `Slot*` or `Inner*` without modifying the slot.
+  - Retrieves an `Outer*` from a `Slot*`, `Inner*` or `any*` without modifying the holder.
     Aborts if the type identity does not match `Outer`.
-- `take` — from a Slot back to `Outer*`, emptying the Slot on success.
-  - Null on an identity mismatch, and then the Slot is unchanged.
-  - There is no `Inner*` form: an inner has no Slot to empty.
-  - Extracts the `Outer*` from a `Slot*` and clears the slot on success.
-    Returns `null` without clearing the slot if the type identity does not match.
+- `take` — from a Slot or an `any` back to `Outer*`, emptying the holder on success.
+  - Null on an identity mismatch, and then the holder is unchanged.
+  - There is no `Inner*` form: an inner has no holder to empty.
+  - From an `any`, both fields are cleared.
+  - Extracts the `Outer*` from a `Slot*` or `any*` and clears the holder on success.
+    Returns `null` without clearing the holder if the type identity does not match.
+    An outer taken from an `any` must not be linked.
 - `must_take` — same as `take`, and it aborts on a mismatch.
-  - The Slot is empty afterwards.
+  - The holder is empty afterwards.
   - This form did not exist before 3TK-64: the old `move_from_slot` had no abort form.
-  - Extracts the `Outer*` from a `Slot*` and clears the slot. Aborts if the type
-    identity does not match `Outer`.
+  - Extracts the `Outer*` from a `Slot*` or `any*` and clears the holder.
+    Aborts if the type identity does not match `Outer`.
+    An outer taken from an `any` must not be linked.
+
+#### The border — Slot and any
+
+**`any` is C3's border type.** 3tk converts at the border, and keeps nothing.
+
+- An outer travels over a C3 container as an `any`, such as `UnboundedChannel{any}`.
+- The container copies the `any`, 16 bytes. The outer is not copied.
+- After a `push`, the sender still has its copy of the `any`. That copy is the user's.
+
+```c3
+macro Outer* OuterHelper.to_any(self, Slot* slot, any* a)
+macro Outer* OuterHelper.must_to_any(self, Slot* slot, any* a)
+macro Outer* OuterHelper.to_slot(self, any* a, Slot* slot)
+macro Outer* OuterHelper.must_to_slot(self, any* a, Slot* slot)
+```
+
+A pair, one call per direction, named by where the outer goes.
+
+- `to_any` — the sender.
+  - Moves the outer from a `Slot` into an empty `any`, before a C3 container sends it.
+    Returns `null` and leaves both untouched if the Slot is empty or holds another type.
+    Aborts on an unstamped outer, a linked outer, or an `any` that is not empty.
+    Both fields of the `any` are written.
+- `must_to_any` — same, and it aborts on a mismatch.
+  - Moves the outer from a `Slot` into an empty `any`, before a C3 container sends it.
+    Aborts if the Slot is empty or holds another type.
+    Aborts on an unstamped outer, a linked outer, or an `any` that is not empty.
+- `to_slot` — the receiver, and the sender after a failed `push`.
+  - Moves the outer from an `any` into an empty `Slot`, after it arrives from a C3 container.
+    Returns `null` and leaves both untouched if the `any` is empty or holds another type.
+    `.type` is checked first, then `otrtypeid` inside the outer.
+    Aborts if they disagree, on an unstamped outer, a linked outer, or a full Slot.
+    Both fields of the `any` are cleared.
+- `must_to_slot` — same, and it aborts on a mismatch.
+  - Moves the outer from an `any` into an empty `Slot`, after it arrives from a C3 container.
+    Aborts if the `any` is empty or holds another type.
+    Aborts if `.type` and `otrtypeid` disagree, on an unstamped outer, a linked outer, or a full Slot.
+
+**`.type` is a hint. `otrtypeid` inside the outer is the truth.**
+
+What always aborts, in both forms, in a safe build:
+
+- `.type` says `Outer`, and `otrtypeid` does not. The `any` was built by hand.
+- An unstamped outer.
+- A linked outer. An outer crosses the border unlinked, in both directions.
+- A target that is not empty.
+
+The order of checks on a move:
+
+```
+source not empty -> type (.type, then otrtypeid) -> stamped -> not linked -> target empty
+```
+
+The shape in use:
+
+```c3
+// the sender
+any a;
+REQ.must_to_any(&slot, &a);
+if (catch ch.push(a)) REQ.must_to_slot(&a, &slot);   // back into its Slot
+
+// the receiver
+any a = ch.pop()!;
+if (REQ.is(&a))
+{
+    Slot s;
+    REQ.must_to_slot(&a, &s);
+    // send s on through a Mailbox, or release it
+}
+// otherwise a is an io event, and it is the user's
+```
+
+Where to go deeper:
+
+- `test/t_bridge.c3` — every call above, and the shape over a channel.
+- `negative/any_wrong_type_must`, `any_forged`, `any_unstamped`, `any_linked`, `any_full_target`.
 
 #### The other three
 
@@ -601,13 +716,14 @@ macro bool   OuterHelper.linked(self, from)          // an `Outer*` or an `Inner
     field. Required when manually allocating structures without using
     `create()`.
 
-**Why `inner` verifies rather than stamps, and why `stamp` was left alone.**
-Writing the identity rebuilds the whole `link` field, because `Inner` is one
-`any` and `.type` is not assignable on its own: the pointer half — the chain link
-— is read and written back with it. At construction that is safe, and `stamp`'s
-three callers are all construction-time. `inner()` was the fourth site and the
-only one that could fire on an outer another thread already held, where a
-concurrent relink between the read and the write is lost. **Removing the write
+**Why `inner` verifies rather than stamps.** Until INTR 12, writing the
+identity rebuilt the whole field, because `Inner` was one `any` and `.type` is
+not assignable on its own: the chain link was read and written back with it.
+`inner()` was the one site that could fire on an outer another thread already
+held, where a concurrent relink between the read and the write is lost.
+**INTR 12 removed the cause** — `stamp` writes `otrtypeid` and never touches
+`link` — but `inner()` still verifies rather than writes, because a reading door
+that writes is the wrong shape whatever the field layout is. **Removing the write
 closes that, and the check that replaced it is strictly more than the stamp
 gave**: a stamp covered a forgotten identity by writing one, silently agreeing
 with itself afterwards even when the outer belonged to another type. The check
@@ -754,17 +870,15 @@ hook, so the macro that writes the identity is `stamp`. `OuterHelper.stamp` and
   - Call it any number of times.
   - A second call writes what the first one wrote, and it is safe on a linked outer as well as an unlinked one.
   - An outer that was never stamped carries no identity.
-  - The line below rebuilds the whole `any`, because `.type` is not assignable on its own.
-  - It preserves `link.ptr`, and that is what makes the stamp safe on a linked inner.
-  - The natural maintenance edit is `any_make(null, ...)`, which silently unlinks a linked outer.
-  - The correct line differs from the destructive one by a single sub-expression.
+  - It writes `otrtypeid` alone and never touches `link`, so it cannot disturb a chain.
+  - **Until INTR 12 it rebuilt the whole field**, the chain link included, and the natural maintenance edit silently unlinked a linked outer. Two fields removed that trap.
   - It was called `init` until 3TK-64, when `init` became the name of the user's own hook.
 - `is_mine` — true when the inner names `$Type`.
   - False for a null inner.
   - False for an outer that was never stamped.
 - `outer_tid` — the identity of the outer this inner is embedded in.
   - Null for an inner that was never stamped.
-  - It exists so that no user ever writes `inner.link.type`.
+  - It exists so that no user ever reads `inner.otrtypeid` directly.
   - Public because C3 cannot hide a method — `@private` is ignored on method declarations.
   - It is part of the user surface: a dispatch switch reads it.
   - Returns the `typeid` of the enclosing outer structure.
@@ -2369,7 +2483,7 @@ description to carry. `create` and `release` are members of `OuterHelper` in
 
 A short section, and the last word on the surface: everything below was
 proposed, weighed, and left out. It is here because the absences are as much a
-design as the nine members are, and because a reader who does not find something
+design as the fourteen members are, and because a reader who does not find something
 deserves to know it was refused rather than forgotten.
 
 **Not on the helper.** `inner_offset`; the Slot's own five operations — `fill`,
@@ -2392,7 +2506,7 @@ is testing.
 
 **No dispatch construct.** A `switch` on `inner.outer_tid()` with compile-time
 constant cases is the whole of it, and *Dispatch* in
-[3tk-patterns-004.md](3tk-patterns-004.md) shows the four shapes that switch
+[3tk-patterns-005.md](3tk-patterns-005.md) shows the four shapes that switch
 takes.
 
 **No `Allocator` field convention.** No name rule, no compile-time discovery, no

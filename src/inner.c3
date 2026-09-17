@@ -171,6 +171,20 @@ macro move_from_slot(Slot* s, $Type)
 }
 
 
+macro Inner* from_any(any* a, $Type)
+{
+    if (a.ptr == null || a.type != $Type::typeid) return null;
+    Inner* inner = to_inner(($Type*)a.ptr);
+    mtk::@check((void*)inner.outer_tid() == null || inner.outer_tid() == $Type::typeid,
+        "the any says one type and the outer carries another: it was built by hand, or it points at the wrong thing");
+    check_stamped(inner, "the outer was never stamped: make it with `create`, or call `stamp` once");
+    return inner;
+}
+
+
+macro void clear_any(any* a) => *a = (any){};
+
+
 fn void Inner.repoint_to(&self, Inner* to) @inline
     => self.link = to;
 

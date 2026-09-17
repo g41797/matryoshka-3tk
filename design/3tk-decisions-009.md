@@ -1,5 +1,16 @@
 # 3tk — the decisions
 
+**This is 009, by 3TK-87, 2026-09-17.** The `any` border is ruled: an `any` is
+handled like a Slot, by address, and `OuterHelper` gains `is`, the
+`to_any`/`to_slot` pair, and `any*` in `look` and `take`. **Ruled, not built** —
+`3TK-88` builds it. The entry is under `helper.c3`, *The `any` crossing*.
+`008` is in `backup/`.
+
+**008, by INTR 12, 2026-09-16.** `any` left the inner: the chain link
+and the identity are two named fields again, and `any` is a border type the
+toolkit builds only at the crossing into C3's own containers. **It supersedes
+3TK-21's entry**, which is marked rather than deleted. `007` is in `backup/`.
+
 **What was decided, and where it lives in the code.** One common section, then
 one section per source file.
 
@@ -86,7 +97,7 @@ truth**, and a `Part n` or `RT-n` below is a **historical marker**, not a live
 link: it says which sitting ruled the entry, and the entry itself says what
 stands. **Where the two would differ, this file and `../3tk/src` are what
 stands.** The surface, the invariants and the absences now live in
-[3tk-reference-012.md](3tk-reference-012.md); the rules that bind a stage live
+[3tk-reference-014.md](3tk-reference-014.md); the rules that bind a stage live
 in [3tk-rules-007.md](3tk-rules-007.md).
 
 ---
@@ -123,7 +134,7 @@ carried down**, because a port that read them got the pre-ruling design:
   spelled **`inner::internal::`** since 3TK-70, and the answer `PL-6` actually gets is that a user
   reaches for the helper member and meets no stutter at all — Boundaries
   `Part 6`, and the *What is deliberately absent* section of
-  [3tk-reference-012.md](3tk-reference-012.md).
+  [3tk-reference-014.md](3tk-reference-014.md).
 - **`RT-5` and `RT-13` — `xtn` and the allocator field.** Both stand as
   superseded, and the body's *`managed.c3`* section is the deletion record.
   There is no allocator-field concept in the source at all: no discovery, no
@@ -315,12 +326,18 @@ discovery of the outer's fields. `../3tk/src/inner.c3:81`.
 
 ### The inner
 
-- **One field, and it is a built-in pair.** `any link`: `link.ptr` is the chain
-  link, `link.type` is the identity. `R6b`, `Part 4.2`, `Part 5`.
+- **Two fields, each with one job.** `Inner* link` is the chain link,
+  `typeid otrtypeid` is the identity. `R6b`, `Part 4.2`, `Part 5`.
   `../3tk/src/inner.c3:81`.
-- **The two meanings did not move; only where they are stored moved.** Two
-  named fields until 2026-08-25. 16 bytes before, 16 after — an observation, and
-  no code may depend on it. `../3tk/src/inner.c3:81`.
+- **The two meanings have never moved; where they are stored has, twice.** Two
+  named fields until 2026-08-25, one `any` until 2026-09-16, two named fields
+  since. **16 bytes at every step** — an observation, and no code may depend on
+  it. `../3tk/src/inner.c3:81`.
+- **`any` is a border type, not an internal one.** INTR 12, the owner's ruling,
+  2026-09-16. An `any` whose `.ptr` is not an instance of its `.type` is a value
+  the rest of C3 misreads, and the toolkit keeps none. It builds a real one only
+  at the crossing into C3's own containers. **This supersedes 3TK-21.**
+  `../3tk/src/inner.c3:81`.
 - **One link, not two.** `prev` is deleted. Nothing needed arbitrary removal,
   arbitrary insertion, backward traversal or a take from the back. `R5`.
   `../3tk/src/inner.c3:81`.
@@ -330,7 +347,7 @@ discovery of the outer's fields. `../3tk/src/inner.c3:81`.
 ### The self-link
 
 - **The invariant: an outer on a chain has a non-null link, the last outer points
-  at itself, an outer on no chain has `link.ptr == null`.** `R6b`.
+  at itself, an outer on no chain has `link == null`.** `R6b`.
   `../3tk/src/inner.c3:81`.
 - **It replaces invariant 16, retired in place.** `R10`, `V12`.
   `../3tk/src/inner.c3:81`.
@@ -342,17 +359,18 @@ discovery of the outer's fields. `../3tk/src/inner.c3:81`.
 
 ### Writing and reading the link
 
-- **`any`'s halves are read-only**, so every link write rebuilds the whole
-  value and carries the identity through by hand.
+- **A link write touches the link and nothing else.** INTR 12, 2026-09-16.
+  While the two lived in one `any` its halves were read-only, so every write
+  rebuilt the whole value and carried the identity through by hand.
   `../3tk/src/inner.c3:81`.
-- **`Inner.repoint_to` keeps the identity and swaps the chain link**, and it is
-  the fourth corner of the stdlib's own table. Nine link writes go through it;
-  `helper::init` is the exception. `../3tk/src/inner.c3:335`.
+- **`Inner.repoint_to` swaps the chain link**, and it is the fourth corner of
+  the stdlib's own table. Nine link writes go through it.
+  `../3tk/src/inner.c3:335`.
 - **`Inner.points_to` is the reader**, and it is what lets a walk site say *the
   last outer points at itself* word for word. `../3tk/src/inner.c3:341`.
-- **Methods on `Inner`, not an extension of `any`** — the owner's ruling,
-  2026-08-25. Extending a builtin widens the surface past what the change may
-  touch. `../3tk/src/inner.c3:90`.
+- **Methods on `Inner`, never an extension of `any`** — the owner's ruling,
+  2026-08-25, and it outlived the `any` itself. Extending a builtin widens the
+  surface past what the change may touch. `../3tk/src/inner.c3:90`.
 - **Neither is `@private`, and the language decided that.**
   `../3tk/src/inner.c3:81`.
 
@@ -475,7 +493,7 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   identity.** `RT-7`. **The field is `outer_tid`, not the `otrid` the ruling
   named**; Boundaries `Part 3.1` is the later document and the source follows
   it. `typeid`, not `void*`: same size, but it type-checks and compares directly
-  against `Inner.link.type` with no cast at either end.
+  against `Inner.otrtypeid` with no cast at either end.
   `../3tk/src/inner.c3:110`.
 - **The field is carried, never trusted.** No member reads `self.outer_tid` to
   decide anything; every member compares against `Outer::typeid`, the
@@ -509,7 +527,7 @@ crossings wherever the crossings sit. **Their `file:line` were re-anchored by
   **reporting** the omission in a safe build rather than covering it
   (`../3tk/src/helper.c3:171`).
 - **No dispatch construct** — users write a `switch` on the identity. `RT-17`.
-  `Inner.outer_tid()` exists so no user writes `inner.link.type`.
+  `Inner.outer_tid()` exists so no user reads `inner.otrtypeid` directly.
   `../3tk/src/helper.c3:56`.
 
 ### `create` and `release` — built by 3TK-64, 2026-09-07
@@ -622,6 +640,31 @@ type-erased inner. `Part 7`, `Part 7.5`.
   correction is kept because a reader meeting this file next to 003 should know
   which way it ran. `E6`, `V19`. `../3tk/src/helper.c3:56`.
 
+### The `any` crossing — ruled by 3TK-87, 2026-09-17, not built
+
+**The owner's ruling. The case is in `3tk-any-border-001.md`.**
+
+- **3tk checks an `any` on its own side, through `OuterHelper`.** `.type` is a
+  hint; `otrtypeid` is the truth. `3tk-any-border-001.md` 1-2.
+- **3tk fixes only what it can check.** The copy of an `any` a sender keeps
+  after `push` is the user's. `3tk-any-border-001.md` 3.
+- **An `any` is a kind of Slot.** Handled by address, `&a`; empty when
+  `.ptr == null`, whatever `.type` says. A take clears both fields; a put needs
+  `.ptr == null`. `3tk-any-border-001.md` 4-8.
+- **The surface.** `is(from)` for `Slot*`, `Inner*`, `any*`; `look`,
+  `must_look`, `take`, `must_take` accept `any*`; `to_any(&slot, &a)` and
+  `to_slot(&a, &slot)`, each with a `must_` form. `3tk-any-border-001.md` 9-12.
+- **No `must_is`.** `is` answers a question and `false` is a normal answer;
+  the `must_` calls that return the outer already abort.
+  `3tk-any-border-001.md` 12a.
+- **The examples group is `l_bridge`.** The border is the line; the bridge is
+  the calls that cross it. Both words stay. `3tk-any-border-001.md` 18.
+- **Always aborts, in both forms:** `.type` says `Outer` and `otrtypeid` does
+  not; unstamped; linked, in both directions; target not empty.
+  `3tk-any-border-001.md` 13-16.
+- **Where it will live:** `../3tk/src/helper.c3`, beside `look`
+  (`../3tk/src/helper.c3:87`). No line yet.
+
 ### The members
 
 - **`is_mine` refuses a null inner and an uninitialized outer.** A zeroed
@@ -633,14 +676,15 @@ type-erased inner. `Part 7`, `Part 7.5`.
   argument is not an existing `link.type`."* **Both halves changed.** The name
   is `mtk::stamp`, because `init` became the name of the user's own hook and one
   word could not carry two opposite meanings inside one module; the rename
-  touched about sixty call sites. And the write **preserves `link.ptr`** —
-  `any_make(inner.link.ptr, ...)` — which is what makes the stamp safe on a
-  linked inner as well as an unlinked one. Boundaries `Part 5.1`.
-  `../3tk/src/helper.c3:197`.
-- **The correct line differs from the destructive one by a single
-  sub-expression**, and it is written into the file with its reason. The natural
-  maintenance edit is `any_make(null, ...)` — the old `init` body verbatim — and
-  it silently unlinks a linked outer. `../3tk/src/helper.c3:56`.
+  touched about sixty call sites. And the write preserved the chain link, which
+  is what made the stamp safe on a linked inner as well as an unlinked one.
+  Boundaries `Part 5.1`. `../3tk/src/helper.c3:197`.
+- **REVISED AGAIN by INTR 12, 2026-09-16 — the trap is gone with the `any`.**
+  This entry read *"the correct line differs from the destructive one by a
+  single sub-expression"*, because writing the identity rebuilt the whole packed
+  field and a plausible maintenance edit silently unlinked a linked outer.
+  **`stamp` now writes `otrtypeid` alone and never touches `link`**, so there is
+  no destructive spelling left to get wrong. `../3tk/src/helper.c3:56`.
 - **`stamp` stays a separate call and is not folded into construction, and
   since `3TK-75` it is the user's to remember.** `H8`, `HR-5`, revised by `C-1`
   and `C-2`, 2026-09-10. `OuterHelper.inner()` used to stamp on every crossing
@@ -650,7 +694,7 @@ type-erased inner. `Part 7`, `Part 7.5`.
   a forgotten identity *and* one naming another type, where a stamp covered the
   first by writing over it and agreed with itself afterwards.
   `../3tk/src/helper.c3:171,187`.
-- **`Inner.outer_tid()` exists so that no user writes `inner.link.type`.** An
+- **`Inner.outer_tid()` exists so that no user reads `inner.otrtypeid`.** An
   `@inline` accessor, and the thing a dispatch `switch` reads. It is above
   `inner.c3`'s internal banner for that reason: the helper cannot read an
   identity before the type is known. `../3tk/src/inner.c3:110`.

@@ -48,7 +48,7 @@ that changed the source.
 it — so no version there is ever cited as a source of truth.**
 
 **It does not argue.** No ruling markers, no history, no alternatives that were
-refused. Those live in [3tk-decisions-008.md](3tk-decisions-008.md).
+refused. Those live in [3tk-decisions-009.md](3tk-decisions-009.md).
 
 **Every contract and every check below is copied from `3tk/src`**, with its
 `file:line`. None is inferred from what a declaration ought to check.
@@ -77,7 +77,7 @@ construction**, and that entry documented a gap that no longer exists. `is_quiet
 on both, `InnerQueue.take`, `stamp`, `check_stamped` and the four helper
 crossings are new entries. `VERSION` read `"0.2.0"` and reads `"0.0.1"`. **Every
 `file:line` was recomputed from the built tree**, in the same pass that repaired
-[3tk-decisions-008.md](3tk-decisions-008.md).
+[3tk-decisions-009.md](3tk-decisions-009.md).
 
 **`004` is not in `backup/`, and this is the one thing to know about the
 version.** 3TK-66 revised it **in place** first, on the strength of the *It is

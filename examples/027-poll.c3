@@ -20,7 +20,7 @@ faultdef POLL_FAILED;
 fn void free_outer(Allocator a, Slot* s)
 {
     if (s.is_empty()) return;
-    if (HOLDER.look(s)) { HOLDER.release(a, s); return; }
+    if (HOLDER.is(s)) { HOLDER.release(a, s); return; }
     unreachable("free_outer met an identity it was not written for");
 }
 
@@ -42,6 +42,6 @@ fn void? poll_then_send_then_poll(Allocator a, Mailbox* mb)
 
     Slot got;
     mb.poll(&got)!;
-    shc::helpers::expect(POLL_FAILED, HOLDER.look(&got) != null, "the polled outer is the Holder that was sent")!;
+    shc::helpers::expect(POLL_FAILED, HOLDER.is(&got), "the polled outer is the Holder that was sent")!;
     free_outer(a, &got);
 }

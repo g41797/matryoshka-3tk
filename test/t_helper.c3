@@ -25,7 +25,7 @@ fn void an_outer_needs_no_allocator_field() @test
     Slot s;
     if (catch MSG.create(mem, &s)) { always_assert(false, "create failed on an outer with no Allocator field"); }
     always_assert(s.is_full(), "create did not fill the Slot");
-    always_assert(MSG.look(&s) != null, "the created outer is not of its own type");
+    always_assert(MSG.is(&s), "the created outer is not of its own type");
     MSG.release(mem, &s);
     always_assert(s.is_empty(), "release did not clear the Slot");
 }

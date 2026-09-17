@@ -59,7 +59,8 @@ MODES=("safe -O0::--safe=yes -O0"
 # A runtime negative aborts where the checks are live and exits 0 where they are not.
 RUNTIME_NEGATIVES=(overwrite_slot create_into_full_slot insert_twice_same_queue insert_linked_outer self_move wrong_type_must duplicate_pool_tags pool_unknown_identity
                    unstamped_insert unstamped_crossing
-                   unstamped_inner wrong_type_inner)
+                   unstamped_inner wrong_type_inner
+                   any_wrong_type_must any_forged any_unstamped any_linked any_full_target)
 
 # 3TK-65 added the last two. Part 5.2 asserts the identity at BOTH boundaries and
 # the two programs are not variants of one another: `unstamped_insert` reaches
@@ -73,6 +74,14 @@ RUNTIME_NEGATIVES=(overwrite_slot create_into_full_slot insert_twice_same_queue 
 # it an outer that was never stamped, `wrong_type_inner` one stamped as another
 # type. The second is the half no stamp could ever have caught — the old
 # `inner()` would have re-stamped it and agreed with itself afterwards.
+#
+# 3TK-88 added the five `any_` programs, the border with C3's `any`:
+#
+#   any_wrong_type_must  a plain wrong type, through the must_ form
+#   any_forged           `.type` and `otrtypeid` disagree; the plain form aborts too
+#   any_unstamped        an unstamped outer arrives
+#   any_linked           an outer crosses while it is on a queue
+#   any_full_target      `to_any` into an `any` that is not empty
 
 # A TIER 1 negative aborts in EVERY mode, including --safe=no -O3. Part 11.12 is
 # the one precondition the specification refuses to soften, and this is the only
@@ -305,13 +314,15 @@ for banner in '^// Part 2 of 2: public, and not yours' '^module mtk::inner::inte
 done
 [ $PARTITION_OK -eq 1 ] && ok "src/inner.c3 carries the part banners the partition is written in"
 
-# The second part, by name. Two examples name a crossing on purpose and are
-# listed here rather than silently skipped: 010 asserts that `create` wrote an
-# identity, and 012's whole subject is that the free form and the method form
-# give the same answer. Any THIRD example is a user reaching past the helper,
-# and either the example is wrong or the partition is.
-INTERNAL='inner::internal::(to_inner|from_inner|must_from_inner|from_slot|must_from_slot|move_from_slot|is_mine|stamp|is_linked|reset|inner_offset)\b|\.(repoint_to|points_to)[[:space:]]*\('
-ALLOWED='examples/010-no_raw_allocator_call.c3|examples/012-type_crossing.c3'
+# The second part, by name. One example names a crossing on purpose and is
+# listed here rather than silently skipped: 012's whole subject is that the free
+# form and the method form give the same answer. Any SECOND example is a user
+# reaching past the helper, and either the example is wrong or the partition is.
+#
+# 3TK-88 took 010 off the list. It asked `is_mine` whether `create` wrote an
+# identity, because the helper had no yes/no call; `HOLDER.is` is that call.
+INTERNAL='inner::internal::(to_inner|from_inner|must_from_inner|from_slot|must_from_slot|move_from_slot|is_mine|stamp|is_linked|reset|inner_offset|from_any|clear_any)\b|\.(repoint_to|points_to)[[:space:]]*\('
+ALLOWED='examples/012-type_crossing.c3'
 REACHING=$(grep -rEn "$INTERNAL" examples/*.c3 | grep -vE "^[^:]*:[0-9]+:[[:space:]]*//" \
     | grep -vE "^($ALLOWED):" | cut -d: -f1 | sort -u)
 if [ -z "$REACHING" ]; then
@@ -491,6 +502,9 @@ fi
 # that can be dropped on its own. The measurement wins over the charter's
 # figure and this is where it is written down (`3tk-rules-001.md` Rule 10).
 #
+# 3TK-88 MADE THEM TEN. `is` adds a `Slot*` and an `Inner*` branch, and `to_any`
+# and `must_to_any` read a Slot. The `any*` branches are counted separately below.
+#
 # The count is the check and the negatives are the proof: `unstamped_insert`
 # proves the guard aborts, `unstamped_crossing` proves the crossing does, and
 # this proves the other four were not quietly dropped by a later stage.
@@ -501,10 +515,21 @@ fi
 # and it must go red here.
 echo "== Part 5.2: the identity check at both boundaries =="
 CROSSINGS=$(grep -c 'inner::internal::check_stamped(' src/helper.c3)
-if [ "$CROSSINGS" -eq 6 ]; then
-    ok "the four crossings of src/helper.c3 check the identity, on all six arms"
+if [ "$CROSSINGS" -eq 10 ]; then
+    ok "the Slot and Inner branches of src/helper.c3 check the identity, on all ten"
 else
-    bad "src/helper.c3 has $CROSSINGS of the 6 identity checks Part 5.2 requires"
+    bad "src/helper.c3 has $CROSSINGS of the 10 identity checks Part 5.2 requires"
+fi
+# 3TK-88. The seven `any*` branches reach the identity through `from_any`, and
+# `from_any` carries the check once. Both counts are asserted, for the reason
+# above: the failure is a site being deleted.
+ANY_ARMS=$(grep -c 'inner::internal::from_any(' src/helper.c3)
+FROM_ANY=$(awk '/^macro Inner\* from_any\(/,/^}/' src/inner.c3)
+if [ "$ANY_ARMS" -eq 7 ] && printf '%s\n' "$FROM_ANY" | grep -q 'check_stamped(' \
+   && printf '%s\n' "$FROM_ANY" | grep -q 'outer_tid() == \$Type::typeid'; then
+    ok "the seven any branches of src/helper.c3 go through from_any, and it checks the identity"
+else
+    bad "the any border has lost a site: $ANY_ARMS of 7 branches, or from_any lost its checks"
 fi
 for f in queue pool; do
     N=$(grep -c 'inner::internal::check_stamped(' "src/$f.c3")

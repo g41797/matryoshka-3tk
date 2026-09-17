@@ -92,13 +92,11 @@ not reopen it.**
 
 | | what | where the README depends on it | owner of the work |
 |---|---|---|---|
-| **D-1** | **`Slot`/`Outer` ↔ `any` does not exist.** `OuterHelper.look` takes a `Slot*` or an `Inner*` (`helper.c3:87`), never an `any` | *How to start*, step 2: *on arrival, `look` checks what arrived*. *If you already have a channel*: *Never cast. Use `look`…*. **Today both need a cast of `a.ptr`, which the README forbids** | plan `044`, the `any` border |
-| **D-2** | **The `l_` examples group does not exist** | step 2 has no example behind it; the channel section names none | plan `044` |
-| **D-3** | **The module `<* *>` blocks are not written from the README** | the mapping table below | a later doc-comment plan, with the `3tk-reference-013.md` re-sync |
+| **D-1** | **`Slot`/`Outer` ↔ `any` does not exist.** `OuterHelper.look` takes a `Slot*` or an `Inner*` (`helper.c3:87`), never an `any` | *How to start*, step 2: *on arrival, `look` checks what arrived*. *If you already have a channel*: *Never cast. Use `look`…*. **Today both need a cast of `a.ptr`, which the README forbids** | plan `044`, the `any` border. **Ruled 2026-09-17 in [3tk-any-border-001.md](3tk-any-border-001.md)**; **built by `3TK-88`, 2026-09-17**: `is`, `look`/`take` on `any*`, `to_any`/`to_slot`. **Closed by `3TK-90`, 2026-09-17**: step 2 and the channel section name `to_any`, `to_slot` and the `any` forms |
+| **D-2** | **The `l_` examples group does not exist** | step 2 has no example behind it; the channel section names none | plan `044`, `3TK-89`. See [3tk-any-border-001.md](3tk-any-border-001.md). **Closed by `3TK-90`, 2026-09-17**: both `shc::l_bridge` examples are named |
+| **D-3** | **The module `<* *>` blocks are not written from the README** | the mapping table below | a later doc-comment plan, with the `3tk-reference-014.md` re-sync |
 
-**When `044` closes, two README passages are revised** — step 2 and the
-channel section's rules — to name the real calls and the `l_` examples. **No
-other README change is owed.**
+**`044` is spent.** `3TK-90` revised both passages. **Only `D-3` is open. No README change is owed.**
 
 ---
 

@@ -5,7 +5,7 @@
  A wait ends on an outer, a close, a wake, or a timeout, and nothing else.
  Shutting down means reading which one happened and freeing what `close` returns.
  Stop producing first.
- Then close the mailbox that feeds the workers.
+ Then close the mailbox the workers receive from.
  Every waiting receiver gets `CLOSED`.
  Release what `close` returns, then join the workers.
  Close the pool only after the workers are joined.

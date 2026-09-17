@@ -22,5 +22,6 @@
  - `shc::i_shutdown` — how a wait ends, and shutting down.
  - `shc::j_coordinator` — a coordinator and its steps.
  - `shc::k_new_in_3tk` — shapes that C3 makes cheap.
+ - `shc::l_bridge` — outers leaving as `any`, and coming back.
 *>
 module shc;

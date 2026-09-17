@@ -53,7 +53,7 @@ rulings of 2026-08-26, and from `matryoshka-ztk`'s `rules-049.md` Parts 1, 2, 4,
 not bind `3tk/src`, `3tk/test` or `3tk/negative`, none of which it changes.
 
 **It is normative. The catalog is descriptive.** A rule is changed here and
-nowhere else. [3tk-patterns-004.md](3tk-patterns-004.md), written by 3TK-49 and
+nowhere else. [3tk-patterns-005.md](3tk-patterns-005.md), written by 3TK-49 and
 revised by the owner's stack-outer ruling, says what the shapes are; this file
 says how one is written down.
 
@@ -75,7 +75,7 @@ one.
 
 ### The scope of the rule, and why two words are in the port
 
-**The rule binds new work only.** `3tk/examples/`, `3tk-patterns-004.md`,
+**The rule binds new work only.** `3tk/examples/`, `3tk-patterns-005.md`,
 this file, and anything a later stage adds.
 
 **The existing tree in `matryoshka-ztk` is not searched and replaced.** That is
@@ -204,7 +204,7 @@ in the middle of its name.**
 - **Why.** The helper is the surface; the macros are the layer beneath. An
   example is what a reader copies, and 52 files copying the lower layer taught
   the wrong one. See *What is deliberately absent* in
-  [3tk-reference-013.md](3tk-reference-013.md).
+  [3tk-reference-014.md](3tk-reference-014.md).
 
 ## Allocation — every outer is heap-allocated, never stack — MUST
 
@@ -218,7 +218,7 @@ demonstration is exempt.
   valid for exactly one lexical instance of one frame: a copy of the struct,
   or a use after the frame returns, reaches through a stale address. It can
   appear to work and fail later, unpredictably. See
-  [3tk-patterns-004.md](3tk-patterns-004.md) entry 14 for the full account and
+  [3tk-patterns-005.md](3tk-patterns-005.md) entry 14 for the full account and
   the owner's ruling.
 - **The default path is the helper.** `MSG.create(a, &slot)` and
   `MSG.release(a, &slot)`, off one `alias MSG = helper::OF{Msg};` per outer
