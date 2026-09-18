@@ -32,7 +32,7 @@ This page:
 ---
 
 
-## A process you have probably built
+# A process you have probably built
 
 ---
 
@@ -340,7 +340,7 @@ The code that keeps them:
 
 ---
 
-## The same process, with this toolkit
+# The same process, with this toolkit
 
 ---
 
@@ -1000,7 +1000,7 @@ Use the part that solves your actual problem.
 
 ---
 
-## Matryoshka
+# Matryoshka
 
 ---
 
