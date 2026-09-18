@@ -97,7 +97,7 @@ truth**, and a `Part n` or `RT-n` below is a **historical marker**, not a live
 link: it says which sitting ruled the entry, and the entry itself says what
 stands. **Where the two would differ, this file and `../3tk/src` are what
 stands.** The surface, the invariants and the absences now live in
-[3tk-reference-014.md](3tk-reference-014.md); the rules that bind a stage live
+[3tk-reference-015.md](3tk-reference-015.md); the rules that bind a stage live
 in [3tk-rules-007.md](3tk-rules-007.md).
 
 ---
@@ -134,7 +134,7 @@ carried down**, because a port that read them got the pre-ruling design:
   spelled **`inner::internal::`** since 3TK-70, and the answer `PL-6` actually gets is that a user
   reaches for the helper member and meets no stutter at all — Boundaries
   `Part 6`, and the *What is deliberately absent* section of
-  [3tk-reference-014.md](3tk-reference-014.md).
+  [3tk-reference-015.md](3tk-reference-015.md).
 - **`RT-5` and `RT-13` — `xtn` and the allocator field.** Both stand as
   superseded, and the body's *`managed.c3`* section is the deletion record.
   There is no allocator-field concept in the source at all: no discovery, no

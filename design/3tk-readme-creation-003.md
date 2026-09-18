@@ -128,9 +128,9 @@ not reopen it.**
 |---|---|---|---|
 | **D-1** | **`Slot`/`Outer` ↔ `any` does not exist.** `OuterHelper.look` takes a `Slot*` or an `Inner*` (`helper.c3:87`), never an `any` | *How to start*, step 2: *on arrival, `look` checks what arrived*. *If you already have a channel*: *Never cast. Use `look`…*. **Today both need a cast of `a.ptr`, which the README forbids** | plan `044`, the `any` border. **Ruled 2026-09-17 in [3tk-any-border-001.md](3tk-any-border-001.md)**; **built by `3TK-88`, 2026-09-17**: `is`, `look`/`take` on `any*`, `to_any`/`to_slot`. **Closed by `3TK-90`, 2026-09-17**: step 2 and the channel section name `to_any`, `to_slot` and the `any` forms |
 | **D-2** | **The `l_` examples group does not exist** | step 2 has no example behind it; the channel section names none | plan `044`, `3TK-89`. See [3tk-any-border-001.md](3tk-any-border-001.md). **Closed by `3TK-90`, 2026-09-17**: both `shc::l_bridge` examples are named |
-| **D-3** | **The module `<* *>` blocks are not written from the README** | the mapping table below | a later doc-comment plan, with the `3tk-reference-014.md` re-sync |
+| **D-3** | **The module `<* *>` blocks are not written from the README** | the mapping table below | plan `045`. **Closed by `3TK-92`, 2026-09-18**: all six public blocks written, `mtk::pool::hooks` rewritten, reference re-synced to `3tk-reference-015.md`. **Verified by `3TK-93`, 2026-09-18** |
 
-**`044` is spent.** `3TK-90` revised both passages. **Only `D-3` is open. No README change is owed.**
+**`044` is spent, and so is `045`. All three debts are closed. No README change is owed.**
 
 ---
 
@@ -744,6 +744,7 @@ crossings.
 
 | version | stage | date | what changed |
 |---|---|---|---|
+| `003` | `3TK-93` | 2026-09-18 | `D-3` closed in place: `3TK-92` wrote all six public module blocks and `3TK-93` verified them — `check-doc-loop.sh` clean at 424 of 424 with 0 banned words, `c3c test` 159 passed, `run-builds.sh` 135 passed with the same 9 pre-existing failures. No text elsewhere in this document changed. |
 | `003` | README round | 2026-09-18 | New version. The owner reopened the finished README and revised it with the session over one round: two new sections, one renamed, *If you already have a channel* removed, the independence of the three pieces corrected, `init`/`finish` moved, every claim re-checked against `src/`. Rulings 26–34 added; the mapping table re-sourced. |
 | `002` | closing stage | 2026-09-17 | New version. README finished after four owner revisions (owner edits and a Gemini merge; English; two ChatGPT merges; staccato formatting) and the one-`Inner` claim corrected. Rulings 19–25 added; size limit lifted; *What is open* rewritten as debts D-1..D-3; mapping table re-sourced to the final sections. |
 | `001` | `3TK-86` | 2026-09-16 | Revised in place. The README's solution half written; `O-4` closed; the mapping table's *source* column filled; `mtk::inner`'s debt corrected to the two-field `Inner`. |

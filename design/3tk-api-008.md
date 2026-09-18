@@ -39,7 +39,7 @@ Every public declaration of the C3 port, with every assert and every contract
 clause copied from the source and carrying its `file:line`.
 
 **This is not the page to learn the toolkit from.**
-[3tk-reference-014.md](3tk-reference-014.md) is that page, and it is the one a
+[3tk-reference-015.md](3tk-reference-015.md) is that page, and it is the one a
 caller reads. (Until this version the pointer here was `3tk-api-002.md`, which
 3TK-60 moved to `matryoshka-ztk`'s `backup/`.) Read this one to check that the
 reference is telling the truth, or to find where in `3tk/src` a promise is

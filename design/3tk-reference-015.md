@@ -1,6 +1,34 @@
 # 3tk — the book
 
-**012 replaces 011, revised by 3TK-78 on 2026-09-14**, which added `Mailbox.send`'s
+**This is 015**, by `3TK-92`, 2026-09-18: **the six public module blocks are the
+deep dive now.** `mtk`, `mtk::inner`, `mtk::helper`, `mtk::mailbox`, `mtk::pool`
+and `mtk::pool::hooks` carry the labelled blocks their `src/*.c3` sections carry,
+byte for byte. `mtk::queue` was `3TK-91`'s exemplar and is unchanged here.
+
+The blocks are written from the finished `README.md`, in its voice, and they
+carry only what the README does not say. **Ruled by the owner, 2026-09-18**, as
+`045-O-1` … `045-O-5` of `3tk-staging-plan-045.md`: a block carries only what it
+owes; it orients and names, and no declaration block was touched; a fenced ASCII
+diagram is allowed; `mtk::pool::hooks` is rewritten as user surface and the four
+`::internal` blocks are left as they are; and `mtk`'s block names the outcome set
+without listing the eight faults, which are documented at their own declarations.
+
+**`014` is in this repo's `backup/`.**
+
+**014 was by `3TK-88`, 2026-09-17: the `any` border is built.**
+`OuterHelper` gains five members and widens three.
+
+- `is(from)` — new. A yes/no answer for a `Slot*`, an `Inner*` or an `any*`.
+- `look`, `must_look` — accept an `any*`.
+- `take`, `must_take` — accept an `any*`, and clear both of its fields.
+- `to_any`, `must_to_any` — new. Slot → `any`, before a C3 container sends it.
+- `to_slot`, `must_to_slot` — new. `any` → Slot, after it arrives from a C3 container.
+
+Ruled by the owner, 2026-09-17, in `3tk-any-border-001.md`. Part 3's
+*The API — the helper* carries it, in *The four crossings* and in the new
+*The border — Slot and any*. **`013` is in this repo's `backup/`.**
+
+**012 replaced 011, revised by 3TK-78 on 2026-09-14**, which added `Mailbox.send`'s
 `limit` parameter and the `LIMIT` fault. `011` is in `backup/`.
 
 Matryoshka in C3.
@@ -81,7 +109,7 @@ void`, with the fields in `@private` `_Mbox`/`_Pool` structs — and added
 `005` carried all of `004` and fixed one example: Part 1's *Usual
 flow* walkthrough created its demo outer on the stack. The owner ruled a stack
 outer illegal, in every case, not only across a mailbox or thread boundary —
-see [3tk-patterns-004.md](3tk-patterns-004.md) entry 14. The walkthrough now
+see [3tk-patterns-005.md](3tk-patterns-005.md) entry 14. The walkthrough now
 creates the outer on the heap. Nothing else changed. **`004` is in
 `matryoshka-ztk`'s `backup/`, and this version lives in `matryoshka-3tk/design/`,
 not in that repo's `ref/`.**
@@ -471,7 +499,7 @@ Msg* back = MSG.take(&got);
      identity, and fills the Slot. **Never on the stack** — 3tk computes the
      outer's address from the embedded `Inner` at every crossing, and a stack
      address is only valid for one lexical instance of one frame. See
-     [3tk-patterns-004.md](3tk-patterns-004.md) entry 14.
+     [3tk-patterns-005.md](3tk-patterns-005.md) entry 14.
    - `push_back_slot` reaches the field and empties the Slot in the same call.
    - The inner travels. The identity travels with it.
 
@@ -516,7 +544,7 @@ while (Inner* inner = q.pop_front())
 ### The API — the helper
 
 **This is the first API section of the book, and that is deliberate.** `OuterHelper` is the
-whole user surface for an outer: nine members, one alias to bind them, and no
+whole user surface for an outer: fourteen members, one alias to bind them, and no
 registration. The sections after it — the identity, the crossings, the Slot,
 the link, the queue and the stack — are the layer beneath, and they are here so
 that you can read what the helper does rather than trust it. **Reach for the
@@ -550,40 +578,133 @@ read, as a number or as anything else.
 - `OF` — compile-time constant used to alias helper instances. Example:
   `alias MSG = helper::OF{Msg};`
 
-#### The four crossings
+#### The four crossings, and `is`
 
 ```c3
-macro Outer* OuterHelper.look(self, from)
-macro Outer* OuterHelper.must_look(self, from)
-macro Outer* OuterHelper.take(self, Slot* slot)
-macro Outer* OuterHelper.must_take(self, Slot* slot)
+macro bool   OuterHelper.is(self, from)          // a `Slot*`, an `Inner*` or an `any*`
+macro Outer* OuterHelper.look(self, from)        // a `Slot*`, an `Inner*` or an `any*`
+macro Outer* OuterHelper.must_look(self, from)   // a `Slot*`, an `Inner*` or an `any*`
+macro Outer* OuterHelper.take(self, from)        // a `Slot*` or an `any*`
+macro Outer* OuterHelper.must_take(self, from)   // a `Slot*` or an `any*`
 ```
 
 Two independent axes, so the names are derivable rather than memorised. `must_`
-aborts on a mismatch and plain returns null; `take` empties the Slot and `look`
+aborts on a mismatch and plain returns null; `take` empties the holder and `look`
 leaves it alone.
 
-- `look` — from a Slot or an inner back to `Outer*`, without disturbing the Slot.
+**A holder is a `Slot`, an `Inner*`, or an `any`.** An `any` is a kind of Slot:
+
+- it is handled by address, `&a`
+- it is empty when `.ptr == null`, whatever `.type` says
+
+- `is` — answers whether the holder has an outer of this type.
+  - `false` is a normal answer: an empty holder, another type, an io event.
+  - There is no `must_is`. A `must_` form returns something usable, and `is` returns nothing.
+  - Use it where the pointer is not needed.
+  - Returns `true` if the holder has an outer of type `Outer`.
+    Returns `false` for an empty holder, and for any other type.
+    An `any` whose `.type` is not `Outer` is not an outer of this type: an io event passes untouched.
+    Aborts on an unstamped outer, and on an `any` whose `.type` and `otrtypeid` disagree.
+- `look` — from a holder back to `Outer*`, without disturbing it.
   - Null on an identity mismatch.
   - A mismatch is an answer, not a failure.
-  - Retrieves an `Outer*` from a `Slot*` or `Inner*` without modifying the slot.
+  - Retrieves an `Outer*` from a `Slot*`, `Inner*` or `any*` without modifying the holder.
     Returns `null` if the identity does not match `Outer`.
 - `must_look` — same as `look`, and it aborts on a mismatch.
   - Use it where a mismatch would be your own defect.
   - The abort names your line.
   - Under `--safe=no` the check is gone.
-  - Retrieves an `Outer*` from a `Slot*` or `Inner*` without modifying the slot.
+  - Retrieves an `Outer*` from a `Slot*`, `Inner*` or `any*` without modifying the holder.
     Aborts if the type identity does not match `Outer`.
-- `take` — from a Slot back to `Outer*`, emptying the Slot on success.
-  - Null on an identity mismatch, and then the Slot is unchanged.
-  - There is no `Inner*` form: an inner has no Slot to empty.
-  - Extracts the `Outer*` from a `Slot*` and clears the slot on success.
-    Returns `null` without clearing the slot if the type identity does not match.
+- `take` — from a Slot or an `any` back to `Outer*`, emptying the holder on success.
+  - Null on an identity mismatch, and then the holder is unchanged.
+  - There is no `Inner*` form: an inner has no holder to empty.
+  - From an `any`, both fields are cleared.
+  - Extracts the `Outer*` from a `Slot*` or `any*` and clears the holder on success.
+    Returns `null` without clearing the holder if the type identity does not match.
+    An outer taken from an `any` must not be linked.
 - `must_take` — same as `take`, and it aborts on a mismatch.
-  - The Slot is empty afterwards.
+  - The holder is empty afterwards.
   - This form did not exist before 3TK-64: the old `move_from_slot` had no abort form.
-  - Extracts the `Outer*` from a `Slot*` and clears the slot. Aborts if the type
-    identity does not match `Outer`.
+  - Extracts the `Outer*` from a `Slot*` or `any*` and clears the holder.
+    Aborts if the type identity does not match `Outer`.
+    An outer taken from an `any` must not be linked.
+
+#### The border — Slot and any
+
+**`any` is C3's border type.** 3tk converts at the border, and keeps nothing.
+
+- An outer travels over a C3 container as an `any`, such as `UnboundedChannel{any}`.
+- The container copies the `any`, 16 bytes. The outer is not copied.
+- After a `push`, the sender still has its copy of the `any`. That copy is the user's.
+
+```c3
+macro Outer* OuterHelper.to_any(self, Slot* slot, any* a)
+macro Outer* OuterHelper.must_to_any(self, Slot* slot, any* a)
+macro Outer* OuterHelper.to_slot(self, any* a, Slot* slot)
+macro Outer* OuterHelper.must_to_slot(self, any* a, Slot* slot)
+```
+
+A pair, one call per direction, named by where the outer goes.
+
+- `to_any` — the sender.
+  - Moves the outer from a `Slot` into an empty `any`, before a C3 container sends it.
+    Returns `null` and leaves both untouched if the Slot is empty or holds another type.
+    Aborts on an unstamped outer, a linked outer, or an `any` that is not empty.
+    Both fields of the `any` are written.
+- `must_to_any` — same, and it aborts on a mismatch.
+  - Moves the outer from a `Slot` into an empty `any`, before a C3 container sends it.
+    Aborts if the Slot is empty or holds another type.
+    Aborts on an unstamped outer, a linked outer, or an `any` that is not empty.
+- `to_slot` — the receiver, and the sender after a failed `push`.
+  - Moves the outer from an `any` into an empty `Slot`, after it arrives from a C3 container.
+    Returns `null` and leaves both untouched if the `any` is empty or holds another type.
+    `.type` is checked first, then `otrtypeid` inside the outer.
+    Aborts if they disagree, on an unstamped outer, a linked outer, or a full Slot.
+    Both fields of the `any` are cleared.
+- `must_to_slot` — same, and it aborts on a mismatch.
+  - Moves the outer from an `any` into an empty `Slot`, after it arrives from a C3 container.
+    Aborts if the `any` is empty or holds another type.
+    Aborts if `.type` and `otrtypeid` disagree, on an unstamped outer, a linked outer, or a full Slot.
+
+**`.type` is a hint. `otrtypeid` inside the outer is the truth.**
+
+What always aborts, in both forms, in a safe build:
+
+- `.type` says `Outer`, and `otrtypeid` does not. The `any` was built by hand.
+- An unstamped outer.
+- A linked outer. An outer crosses the border unlinked, in both directions.
+- A target that is not empty.
+
+The order of checks on a move:
+
+```
+source not empty -> type (.type, then otrtypeid) -> stamped -> not linked -> target empty
+```
+
+The shape in use:
+
+```c3
+// the sender
+any a;
+REQ.must_to_any(&slot, &a);
+if (catch ch.push(a)) REQ.must_to_slot(&a, &slot);   // back into its Slot
+
+// the receiver
+any a = ch.pop()!;
+if (REQ.is(&a))
+{
+    Slot s;
+    REQ.must_to_slot(&a, &s);
+    // send s on through a Mailbox, or release it
+}
+// otherwise a is an io event, and it is the user's
+```
+
+Where to go deeper:
+
+- `test/t_bridge.c3` — every call above, and the shape over a channel.
+- `negative/any_wrong_type_must`, `any_forged`, `any_unstamped`, `any_linked`, `any_full_target`.
 
 #### The other three
 
@@ -2196,6 +2317,52 @@ vocabulary they share. The inner, the Slot, the link and the crossings went to
 
 <!-- 3tk:module mtk -->
 Matryoshka Toolkit (3tk) for building background processing in C3.
+
+Your process passes around pointers to structs that already exist.
+The code in the middle does not need to know what those structs are.
+
+This page holds what every module and every user shares.
+The subjects are on the six pages below.
+
+## The six modules
+
+- `mtk` — this page. The version, the outcomes, and the safe-mode check.
+- `mtk::inner` — `Inner` and `Slot`, the two small types everything is written against.
+- `mtk::helper` — one helper per outer type. It creates, releases and checks the type.
+- `mtk::mailbox` — moves outers between threads, without copying and without allocating.
+- `mtk::pool` — keeps used outers so they can be used again, by your rules.
+- `mtk::queue` — a chain of outers that allocates nothing.
+
+An `::internal` page is not yours to call.
+
+## The names
+
+- An outer is your struct. Your data, plus one `Inner`.
+- An inner is the small part inside it. It keeps the link and the type.
+- A slot is one address, or none. It says whether an outer is still yours.
+- A helper is one per outer type. There is nothing to instantiate.
+- Hooks are your code, and the pool calls them.
+
+## When a call fails
+
+- An operation that fails, fails with one of the faults declared here.
+- The set is fixed, and it is the same set for the whole toolkit.
+- Each call's own page names the ones that call can end with.
+- Each fault is described where it is declared, below.
+
+## Safe mode
+
+- `@check` is how the toolkit states what it refuses.
+- It aborts with a message in a safe build, and compiles away in a fast one.
+- So the checks are a way to find a mistake, not a runtime cost you pay for.
+- A mistake it would catch is still a mistake in a fast build.
+- `CHECKED` is `true` when the checks are there.
+- A `$assert` is different. It is compile time, and it is alive in every build.
+
+## Two numbers
+
+- `VERSION` is the toolkit version.
+- `LOC` is the source line count, computed by the build and never committed.
 <!-- /3tk:module -->
 
 
@@ -2226,20 +2393,68 @@ inversion, since they are the two most-called members in the toolkit and *you*
 call them.
 
 <!-- 3tk:module mtk::helper -->
-Per-type helper binding for user structures (outers).
+One helper per outer type. It does the boring part.
 
-Typical usage: `alias MSG = helper::OF{Msg};`
+One line makes it: `alias MSG = helper::OF{Msg};`
 
-Handles type allocation, the `init` and `finish` hooks, type stamping,
-and identity checking when converting between typeless `Inner` pointers / `Slot` instances
-and the typed user structure.
+There is nothing to instantiate and nothing to keep.
+`OuterHelper` is a compile-time receiver, and `OF` is its one value.
 
-Every outer type handled by this helper must declare two methods:
+## Two methods your outer declares
+
 `fn void? Outer.init(&self, Allocator a)`
+
 `fn void Outer.finish(&self, Allocator a)`
 
-If a structure requires no setup or cleanup, implement them with empty bodies.
-These hooks are verified at compile time.
+- Both are required as soon as this helper creates or releases your struct.
+- An empty body is fine. It says there is nothing to do.
+- A `$assert` in `create` and in `release` checks they are there.
+- A `$assert` is compile time, so it is alive in every build mode.
+- A misspelled hook is what the check exists for.
+- A container that allocates itself never calls `create`, so it is outside this.
+
+## Making one and giving it back
+
+- `create` allocates, calls your `init`, writes the type, and fills the slot.
+- `create` frees the outer again when `init` fails, and passes the fault on.
+- `release` calls your `finish`, empties the slot, and frees the outer.
+- `release` on an empty slot does nothing, so one `defer` covers every path out.
+- `stamp` writes the type into a struct you allocated yourself.
+- `stamp` runs once per struct, before it is used anywhere.
+
+## Reading your type back
+
+Each of these takes what it is given and answers about `Outer`.
+
+- `is` says yes or no. It takes a `Slot*`, an `Inner*` or an `any*`.
+- `look` returns your pointer, or `null`, and leaves the holder alone.
+- `must_look` aborts instead of returning `null`.
+- `take` returns your pointer and empties a `Slot*` or an `any*`.
+- `must_take` does the same, and aborts on another type.
+- `inner` goes the other way, from your pointer to its `Inner*`.
+- `inner` returns `null` for `null`, and refuses an outer that was never stamped.
+- `linked` says whether an outer is on a chain. It takes an `Outer*` or an `Inner*`.
+
+## The border with C3's own containers
+
+A C3 container carries an `any`. The mailbox and the pool carry an `Inner*`.
+These four calls are the crossing between the two, and nothing else stores an `any`.
+
+- `to_any` moves the outer out of a slot and into an empty `any`, before a push.
+- `to_slot` moves it out of an `any` and into an empty slot, after a pop.
+- `must_to_any` and `must_to_slot` abort where the other two return `null`.
+- `look`, `must_look`, `take`, `must_take` and `is` also read an `any*`.
+
+What the crossing checks:
+
+- The outer leaves unlinked. An outer still on a chain is refused.
+- The `any` says a type and the outer carries one. Both are read, and they agree.
+- An `any` built by hand, or pointing at the wrong thing, is caught here.
+- An outer that was never stamped is refused, and not guessed at.
+- The target is empty. A full `any` is not overwritten, nor is a full slot.
+- An `any` of another type is left untouched, so an io event passes through.
+
+Both fields of the `any` are written on the way out, and cleared on the way back.
 <!-- /3tk:module -->
 
 #### `mtk::inner`
@@ -2250,11 +2465,62 @@ paragraphs on the inner, the Slot, the link and the five crossings moved here
 whole, because they were always this module's subject and never the root's.
 
 <!-- 3tk:module mtk::inner -->
-Core type erasure primitives: embedded header (`Inner`), target container (`Slot`),
-and address conversion utilities.
+The two small types every other module is written against.
 
-Users embed `Inner` into domain structures (`outer`). System containers interact
-strictly with `Inner*` pointers, ignoring the layout or type of the outer structure.
+`Inner` is the part you put inside your own struct.
+`Slot` is the place where one outer may be, or may not.
+The mailbox and the pool see an `Inner*` and nothing else.
+
+## The inner
+
+`Inner` has two fields, and both are for the toolkit.
+
+- `link` is the next inner on the chain.
+- `link` is the inner itself when it is the last one on a chain.
+- `link` is `null` when the outer is on no chain.
+- `otrtypeid` is the `typeid` of the outer the inner sits in.
+- `otrtypeid` is written once, by `stamp`, and never again.
+- `outer_tid` reads it back, before anyone knows the type.
+
+An `any` is not used here, and that is a decision.
+
+- An `any` is C3's own border type.
+- It is converted at the border, by `mtk::helper`, and stored nowhere.
+- Two named fields cost the same sixteen bytes and say what they are.
+
+## Exactly one inner per outer
+
+- The offset of the `Inner` field is computed at compile time.
+- So nothing is stored to find the way back: no back-pointer, no map.
+- The field goes anywhere in your struct. First, last, or in the middle.
+- Zero `Inner` fields, or two, is a compile error.
+- The check runs when the toolkit first uses the struct as an outer.
+- Declaring such a struct and never using it is not an error.
+
+## The slot
+
+A slot has one `Inner*`, or nothing, and you read which.
+
+- `is_empty` and `is_full` answer the question.
+- `peek` reads the `Inner*` and leaves it there.
+- `take` reads it and empties the slot.
+- `fill` puts one in. A second `fill` on a full slot is refused.
+- `fill` of a `null` inner is refused.
+
+## Getting your type back
+
+Three endings, and the ending is the promise.
+
+- `to` returns your pointer, or `null` when the type does not match.
+- `must` aborts instead of returning `null`.
+- `as` aborts too, and is the `Inner*` spelling of `must`.
+- `Slot.to`, `Slot.must` and `Slot.move` read a slot.
+- `Slot.move` empties the slot when the type matched, and only then.
+- `Inner.to` and `Inner.as` read a bare `Inner*`.
+
+An abort here is a contract, so it is there in safe mode only.
+
+Most code uses `mtk::helper` instead, and never names a type twice.
 <!-- /3tk:module -->
 
 
@@ -2279,7 +2545,37 @@ description is on `InnerQueue` a few sections up, and a module block that
 repeated it would say the same thing twice on the same page.
 
 <!-- 3tk:module mtk::queue -->
-Non-allocating intrusive FIFO queue and iterator for `Inner*` items.
+A first-in, first-out chain of outers.
+
+The link is the `link` field of each outer's inner.
+So a queue allocates nothing.
+It has no lock.
+
+## The calls
+
+- `push_back` links an inner at the tail.
+- `push_back_slot` does the same from a `Slot`, and leaves the slot empty.
+- `iter` walks the chain and changes nothing.
+- `pop_front` unlinks the head and returns it, or `null` when the queue is empty.
+- `take` moves the whole chain into a new queue, and leaves this one empty.
+- `append_queue` moves another queue onto the tail, and leaves that one empty.
+
+## What is refused
+
+Checked in safe mode:
+
+- a `null` inner
+- an inner that is already on a chain
+- an outer whose type was never written
+- `push_back_slot` from an empty slot
+- `append_queue` from `null`, or onto itself
+
+## Where you meet one
+
+- `Mailbox.close` gives back what was still queued, in a queue.
+- `Mailbox.receive_all` moves every queued outer onto a queue.
+- A pool's `on_close` hook gets everything the pool still keeps, as one queue.
+- A pool's `on_put` hook gets an empty queue for extra outers.
 <!-- /3tk:module -->
 
 #### `mtk::queue::internal`
@@ -2302,9 +2598,63 @@ step.** The fence is left in the reference: it is the book's worked example and
 it repeats what the sentences already say.
 
 <!-- 3tk:module mtk::mailbox -->
-Thread-safe message queue for passing typeless outer structures between threads.
-Supports multiple producers and consumers, out-of-band messages, non-blocking polling,
-timeouts, and explicit mailbox shutdown.
+A queue between threads that answers the hard questions.
+
+Many senders, many receivers. It does its own locking.
+It moves an `Inner*` and never learns your type.
+Nothing is allocated when an outer is sent, and nothing is freed when one arrives.
+
+## Making one
+
+- `create` takes your allocator and keeps it for life.
+- `release` gives the memory back.
+- `release` runs after `close`, and after every call on the mailbox has returned.
+- A mailbox is made by this call, not by a helper.
+- `TYPE`, `to_inner` and `of` let a mailbox travel inside another mailbox or pool.
+
+## Sending
+
+- `send` takes a full slot and empties it.
+- `send` takes an optional `limit`, and `0` is unbounded.
+- A `limit` counts only outers of the sender's own `typeid` already queued.
+- `send_oob` puts the outer at the front, for work that must not wait behind the rest.
+- `send_oob` takes no `limit`.
+
+## Receiving
+
+- `poll` takes what is there and does not wait.
+- `receive` waits up to a timeout.
+- `receive_all` moves everything queued onto a queue of yours, in receive order.
+- `wake_all` returns every waiter at once.
+- Out-of-band outers come out first.
+
+## What a call can end with
+
+The set is fixed per call, and there is nothing else.
+
+- `send` — `CLOSED`, `LIMIT`.
+- `send_oob` — `CLOSED`.
+- `poll` — `CLOSED`, `EMPTY`.
+- `receive` — `CLOSED`, `TIMEOUT`, `WOKEN`.
+- `receive_all` — `CLOSED`.
+- `wake_all` — `CLOSED`.
+- `close` cannot fail.
+
+## Where the outer is afterwards
+
+- A `send` that worked leaves your slot empty.
+- A `send` refused with `CLOSED` or `LIMIT` leaves the outer in your slot.
+- So the slot answers it, and you do not have to remember which failure took it.
+- `poll` and `receive` fill an empty slot. Passing a full one is refused.
+
+## Shutting down
+
+- `close` moves everything still queued onto a queue you pass in, and loses nothing.
+- You release those outers by your own rules, or give them back to a pool.
+- `close` on an already closed mailbox gives back nothing, and is not an error.
+- Every waiter in `receive` comes back with `CLOSED`.
+- `is_closed` is the state. `is_idle` says closed with no call still running.
+- `len` is how many outers are queued now.
 <!-- /3tk:module -->
 
 #### `mtk::mailbox::internal`
@@ -2329,8 +2679,35 @@ it states out loud what the toolkit had never said anywhere: your code runs
 inside tk.
 
 <!-- 3tk:module mtk::pool::hooks -->
-User-defined policy hooks invoked by `mtk::pool::Pool`.
-Handles outer allocation, recycling reset, and pool closure cleanup.
+The one page about code you write, not code you call.
+
+`PoolHooks` is three methods. You implement them, and the pool calls them.
+The rules of reuse are yours, and this is where you state them.
+
+## What each one is for
+
+- `on_get` — a caller asked for an outer of `want`, and none are free.
+- `on_put` — an outer came back, and you decide whether it stays.
+- `on_close` — the pool is closing, and everything it still keeps is passed to you.
+
+## How to answer
+
+- In `on_get`, fill the slot with a new outer, or leave it empty.
+- An empty slot on the way out of `on_get` becomes `NOT_CREATED` for the caller.
+- In `on_put`, clear the outer and leave it in the slot to keep it.
+- Empty the slot yourself, and free the outer, to let it go.
+- Add more outers to `extra`, and they are taken back the same way.
+- `on_close` is passed one queue, by value, flattened across every identity.
+- No order is promised there, and freeing everything on it is your job.
+
+## What to know before you write one
+
+- A hook runs with the pool's lock released.
+- So another thread can be in the pool while your hook runs.
+- `in_pool` is a count read before that, and it is a hint, and stale.
+- It is the count after the removal in `on_get`, and before the addition in `on_put`.
+- `on_get` returns an outer of the identity it was asked for. Another one is refused.
+- Clearing an outer means your own fields. The toolkit keeps the inner.
 <!-- /3tk:module -->
 
 #### `mtk::pool`
@@ -2351,8 +2728,59 @@ that named nothing: the alias was declared in `mtk::inner`, never in `mtk`
 outright, and source and reference both write the inner as `Inner*`.
 
 <!-- 3tk:module mtk::pool -->
-Thread-safe pool managing outer structures grouped by `typeid`.
-Delegates allocation and recycling rules to user-supplied `PoolHooks`.
+Keeps used outers so they can be used again.
+
+Threads share one pool. It does its own locking.
+It keeps each `typeid` apart, in its own bucket.
+It works with an `Inner*`, so it never learns your types.
+
+The pool manages the collection. Your hooks decide what reuse means.
+
+## Making one
+
+- `create` takes your allocator, the identities it will keep, and your hooks.
+- The set of identities is fixed here, is not empty, and has no duplicate.
+- `release` gives the memory back, after `close` and after every call has returned.
+- `TYPE`, `to_inner` and `of` let a pool travel inside a mailbox or another pool.
+
+## Getting one out
+
+`get` takes a mode, and the mode is the whole policy.
+
+- `AVAILABLE_OR_NEW` — a kept outer if there is one, otherwise your `on_get`.
+- `NEW_ONLY` — always your `on_get`, even when kept outers are there.
+- `AVAILABLE_ONLY` — a kept outer, or `NOT_AVAILABLE`. It never calls `on_get`.
+- `get` fills an empty slot. Passing a full one is refused.
+- `get` ends with `CLOSED`, `NOT_AVAILABLE`, `NOT_CREATED` or `UNKNOWN_IDENTITY`.
+- `NOT_CREATED` is what your `on_get` said by leaving the slot empty.
+- `get_wait` waits up to a timeout for a kept outer.
+- `get_wait` never calls `on_get`. It ends with `CLOSED`, `TIMEOUT` or `UNKNOWN_IDENTITY`.
+
+## Giving one back
+
+- `put` takes a full slot and runs your `on_put`.
+- `put` empties the slot when the pool took the outer.
+- A closed pool refuses, and the outer stays with you.
+- `put` cannot fail, so the slot is where you look afterwards.
+
+## The three hooks
+
+They are yours, declared by `mtk::pool::hooks`, and the pool calls them.
+
+- `on_get` — none are free. Make one, or leave the slot empty.
+- `on_put` — one came back. Clear it and leave it in the slot to keep it.
+- `on_put` — free it instead to let it go.
+- `on_close` — the pool is closing, and everything it still keeps is passed to you.
+- `in_pool` is a count from before the lock was given up. It is a hint, and stale.
+- A hook runs with the lock released, so another thread can change the count.
+
+## Shutting down
+
+- `close` moves everything kept into one queue and passes it to `on_close`.
+- `close` on an already closed pool does nothing.
+- Every waiter in `get_wait` comes back with `CLOSED`.
+- `is_closed` is the state. `is_idle` says closed with no call still running.
+- `count_of` is how many of one identity are free now.
 <!-- /3tk:module -->
 
 #### `mtk::pool::internal`
@@ -2377,7 +2805,7 @@ description to carry. `create` and `release` are members of `OuterHelper` in
 
 A short section, and the last word on the surface: everything below was
 proposed, weighed, and left out. It is here because the absences are as much a
-design as the nine members are, and because a reader who does not find something
+design as the fourteen members are, and because a reader who does not find something
 deserves to know it was refused rather than forgotten.
 
 **Not on the helper.** `inner_offset`; the Slot's own five operations — `fill`,
@@ -2400,7 +2828,7 @@ is testing.
 
 **No dispatch construct.** A `switch` on `inner.outer_tid()` with compile-time
 constant cases is the whole of it, and *Dispatch* in
-[3tk-patterns-004.md](3tk-patterns-004.md) shows the four shapes that switch
+[3tk-patterns-005.md](3tk-patterns-005.md) shows the four shapes that switch
 takes.
 
 **No `Allocator` field convention.** No name rule, no compile-time discovery, no

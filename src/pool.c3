@@ -2,8 +2,59 @@
 // SPDX-License-Identifier: MIT
 
 <*
- Thread-safe pool managing outer structures grouped by `typeid`.
- Delegates allocation and recycling rules to user-supplied `PoolHooks`.
+ Keeps used outers so they can be used again.
+
+ Threads share one pool. It does its own locking.
+ It keeps each `typeid` apart, in its own bucket.
+ It works with an `Inner*`, so it never learns your types.
+
+ The pool manages the collection. Your hooks decide what reuse means.
+
+ ## Making one
+
+ - `create` takes your allocator, the identities it will keep, and your hooks.
+ - The set of identities is fixed here, is not empty, and has no duplicate.
+ - `release` gives the memory back, after `close` and after every call has returned.
+ - `TYPE`, `to_inner` and `of` let a pool travel inside a mailbox or another pool.
+
+ ## Getting one out
+
+ `get` takes a mode, and the mode is the whole policy.
+
+ - `AVAILABLE_OR_NEW` — a kept outer if there is one, otherwise your `on_get`.
+ - `NEW_ONLY` — always your `on_get`, even when kept outers are there.
+ - `AVAILABLE_ONLY` — a kept outer, or `NOT_AVAILABLE`. It never calls `on_get`.
+ - `get` fills an empty slot. Passing a full one is refused.
+ - `get` ends with `CLOSED`, `NOT_AVAILABLE`, `NOT_CREATED` or `UNKNOWN_IDENTITY`.
+ - `NOT_CREATED` is what your `on_get` said by leaving the slot empty.
+ - `get_wait` waits up to a timeout for a kept outer.
+ - `get_wait` never calls `on_get`. It ends with `CLOSED`, `TIMEOUT` or `UNKNOWN_IDENTITY`.
+
+ ## Giving one back
+
+ - `put` takes a full slot and runs your `on_put`.
+ - `put` empties the slot when the pool took the outer.
+ - A closed pool refuses, and the outer stays with you.
+ - `put` cannot fail, so the slot is where you look afterwards.
+
+ ## The three hooks
+
+ They are yours, declared by `mtk::pool::hooks`, and the pool calls them.
+
+ - `on_get` — none are free. Make one, or leave the slot empty.
+ - `on_put` — one came back. Clear it and leave it in the slot to keep it.
+ - `on_put` — free it instead to let it go.
+ - `on_close` — the pool is closing, and everything it still keeps is passed to you.
+ - `in_pool` is a count from before the lock was given up. It is a hint, and stale.
+ - A hook runs with the lock released, so another thread can change the count.
+
+ ## Shutting down
+
+ - `close` moves everything kept into one queue and passes it to `on_close`.
+ - `close` on an already closed pool does nothing.
+ - Every waiter in `get_wait` comes back with `CLOSED`.
+ - `is_closed` is the state. `is_idle` says closed with no call still running.
+ - `count_of` is how many of one identity are free now.
 *>
 module mtk::pool;
 
@@ -348,8 +399,35 @@ import std::atomic::types;
 //==============================================================================
 
 <*
- User-defined policy hooks invoked by `mtk::pool::Pool`.
- Handles outer allocation, recycling reset, and pool closure cleanup.
+ The one page about code you write, not code you call.
+
+ `PoolHooks` is three methods. You implement them, and the pool calls them.
+ The rules of reuse are yours, and this is where you state them.
+
+ ## What each one is for
+
+ - `on_get` — a caller asked for an outer of `want`, and none are free.
+ - `on_put` — an outer came back, and you decide whether it stays.
+ - `on_close` — the pool is closing, and everything it still keeps is passed to you.
+
+ ## How to answer
+
+ - In `on_get`, fill the slot with a new outer, or leave it empty.
+ - An empty slot on the way out of `on_get` becomes `NOT_CREATED` for the caller.
+ - In `on_put`, clear the outer and leave it in the slot to keep it.
+ - Empty the slot yourself, and free the outer, to let it go.
+ - Add more outers to `extra`, and they are taken back the same way.
+ - `on_close` is passed one queue, by value, flattened across every identity.
+ - No order is promised there, and freeing everything on it is your job.
+
+ ## What to know before you write one
+
+ - A hook runs with the pool's lock released.
+ - So another thread can be in the pool while your hook runs.
+ - `in_pool` is a count read before that, and it is a hint, and stale.
+ - It is the count after the removal in `on_get`, and before the addition in `on_put`.
+ - `on_get` returns an outer of the identity it was asked for. Another one is refused.
+ - Clearing an outer means your own fields. The toolkit keeps the inner.
 *>
 module mtk::pool::hooks;
 

@@ -2,9 +2,63 @@
 // SPDX-License-Identifier: MIT
 
 <*
- Thread-safe message queue for passing typeless outer structures between threads.
- Supports multiple producers and consumers, out-of-band messages, non-blocking polling,
- timeouts, and explicit mailbox shutdown.
+ A queue between threads that answers the hard questions.
+
+ Many senders, many receivers. It does its own locking.
+ It moves an `Inner*` and never learns your type.
+ Nothing is allocated when an outer is sent, and nothing is freed when one arrives.
+
+ ## Making one
+
+ - `create` takes your allocator and keeps it for life.
+ - `release` gives the memory back.
+ - `release` runs after `close`, and after every call on the mailbox has returned.
+ - A mailbox is made by this call, not by a helper.
+ - `TYPE`, `to_inner` and `of` let a mailbox travel inside another mailbox or pool.
+
+ ## Sending
+
+ - `send` takes a full slot and empties it.
+ - `send` takes an optional `limit`, and `0` is unbounded.
+ - A `limit` counts only outers of the sender's own `typeid` already queued.
+ - `send_oob` puts the outer at the front, for work that must not wait behind the rest.
+ - `send_oob` takes no `limit`.
+
+ ## Receiving
+
+ - `poll` takes what is there and does not wait.
+ - `receive` waits up to a timeout.
+ - `receive_all` moves everything queued onto a queue of yours, in receive order.
+ - `wake_all` returns every waiter at once.
+ - Out-of-band outers come out first.
+
+ ## What a call can end with
+
+ The set is fixed per call, and there is nothing else.
+
+ - `send` — `CLOSED`, `LIMIT`.
+ - `send_oob` — `CLOSED`.
+ - `poll` — `CLOSED`, `EMPTY`.
+ - `receive` — `CLOSED`, `TIMEOUT`, `WOKEN`.
+ - `receive_all` — `CLOSED`.
+ - `wake_all` — `CLOSED`.
+ - `close` cannot fail.
+
+ ## Where the outer is afterwards
+
+ - A `send` that worked leaves your slot empty.
+ - A `send` refused with `CLOSED` or `LIMIT` leaves the outer in your slot.
+ - So the slot answers it, and you do not have to remember which failure took it.
+ - `poll` and `receive` fill an empty slot. Passing a full one is refused.
+
+ ## Shutting down
+
+ - `close` moves everything still queued onto a queue you pass in, and loses nothing.
+ - You release those outers by your own rules, or give them back to a pool.
+ - `close` on an already closed mailbox gives back nothing, and is not an error.
+ - Every waiter in `receive` comes back with `CLOSED`.
+ - `is_closed` is the state. `is_idle` says closed with no call still running.
+ - `len` is how many outers are queued now.
 *>
 module mtk::mailbox;
 

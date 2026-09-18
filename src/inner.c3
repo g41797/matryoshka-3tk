@@ -2,11 +2,62 @@
 // SPDX-License-Identifier: MIT
 
 <*
- Core type erasure primitives: embedded header (`Inner`), target container (`Slot`),
- and address conversion utilities.
+ The two small types every other module is written against.
 
- Users embed `Inner` into domain structures (`outer`). System containers interact
- strictly with `Inner*` pointers, ignoring the layout or type of the outer structure.
+ `Inner` is the part you put inside your own struct.
+ `Slot` is the place where one outer may be, or may not.
+ The mailbox and the pool see an `Inner*` and nothing else.
+
+ ## The inner
+
+ `Inner` has two fields, and both are for the toolkit.
+
+ - `link` is the next inner on the chain.
+ - `link` is the inner itself when it is the last one on a chain.
+ - `link` is `null` when the outer is on no chain.
+ - `otrtypeid` is the `typeid` of the outer the inner sits in.
+ - `otrtypeid` is written once, by `stamp`, and never again.
+ - `outer_tid` reads it back, before anyone knows the type.
+
+ An `any` is not used here, and that is a decision.
+
+ - An `any` is C3's own border type.
+ - It is converted at the border, by `mtk::helper`, and stored nowhere.
+ - Two named fields cost the same sixteen bytes and say what they are.
+
+ ## Exactly one inner per outer
+
+ - The offset of the `Inner` field is computed at compile time.
+ - So nothing is stored to find the way back: no back-pointer, no map.
+ - The field goes anywhere in your struct. First, last, or in the middle.
+ - Zero `Inner` fields, or two, is a compile error.
+ - The check runs when the toolkit first uses the struct as an outer.
+ - Declaring such a struct and never using it is not an error.
+
+ ## The slot
+
+ A slot has one `Inner*`, or nothing, and you read which.
+
+ - `is_empty` and `is_full` answer the question.
+ - `peek` reads the `Inner*` and leaves it there.
+ - `take` reads it and empties the slot.
+ - `fill` puts one in. A second `fill` on a full slot is refused.
+ - `fill` of a `null` inner is refused.
+
+ ## Getting your type back
+
+ Three endings, and the ending is the promise.
+
+ - `to` returns your pointer, or `null` when the type does not match.
+ - `must` aborts instead of returning `null`.
+ - `as` aborts too, and is the `Inner*` spelling of `must`.
+ - `Slot.to`, `Slot.must` and `Slot.move` read a slot.
+ - `Slot.move` empties the slot when the type matched, and only then.
+ - `Inner.to` and `Inner.as` read a bare `Inner*`.
+
+ An abort here is a contract, so it is there in safe mode only.
+
+ Most code uses `mtk::helper` instead, and never names a type twice.
 *>
 module mtk::inner;
 

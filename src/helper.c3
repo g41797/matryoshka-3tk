@@ -2,20 +2,68 @@
 // SPDX-License-Identifier: MIT
 
 <*
- Per-type helper binding for user structures (outers).
+ One helper per outer type. It does the boring part.
 
- Typical usage: `alias MSG = helper::OF{Msg};`
+ One line makes it: `alias MSG = helper::OF{Msg};`
 
- Handles type allocation, the `init` and `finish` hooks, type stamping,
- and identity checking when converting between typeless `Inner` pointers / `Slot` instances
- and the typed user structure.
+ There is nothing to instantiate and nothing to keep.
+ `OuterHelper` is a compile-time receiver, and `OF` is its one value.
 
- Every outer type handled by this helper must declare two methods:
+ ## Two methods your outer declares
+
  `fn void? Outer.init(&self, Allocator a)`
+
  `fn void Outer.finish(&self, Allocator a)`
 
- If a structure requires no setup or cleanup, implement them with empty bodies.
- These hooks are verified at compile time.
+ - Both are required as soon as this helper creates or releases your struct.
+ - An empty body is fine. It says there is nothing to do.
+ - A `$assert` in `create` and in `release` checks they are there.
+ - A `$assert` is compile time, so it is alive in every build mode.
+ - A misspelled hook is what the check exists for.
+ - A container that allocates itself never calls `create`, so it is outside this.
+
+ ## Making one and giving it back
+
+ - `create` allocates, calls your `init`, writes the type, and fills the slot.
+ - `create` frees the outer again when `init` fails, and passes the fault on.
+ - `release` calls your `finish`, empties the slot, and frees the outer.
+ - `release` on an empty slot does nothing, so one `defer` covers every path out.
+ - `stamp` writes the type into a struct you allocated yourself.
+ - `stamp` runs once per struct, before it is used anywhere.
+
+ ## Reading your type back
+
+ Each of these takes what it is given and answers about `Outer`.
+
+ - `is` says yes or no. It takes a `Slot*`, an `Inner*` or an `any*`.
+ - `look` returns your pointer, or `null`, and leaves the holder alone.
+ - `must_look` aborts instead of returning `null`.
+ - `take` returns your pointer and empties a `Slot*` or an `any*`.
+ - `must_take` does the same, and aborts on another type.
+ - `inner` goes the other way, from your pointer to its `Inner*`.
+ - `inner` returns `null` for `null`, and refuses an outer that was never stamped.
+ - `linked` says whether an outer is on a chain. It takes an `Outer*` or an `Inner*`.
+
+ ## The border with C3's own containers
+
+ A C3 container carries an `any`. The mailbox and the pool carry an `Inner*`.
+ These four calls are the crossing between the two, and nothing else stores an `any`.
+
+ - `to_any` moves the outer out of a slot and into an empty `any`, before a push.
+ - `to_slot` moves it out of an `any` and into an empty slot, after a pop.
+ - `must_to_any` and `must_to_slot` abort where the other two return `null`.
+ - `look`, `must_look`, `take`, `must_take` and `is` also read an `any*`.
+
+ What the crossing checks:
+
+ - The outer leaves unlinked. An outer still on a chain is refused.
+ - The `any` says a type and the outer carries one. Both are read, and they agree.
+ - An `any` built by hand, or pointing at the wrong thing, is caught here.
+ - An outer that was never stamped is refused, and not guessed at.
+ - The target is empty. A full `any` is not overwritten, nor is a full slot.
+ - An `any` of another type is left untouched, so an io event passes through.
+
+ Both fields of the `any` are written on the way out, and cleared on the way back.
 *>
 module mtk::helper <Outer>;
 
