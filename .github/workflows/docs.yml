@@ -29,9 +29,9 @@ jobs:
         run: scripts/inject_src_loc.sh --write --strict
 
       - name: c3c docgen
-        run: c3c docgen --emit-stdlib=no src examples
+        run: c3c docgen --emit-stdlib=no src
 
-        # run: c3c docgen --emit-stdlib=no src
+        # run: c3c docgen --emit-stdlib=no src examples
 
       # docgen's "Defined in" link only special-cases c3lang's own repo
       # (checks window.location.href for c3-lang.org/c3lang.org); every

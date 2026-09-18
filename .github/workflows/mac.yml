@@ -1,11 +1,11 @@
-name: Linux
+name: macOS
 
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
     name: Build and test (${{ matrix.safe }}, ${{ matrix.opt }})
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
