@@ -2,7 +2,37 @@
 // SPDX-License-Identifier: MIT
 
 <*
- Non-allocating intrusive FIFO queue and iterator for `Inner*` items.
+ A first-in, first-out chain of outers.
+
+ The link is the `link` field of each outer's inner.
+ So a queue allocates nothing.
+ It has no lock.
+
+ ## The calls
+
+ - `push_back` links an inner at the tail.
+ - `push_back_slot` does the same from a `Slot`, and leaves the slot empty.
+ - `iter` walks the chain and changes nothing.
+ - `pop_front` unlinks the head and returns it, or `null` when the queue is empty.
+ - `take` moves the whole chain into a new queue, and leaves this one empty.
+ - `append_queue` moves another queue onto the tail, and leaves that one empty.
+
+ ## What is refused
+
+ Checked in safe mode:
+
+ - a `null` inner
+ - an inner that is already on a chain
+ - an outer whose type was never written
+ - `push_back_slot` from an empty slot
+ - `append_queue` from `null`, or onto itself
+
+ ## Where you meet one
+
+ - `Mailbox.close` gives back what was still queued, in a queue.
+ - `Mailbox.receive_all` moves every queued outer onto a queue.
+ - A pool's `on_close` hook gets everything the pool still keeps, as one queue.
+ - A pool's `on_put` hook gets an empty queue for extra outers.
 *>
 module mtk::queue;
 

@@ -7,11 +7,21 @@
 [![Sanitizers](https://github.com/g41797/matryoshka-3tk/actions/workflows/sanitizers.yml/badge.svg)](https://github.com/g41797/matryoshka-3tk/actions/workflows/sanitizers.yml)
 [![Docs](https://github.com/g41797/matryoshka-3tk/actions/workflows/docs.yml/badge.svg)](https://github.com/g41797/matryoshka-3tk/actions/workflows/docs.yml)
 
-# Matryoshka-3tk
+---
 
-A small C3 toolkit, 700+ lines of code.
+A small C3 toolkit.
 
-It is for the part of a background process that is not I/O.
+- 800+ lines of code.
+- 600+ lines on this page, explaining them.
+
+You can read all of it in an evening. The code, and the reasons for it.
+
+It is for one part of a background process.
+
+- Not the I/O part.
+- The part that works with your data.
+
+---
 
 This page:
 
@@ -19,7 +29,13 @@ This page:
 - then looks at the everyday problems that process runs into
 - brings in the toolkit only when a problem needs it
 
+---
+
+
 ## A process you have probably built
+
+---
+
 
 A background process often starts with something simple.
 
@@ -41,10 +57,13 @@ Each thread has a responsibility:
    client 4 ---->  handler 4 ---/
 ```
 
-The I/O side:
+The I/O side deals with:
 
-- deals with sockets, parsing and timeouts
-- is usually handled by a library
+- sockets
+- parsing
+- timeouts
+- and the rest of it
+
 
 The process side deals with your data:
 
@@ -68,13 +87,16 @@ Starting the threads is usually not the hard part.
 
 The hard part is everything that happens between the threads.
 
-That is where the boring problems start.
+That is where the boring problems start...
 
-This toolkit lives on the line between the two sides.
 
-Nowhere else.
+
+---
 
 ## Threads need to exchange work
+
+---
+
 
 A handler and a worker run on different threads.
 
@@ -96,7 +118,13 @@ So we need a way to pass work between threads.
    handler 3 <--/                              \---- worker B
 ```
 
+
+---
+
 ## The queue is at the centre
+
+---
+
 
 - Every request crosses it.
 - Every reply crosses back.
@@ -119,7 +147,13 @@ A queue written in an afternoon rarely answers these.
 
 Each answer added later is one more thing to get right.
 
+
+---
+
 ## Moving work should not allocate
+
+---
+
 
 This is where a normal queue can become surprisingly expensive.
 
@@ -147,7 +181,13 @@ And it is on the busiest path of the process.
 A request should not be copied just because it moved from one thread to
 another.
 
+
+---
+
 ## The queue should not know your types
+
+---
+
 
 The queue is infrastructure.
 
@@ -182,7 +222,13 @@ What the worker needs is simple:
 - **ask what arrived**
 - **get a checked answer**
 
+
+---
+
 ## Some structs should not be copied
+
+---
+
 
 Consider a request that contains a large buffer.
 
@@ -220,7 +266,13 @@ So the request stays where it is.
 
 And moving that address should still not allocate.
 
+
+---
+
 ## Where requests come from
+
+---
+
 
 Now look at the handler again.
 
@@ -257,7 +309,13 @@ That raises a new question:
 - **Kept where?**
 - **Shared by which threads?**
 
+
+---
+
 ## Reuse needs rules
+
+---
+
 
 Keeping a request is not enough.
 
@@ -279,7 +337,13 @@ The code that keeps them:
 - should provide the mechanism
 - should not invent the policy
 
+
+---
+
 ## The same process, with this toolkit
+
+---
+
 
 - Same handlers.
 - Same workers.
@@ -294,7 +358,13 @@ What changes is the line between them.
 
 The sections below answer the problems above, in the same order.
 
+
+---
+
 ## A queue that answers the hard questions
+
+---
+
 
 The shared queue becomes a **mailbox**.
 
@@ -309,13 +379,24 @@ The shared queue becomes a **mailbox**.
     - Nothing leaks.
 - **A fast handler hits a limit.**
     - `send` with a limit fails with `LIMIT`.
-    - It fails once that many outers of its type are queued.
+    - It fails once that many requests of its type are queued.
 - **Urgent work goes first.**
     - `send_oob` puts it at the front.
 - **A batch arrives in one call.**
     - `receive_all`.
 
+A mailbox is made by its own call, not by your helper.
+
+- `mailbox::create` takes your allocator.
+- `release` gives the memory back.
+
+
+---
+
 ## The request carries its own link
+
+---
+
 
 The problem is a queue that allocates a node per push.
 
@@ -328,20 +409,20 @@ That is what *intrusive* means.
       |
       v
    +- Request 1 -------------------+
+   |  client_id   path             |
    |  [ inner | link ]---+         |
-   |  client_id   path   |         |
    +---------------------|---------+
                          |
                          v
    +- Request 2 -------------------+
+   |  client_id   path             |
    |  [ inner | link ]---+         |
-   |  client_id   path   |         |
    +---------------------|---------+
                          |
                          v
    +- Request 3 -------------------+
-   |  [ inner | link: itself ]     |   the last one links to itself
    |  client_id   path             |
+   |  [ inner | link: itself ]     |   the last one links to itself
    +-------------------------------+
 ```
 
@@ -352,7 +433,13 @@ That is what *intrusive* means.
 - The request never moves.
     - Only its address travels.
 
+
+---
+
 ## The request carries its own type
+
+---
+
 
 The link lives in a small embedded part, the **inner**.
 
@@ -363,21 +450,28 @@ Your `Request` is an outer.
 ```text
    Outer: Request
    +---------------------------+
+   | client_id                 |
+   | path                      |
+   |                           |
    | +-----------------------+ |
    | | Inner                 | |
    | |   link                | |
    | |   otrtypeid           | |
    | +-----------------------+ |
-   |                           |
-   | client_id                 |
-   | path                      |
    +---------------------------+
 ```
 
 The inner has two fields:
 
 - `link` — the next inner in the chain
-- `otrtypeid` — the type of the outer it sits in
+- `otrtypeid` — the type of the struct it sits in
+
+That second field is written once, when the struct is made.
+
+- The toolkit writes it. You do not.
+- It stays there for as long as the struct exists.
+- So the struct always knows what type it is, even after it has been passed
+  around as a plain `Inner*`.
 
 The mailbox only sees an `Inner*`.
 
@@ -402,43 +496,120 @@ When the worker needs its type back, it asks and gets a checked answer.
 - An outer whose type was never written is refused.
     - It is not guessed at.
 
+
+---
+
+## One struct, two addresses
+
+---
+
+
+Think of the crossing as a cast that the helper makes safe.
+
+Your `Request` and the inner inside it are at two different addresses.
+
+```text
+   one Request in memory
+   +-------------+---------------+---------------------------+
+   |  client_id  |     path      |           Inner           |
+   +-------------+---------------+---------------------------+
+   ^                             ^
+   |                             |
+   |                             +-- Inner*
+   |                                 this address travels
+   |                                 the mailbox and the pool see only this
+   |
+   +-- Request*
+       this address your code works with
+```
+
+A plain cast keeps the address and reads it as another type.
+
+The helper does two things a cast cannot.
+
+- It moves the address, from the inner back to the start of your struct.
+- It checks the type before it gives it to you.
+
+So the crossing back is one call.
+
+- `look` gives you your `Request*`, or `null` if it is not one.
+- `must_look` aborts instead of returning `null`.
+
+**And you never work out the distance yourself.**
+
+- Move `inner` to another place in the struct and the distance changes.
+- Your code does not.
+- A cast you wrote by hand would be wrong from that moment on.
+
+The rest of this page says a request is in the slot.
+
+What is in the slot is the inner inside that request.
+
+Both are true. The helper is what turns one into the other.
+
+
+---
+
 ## The one struct you write
+
+---
+
 
 ```c3
 struct Request
 {
-    Inner inner;
     int   client_id;
     char[256] path;
+    Inner inner;
 }
 ```
 
-**The outer's address is computed from the inner's.**
+The `Inner` can sit anywhere in the struct.
+
+- First, last, or in the middle.
+- Here it is last, and nothing about that is special.
+
+**The Request's address is computed from the inner's.**
 
 - The offset of `inner` in `Request` is known at compile time.
 - So nothing has to be stored to find the way back:
     - no back-pointer
     - no registry
     - no map
-- Exactly one `Inner` per outer, as a direct field of the struct.
+- Exactly one `Inner` per struct of yours, as a direct field of the struct.
     - The check runs when the toolkit first uses the struct as an outer.
     - Zero or two is a compile error at that point.
     - Declaring such a struct alone is not an error.
 
+Two methods go with it:
+
+```c3
+fn void? Request.init(&self, Allocator a)   {}   // set up, or nothing
+fn void  Request.finish(&self, Allocator a) {}   // clean up, or nothing
+```
+
+- Both are required.
+- An empty body is fine.
+    - It means there is nothing to do when the struct is created or released.
+- The compiler checks that they are there.
+
+
+---
+
 ## One helper per type does the boring part
+
+---
+
 
 There is nothing to be afraid of here.
 
-- You never do that calculation yourself.
-- You never stamp types by hand.
+- You never work out that distance yourself.
+- You never write the type into the struct yourself.
 
 One line makes a helper for your type.
 
 ```c3
 alias REQ = helper::OF{Request};
-
-fn void? Request.init(&self, Allocator a) {}   // set up, or nothing
-fn void  Request.finish(&self, Allocator a) {} // clean up, or nothing
 
 Slot slot;
 REQ.create(a, &slot)!;             // allocate, init, write the type, fill the slot
@@ -457,25 +628,45 @@ REQ.release(a, &slot);             // finish, empty the slot, free
 - `create` frees the outer if `init` fails.
 - `release` on an empty slot does nothing.
     - That keeps cleanup paths simple.
-- `init` and `finish` are checked at compile time.
-    - An empty body is fine.
+- `create` calls your `init`, `release` calls your `finish`.
 - Reading the outer back:
     - `look` and `must_look` read.
     - `take` and `must_take` read and empty the slot.
 
-**You can also allocate an outer yourself.**
+**`create` is not the only way in.**
 
-- Call `REQ.stamp` once to write its type.
-- The mailbox and the pool do not care who allocated it.
+You may allocate the struct yourself — from your own allocator, or as a field of
+something bigger you already have.
 
-So these are two separate jobs:
+Then write the type into it once:
 
-- moving a struct between threads
-- deciding when to create or free it
+```c3
+Request* req = my_own_allocation();
+REQ.stamp(req);                // write the type into its inner, once
+```
 
-You can change one without touching the other.
+- Do it once per struct, before it is used anywhere.
+- From then on the mailbox and the pool take it like any other request.
+- `create` is the same three steps done for you: allocate, call `init`, write
+  the type.
+
+**Two questions stay apart.**
+
+- Where does this struct come from, and when does it go away?
+- How does it get from this thread to the next one?
+
+The helper and the pool answer the first. The mailbox answers the second.
+
+- Change how your structs are made, and the sending code is untouched.
+- Send them some other way, and the making code is untouched.
+
+
+---
 
 ## Only the address moves
+
+---
+
 
 Once an address is passed between threads, a small but important question
 appears.
@@ -538,9 +729,15 @@ Every path out of the function is covered by one line.
 - Nothing is freed twice.
 - Nothing is forgotten.
 
+
+---
+
 ## Requests come from a pool
 
-A **pool** keeps used outers and gives them out again.
+---
+
+
+A **pool** keeps used structs and gives them out again.
 
 ```text
         +------+
@@ -548,7 +745,7 @@ A **pool** keeps used outers and gives them out again.
         +--+---+                       |
            |  get                      |  put
            v                           |
-        Request --> send --> work --> Request
+        Request ------->  work  -------> Request
 ```
 
 - Threads share it.
@@ -562,7 +759,7 @@ A **pool** keeps used outers and gives them out again.
 
 `get` takes a mode.
 
-"None are free" can be answered in more than one way:
+*None are free* can be answered in more than one way:
 
 - `AVAILABLE_OR_NEW` — a kept one if there is one, otherwise a new one
 - `NEW_ONLY` — always a new one
@@ -570,7 +767,18 @@ A **pool** keeps used outers and gives them out again.
 
 `get_wait` waits, with a timeout, for a kept one.
 
+A pool is made by its own call too.
+
+- `pool::create` takes your allocator, the types it will keep, and your hooks.
+- `release` gives the memory back.
+
+
+---
+
 ## The rules of reuse are yours
+
+---
+
 
 The pool makes no decisions about your types.
 
@@ -589,7 +797,13 @@ The pool manages the collection.
 
 Your code decides what reuse means for your structs.
 
+
+---
+
 ## Putting the pieces together
+
+---
+
 
 There is not much to the model.
 
@@ -635,37 +849,55 @@ The toolkit stays on the line in the middle.
 
 That is all it needs to be.
 
+
+---
+
 ## You do not have to use everything
 
-The mailbox is not the price of entry.
+---
+
+
+The three pieces are independent.
 
 ```text
-   Inner + Outer            the type in the struct, and a link
-        +  Pool             reuse, and your rules for it
-        +  Mailbox          transfer between threads
+   Inner + Outer      your struct carries its own type, and a link
+   Mailbox            moves structs between threads
+   Pool + your hooks  keeps used structs, by your rules
 ```
 
-- **Inner and outer alone**
-    - work with any container you already use.
-- **A pool with no mailbox**
-    - is a supported shape.
-    - Every pool example in `shc` uses no mailbox.
+**The mailbox and the pool know nothing about each other.**
 
-If your existing queue already does what you need, keep it.
+- Neither one needs the other.
+- Use both, or one, or neither.
+
+Inner and outer alone are already worth something.
+
+- `InnerQueue` chains your structs and allocates nothing.
+    - The link is already in them.
+- Any C3 container carries a pointer to your struct instead.
+    - The container allocates for its own node.
+    - Your struct is still never copied.
+- Either way, the type comes back checked.
 
 Use the part that solves your actual problem.
 
+
+---
+
 ## Matryoshka
+
+---
+
 
 Now the model gets its name.
 
-An outer contains an inner, the way a Russian doll contains a smaller doll.
+An **outer** contains an **inner**, the way a Russian doll contains a smaller doll.
 
 Why the name:
 
 - **The first reason: you can use any doll you want.**
     - Any struct of yours can be an outer.
-- **The main reason: it is funny.**
+- **But the main reason: it is funny.**
 
 The names, and what each one is for:
 
@@ -699,70 +931,13 @@ An operation that fails, fails with one of eight faults declared in `mtk`.
 
 Each module's page has the details this page leaves out.
 
-## If you already have a channel
 
-Your I/O may already use C3's `UnboundedChannel(<any>)`.
-
-Then the mailbox is not what you came for.
-
-The type is.
-
-**Where the type lives:**
-
-- C3's `any` carries the type beside the pointer.
-- An inner carries it inside the struct.
-
-An `any` keeps its type only as long as it stays an `any`.
-
-- Stored as a `void*`, the type is gone.
-- Passed to a C callback, the type is gone.
-
-An outer can always tell what it is, however it got there.
-
-What you get with no mailbox and no pool:
-
-- **The struct knows its own type.**
-- **Structs can be chained without allocating.**
-    - `InnerQueue` takes any outer.
-- **The crossing back is checked, not cast.**
-
-Rules for data whose type has been erased:
-
-- The type in the struct is the truth.
-    - The type beside the pointer is a hint.
-- Check once:
-    - at the boundary
-    - on arrival
-- Never cast.
-    - An outer leaves with `to_any`.
-    - It comes back with `to_slot`.
-    - `is`, `look` and `take` also accept an `any`.
-    - `must_to_any`, `must_to_slot`, `must_look` and `must_take` abort instead of returning `null`.
-- Your own data can share the channel.
-    - `is` says no to it and leaves it untouched.
-    - `shc::l_bridge::io_and_outers_share_a_channel` shows it.
-- An outer crosses unlinked.
-- An outer whose type was never written is refused.
-- 3tk is responsible for its side of the boundary.
-    - What happens to an `any` on the C3 side is up to you.
-
-**What the mailbox adds to a channel:**
-
-- **No allocation on transfer.**
-    - The channel copies into a buffer it grows.
-- **`close` gives back what was queued.**
-    - The channel's `close` leaves it in the queue.
-- And more:
-    - timeouts
-    - `wake_all`
-    - sending to the front
-    - a per-type limit
-    - batches
-    - every outer type in one queue
-
-If your channel already does what you need, keep it.
+---
 
 ## What this toolkit does not do
+
+---
+
 
 It is not a process framework.
 
@@ -782,7 +957,33 @@ The toolkit provides the transfer and reuse pieces between them.
 
 Use it together with whatever your process already uses for those jobs.
 
+
+---
+
+## Show cases
+
+---
+
+
+`shc` is the show cases module.
+
+Each show case:
+
+- is small
+- shows exactly one idiom, pattern or use case
+- says up front what it shows, and the steps it takes
+- works, and the tests call it
+- uses no testing functions
+
+The show cases are grouped by subject.
+
+
+---
+
 ## How to start
+
+---
+
 
 You are about to build a background process in C3.
 
@@ -811,11 +1012,32 @@ Go step by step.
     - Write the three hooks.
     - Decide what to clear and what to keep.
 4. **Replace the channel with a mailbox.**
-    - Do it when you need its extra control:
-        - timeouts
-        - `wake_all`
-        - limits
-    - `close` gives back what was queued.
+    - Do it when the channel stops being enough.
+
+### What the mailbox adds to a channel
+
+- **No allocation on transfer.**
+    - The channel copies into a buffer it grows.
+- **`close` gives back what was queued.**
+    - The channel's `close` leaves it in the queue.
+- And more:
+    - timeouts
+    - `wake_all`
+    - sending to the front
+    - a per-type limit
+    - batches
+    - every outer type in one queue
+
+If your channel already does what you need, keep it.
+
+
+---
+
+## When to stop
+
+---
+
+
 
 At any step you can stop and say:
 
@@ -827,20 +1049,13 @@ Every step stands on its own.
 
 You do not need to solve every problem on the first day.
 
-The `shc` module (show cases) in the generated docs has many examples and
-patterns.
 
-Each one:
-
-- is small
-- compiles
-- runs as part of the tests
-
-The core is deliberately small.
-
-The rest belongs to your application.
+---
 
 ## The Matryoshka family
+
+---
+
 
 This doll is not the first one.
 
@@ -868,7 +1083,7 @@ The same ideas:
 
 Odin, Zig, C3.
 
-Three languages, each trying to be a better C.
+Three languages, each trying to be a **better C**.
 
 All three are mature enough to run a real background process today.
 
