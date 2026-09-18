@@ -1,6 +1,12 @@
 # 3tk — writing the README
 
-**`001`, written by `3TK-84`, 2026-09-16.**
+**`003`, written by the README round of 2026-09-17/18, on Opus 5.** It replaces
+`002` (closing stage of plan `043`, 2026-09-17), now in `backup/`. **What
+changed:** the owner reopened the README by hand and it was revised with him
+over one long round; *What is decided* gained rulings 26–34; the mapping table
+is re-sourced to the sections as they now stand, two of which are new and one
+renamed. **Ruled by the owner:** the round closed 2026-09-18, and `3TK-92`
+starts from this table.
 
 **The subject document of [staging plan 043](https://github.com/g41797/matryoshka-ztk/blob/main/design/secondary/lang/c3/3tk-staging-plan-043.md).**
 
@@ -34,8 +40,8 @@ not reopen it.**
    Staccato, `rules-049.md` Part 6. Part 5's banned list applies.
 6. **Two tiers.** The README is the base, 10,000 m. The deep dive is per module.
 7. **The deep dive is the module's `<* *>` block, not a separate document.**
-8. **Size: 200 lines of prose aimed at, ~300 the ceiling. Diagram lines do not
-   count.** Fenced blocks are outside the budget.
+8. **Size: no limit.** The first budget was 200 lines of prose, ~300 the
+   ceiling. **The owner lifted it on 2026-09-17**, for readability.
 9. **Nothing is said in both tiers.** A section that cannot earn its lines in
    the README is deep-dive material and goes in the mapping table.
 10. **Every factual claim about 3tk is checked against `src/*.c3`.** That is the
@@ -61,52 +67,70 @@ not reopen it.**
     B**, carrying a note on what the mailbox adds. **The README does not open on
     the channel.** See *Two readers, and the README currently serves one*.
 
+19. **`O-1` is changed by the owner, 2026-09-17: two C3 blocks.** The second
+    shows the per-type helper — the alias, both methods, `create`, `look`,
+    `release` — because *nothing to be afraid of* needs to be seen. A third,
+    the `defer REQ.release` cleanup sketch, came with the slot description.
+20. **More humanity.** Plain English, a developer talking to developers.
+    **No smart words.** When a sentence is added, a few more plain words beat
+    one clever one.
+21. **Staccato formatting.** Short sentences; bullets; nested bullets,
+    indented 4 spaces; a blank line before every list; no bold across lines.
+22. **The last section is *The Matryoshka family*** — Odin, Zig, C3. It is
+    not removed.
+23. **The README names no source of its wording** — no other AI, no phrase
+    attributed to a language or a person.
+24. ***How to start* stays.** The owner's own section, four steps, stop at any
+    of them.
+25. **Tagged unions are not C3.** The workaround is named *an enum tag plus a
+    union*. `MANUAL.md` §6_4_2 has only C unions.
+
+26. **The marks have one meaning each.** `backticks` for a name that is in the
+    code; **bold** for a model term where it is introduced; *italics* for a
+    borrowed word or a quoted phrase; plain text afterwards. **No single
+    quotes** — they are invisible and mean nothing in Markdown.
+27. **The slot holds an inner, and the page says request.** The plain talk is
+    kept, because *One struct, two addresses* teaches the reader to decode it.
+    **The same shorthand is allowed in a module block only after the block has
+    said which is which.**
+28. **`Inner` is last in the README's `Request`**, and the page says it may sit
+    anywhere. Ruled 2026-09-18. With the inner first, the two addresses are the
+    same number, and the section that exists to separate them would rest on a
+    coincidence.
+29. **The reader's habit is a cast, so the crossing is taught as one.** *A cast
+    the helper makes safe*, and then the two things it adds: it moves the
+    address, and it checks the type. **A plain cast is not said to be incapable
+    of the first** — a hand-written offset can do it, and breaks when a field
+    moves.
+30. **The inner is a handle.** The picture is a case with a handle bolted on;
+    the mailbox and the pool are the porter, who carries it by the handle and
+    never opens it. **Anchor was refused** — an anchor stops movement, which is
+    the opposite of the fact.
+31. **One heading speaks to the reader: *The slot — read this one twice, at
+    least*.** It stays the only one. The section is the hardest on the page and
+    the heading is the warning; the closing block says why it takes a second
+    pass.
+32. **The title *The one struct you write* stays**, although the struct, `init`
+    and `finish` are all written there.
+33. **No link to the generated docs site**, anywhere on the page, for now.
+34. **The three pieces are independent, and the page says so plainly.** The
+    mailbox and the pool know nothing about each other — neither imports the
+    other. **The staircase picture is gone**: it read as a stack that had to be
+    climbed.
+
 ## What is open
 
-**Revision 1, 2026-09-17, the owner's.** The owner removed *Examples* and wrote
-"700+ lines of code" into the opening line; 746 was measured. **`O-1` is changed by
-the owner:** a second C3 block shows the per-type helper, since `create` is
-not honest without the alias and both methods, and this block shows all three.
-Added: *One helper per type does the boring part*; *How to start*, four steps,
-each one a place to stop; the naming reasons in *Matryoshka*, with the doll
-reason kept. Taken from a Gemini revision: the link diagram with the inner
-inside each request, and labels on the slot diagram. Not taken: its
-`link = null` for the last inner (`inner.c3`: the last links to itself), its
-pointer arithmetic, and its bullet reformatting. 216 prose lines.
-**Open, not blocking:** step 2 of *How to start* has no example behind it
-until the `l_` group exists.
+**The README is finished. Nothing about its text is open.**
 
-**Nothing is open.** `O-4`, the voice, was accepted by the owner on 2026-09-16
-by running `3TK-86` on the problem half as written.
+**What it leaves as debt, owned by later plans.**
 
-**The whole README exists after `3TK-86`.** 192 prose lines, fenced blocks and
-badges excluded. The next stage is a revision, on the owner's reading.
+| | what | where the README depends on it | owner of the work |
+|---|---|---|---|
+| **D-1** | **`Slot`/`Outer` ↔ `any` does not exist.** `OuterHelper.look` takes a `Slot*` or an `Inner*` (`helper.c3:87`), never an `any` | *How to start*, step 2: *on arrival, `look` checks what arrived*. *If you already have a channel*: *Never cast. Use `look`…*. **Today both need a cast of `a.ptr`, which the README forbids** | plan `044`, the `any` border. **Ruled 2026-09-17 in [3tk-any-border-001.md](3tk-any-border-001.md)**; **built by `3TK-88`, 2026-09-17**: `is`, `look`/`take` on `any*`, `to_any`/`to_slot`. **Closed by `3TK-90`, 2026-09-17**: step 2 and the channel section name `to_any`, `to_slot` and the `any` forms |
+| **D-2** | **The `l_` examples group does not exist** | step 2 has no example behind it; the channel section names none | plan `044`, `3TK-89`. See [3tk-any-border-001.md](3tk-any-border-001.md). **Closed by `3TK-90`, 2026-09-17**: both `shc::l_bridge` examples are named |
+| **D-3** | **The module `<* *>` blocks are not written from the README** | the mapping table below | a later doc-comment plan, with the `3tk-reference-014.md` re-sync |
 
-**Choices `3TK-86` made that the owner may overrule.**
-
-- **One bridging section**, *The same process, with this toolkit*, joins the
-  two halves.
-- **Terms arrive one per section**, bold, at the problem each answers:
-  mailbox, inner, outer, slot, pool, hooks.
-- **The `l_` examples are not named.** The group does not exist yet. The
-  closing section lists the ten examples that use neither mailbox nor pool.
-- **No link to the docs site.** Its URL was not measured.
-- **`receive` on a full slot is called a checked error**, since
-  `mailbox.c3:130` is an `@check`.
-
-**Closed, 2026-09-16, all on the day they were asked.**
-
-| | what it asked | how it went |
-|---|---|---|
-| **O-1** | how much C3 the README shows | **one block and one note** — the outer struct, and that the outer's address is found from the inner's |
-| **O-2** | whether the print server appears | **it does not**, ruled out with the transcoder |
-| **O-4** | whether `3TK-85`'s problem half sets the voice | **yes** — accepted by running `3TK-86` |
-| **O-3** | whether Reader B gets a closing section | **yes** — one arc plus a closing section, with a note on what the mailbox adds. The README does not open on the channel |
-
-**What a later stage may still have to decide**, none of it blocking:
-
-- **The `l_` group's name.** The conversion stage picks it.
-- **How the floor section names the `l_` examples**, once they exist.
+**`044` is spent.** `3TK-90` revised both passages. **Only `D-3` is open. No README change is owed.**
 
 ---
 
@@ -693,12 +717,21 @@ carry.
 
 | module | source passage | the deep dive owes |
 |---|---|---|
-| `mtk` | *Matryoshka* — the six modules, the eight faults | the eight faults as one outcome set; `@check` and what safe mode means |
-| `mtk::inner` | *The request carries its own type*, *The one struct you write*, *Only the address moves* | `Inner`'s two fields and why `any` stays outside; the full `Slot` surface; `to` vs `as` vs `must` |
-| `mtk::helper` | *The request carries its own type* — `look`, `must_look`; the closing section's rules |  the two required hooks and the empty body; `look`/`take`/`must_*`; `stamp` for hand-made outers |
-| `mtk::mailbox` | *A queue that answers the hard questions*; *What the mailbox adds to a channel* | the fixed outcome set per call; `limit` and `send_oob`; what `close` gives back |
-| `mtk::pool` | *Requests come from a pool*, *The rules of reuse are yours* | `GetMode`'s three policies; the three hooks and their real signatures; `in_pool` is a stale hint |
-| `mtk::queue` | *If you already have a channel* — one line | where a reader meets it: `close`, `receive_all`, `on_close` |
+| `mtk` | *Matryoshka* — six modules, eight faults | the eight faults as one outcome set; `@check` and what safe mode means |
+| `mtk::inner` | *The request carries its own link*; *The request carries its own type*; *One struct, two addresses*; *The one struct you write* | `Inner`'s two fields and why `any` stays outside; the full `Slot` surface; `to` vs `as` vs `must`; the one-`Inner` check runs at first use as an outer, and a nested `Inner` counts as none |
+| `mtk::helper` | *One helper per type does the boring part*; *One struct, two addresses*; the `defer` sketches in *The slot — read this one twice, at least* | the two required methods and the empty body; `look`/`take`/`must_*`; `stamp` for hand-made outers; `inner`, `linked`; **the `any` crossings** — the README no longer carries the rules for type-erased data, so the whole subject is the block's |
+| `mtk::mailbox` | *A queue that answers the hard questions*; *What the mailbox adds to a channel*, now under *How to start* | the fixed outcome set per call; `limit` and `send_oob`; what `close` gives back; a refused `send` leaves the slot full |
+| `mtk::pool` | *Requests come from a pool*; *The rules of reuse are yours* | `GetMode`'s three policies; the three hooks and their real signatures; `in_pool` is a stale hint; `get_wait` never calls `on_get` |
+| `mtk::queue` | *You do not have to use everything*; *How to start*, step 1 | `iter`, `push_back`, `pop_front`, `take`, `append_queue`; where a reader meets it: `close`, `receive_all`, `on_close` |
+
+**Written by `3TK-91`, 2026-09-17.** `mtk::queue`'s block is the exemplar and
+is already in `src/queue.c3`. The other five are `3TK-92`'s.
+
+**Two sections are new and one is renamed, 2026-09-18.** *One struct, two
+addresses* and *Show cases* did not exist when `002` was written; *Only the
+address moves* is now *The slot — read this one twice, at least*. **The section
+*If you already have a channel* is gone** — the owner removed it, and with it
+the README's only account of the `any` crossings.
 
 **A row's *source* stays empty until a README passage exists for it.** An empty
 source with a non-empty debt means **the whole subject is deep-dive only** —
@@ -711,6 +744,8 @@ crossings.
 
 | version | stage | date | what changed |
 |---|---|---|---|
+| `003` | README round | 2026-09-18 | New version. The owner reopened the finished README and revised it with the session over one round: two new sections, one renamed, *If you already have a channel* removed, the independence of the three pieces corrected, `init`/`finish` moved, every claim re-checked against `src/`. Rulings 26–34 added; the mapping table re-sourced. |
+| `002` | closing stage | 2026-09-17 | New version. README finished after four owner revisions (owner edits and a Gemini merge; English; two ChatGPT merges; staccato formatting) and the one-`Inner` claim corrected. Rulings 19–25 added; size limit lifted; *What is open* rewritten as debts D-1..D-3; mapping table re-sourced to the final sections. |
 | `001` | `3TK-86` | 2026-09-16 | Revised in place. The README's solution half written; `O-4` closed; the mapping table's *source* column filled; `mtk::inner`'s debt corrected to the two-field `Inner`. |
 | `001` | `3TK-85` | 2026-09-16 | Revised in place. The README's problem half written; `O-4`, the voice, opened for the owner. |
 | `001` | INTR 12 | 2026-09-16 | Revised in place, same day. `O-1` and `O-3` closed; *What the mailbox adds* measured against `std::thread::channel`; the channel-first opening refused and why. `Inner` facts re-measured after INTR 12; `F-1` reframed; the print server and the transcoder ruled out; *The pieces are separable*, *The floor*, *Rules for type-erased data*, *Two readers* and *The examples order* added; `O-1` closed — one block and one note; `O-3` opened. |

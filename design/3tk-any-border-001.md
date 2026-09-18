@@ -34,7 +34,7 @@ A stage reads *What is decided* and *What is open* first.
     - it sends it on through a Mailbox
 
 **The README already promises the crossing** — debt `D-1` of
-[3tk-readme-creation-002.md](3tk-readme-creation-002.md):
+[3tk-readme-creation-003.md](3tk-readme-creation-003.md):
 
 - *On arrival, `look` checks what arrived.*
 - *Never cast. Use `look`, `must_look`, `take`, `must_take`.*
@@ -224,7 +224,7 @@ if (REQ.is(&a))
 
 - **`3TK-87`:**
     - `3tk-decisions-008.md` → `009`, this ruling recorded.
-    - `3tk-readme-creation-002.md`, in place: `D-1` and `D-2` point here.
+    - `3tk-readme-creation-003.md`, in place: `D-1` and `D-2` point here.
 - **`3TK-88`, once the code exists:**
     - `3tk-api-007.md` → `008`
     - `3tk-reference-013.md` → `014`, with `check-doc-loop.sh` and

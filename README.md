@@ -12,14 +12,14 @@
 A small C3 toolkit.
 
 - 800+ lines of code.
-- 600+ lines on this page, explaining them.
+- 700+ lines on this page, about the ideas behind it.
 
 You can read all of it in an evening. The code, and the reasons for it.
 
-It is for one part of a background process.
+It is for one part of a background process:
 
-- Not the I/O part.
-- The part that works with your data.
+- not the I/O part
+- the part that works with your data
 
 ---
 
@@ -523,12 +523,15 @@ Your `Request` and the inner inside it are at two different addresses.
        this address your code works with
 ```
 
-A plain cast keeps the address and reads it as another type.
+A plain cast only changes how an address is read.
 
-The helper does two things a cast cannot.
+- It does not move the address.
+- It has nothing to check the type against.
+
+The helper does both.
 
 - It moves the address, from the inner back to the start of your struct.
-- It checks the type before it gives it to you.
+- It checks the type first, because the inner carries it.
 
 So the crossing back is one call.
 
@@ -540,6 +543,28 @@ So the crossing back is one call.
 - Move `inner` to another place in the struct and the distance changes.
 - Your code does not.
 - A cast you wrote by hand would be wrong from that moment on.
+
+**Think of the inner as a handle.**
+
+```text
+                        _____
+                       |     |          <- the inner
+   +-------------------|     |-------+      the handle, bolted on
+   |  Request                        |
+   |     client_id                   |
+   |     path                        |
+   +---------------------------------+
+```
+
+- The handle belongs to one case, and it is bolted to that one.
+- Pick the case up by the handle, and the whole case comes.
+- The porter carries it by the handle, and never opens it.
+
+The mailbox and the pool are the porter.
+
+**So when this page says a request moves, it is the inner that moves.**
+
+The request comes along, because the request is around it.
 
 The rest of this page says a request is in the slot.
 
@@ -588,7 +613,7 @@ fn void? Request.init(&self, Allocator a)   {}   // set up, or nothing
 fn void  Request.finish(&self, Allocator a) {}   // clean up, or nothing
 ```
 
-- Both are required.
+- Both are required as soon as the helper creates or releases your struct.
 - An empty body is fine.
     - It means there is nothing to do when the struct is created or released.
 - The compiler checks that they are there.
@@ -635,8 +660,10 @@ REQ.release(a, &slot);             // finish, empty the slot, free
 
 **`create` is not the only way in.**
 
-You may allocate the struct yourself — from your own allocator, or as a field of
-something bigger you already have.
+You may allocate the struct yourself.
+
+- From your own allocator.
+- Or as a field of something bigger you already have.
 
 Then write the type into it once:
 
@@ -655,7 +682,9 @@ REQ.stamp(req);                // write the type into its inner, once
 - Where does this struct come from, and when does it go away?
 - How does it get from this thread to the next one?
 
-The helper and the pool answer the first. The mailbox answers the second.
+The helper and the pool answer the first.
+
+The mailbox answers the second.
 
 - Change how your structs are made, and the sending code is untouched.
 - Send them some other way, and the making code is untouched.
@@ -663,32 +692,60 @@ The helper and the pool answer the first. The mailbox answers the second.
 
 ---
 
-## Only the address moves
+## The slot — read this one twice, at least
 
 ---
 
 
-Once an address is passed between threads, a small but important question
-appears.
+A request passes to someone else a few times in its life.
 
-**Who has it now?**
+- You send it to a mailbox.
+- You give it back to a pool.
+- You release it.
+- You pass it to a channel, or to any container of your own.
 
-An address kept in two places is a request two threads can both touch.
+Each of those calls either took the request, or did not.
 
-A **slot** makes the answer visible.
+**So the question is: did it go, or is it still mine?**
+
+This is not a threading question.
+
+The same question is there in a program with one thread.
+
+Matryoshka borrows the word from the everyday thing.
+
+```text
+   +---------------------+        +---------------------+
+   |                     |        |     [ Request ]     |
+   +---------------------+        +---------------------+
+
+          empty                          full
+```
+
+- A slot is a place with room for exactly one thing.
+- You can see which of the two states it is in.
+- A second thing does not go in.
+- Handing the thing over empties your slot.
+
+A **slot** answers it.
+
+You read the answer by looking at the slot.
+
+- **Empty** — it went. It is not yours anymore.
+- **Full** — it did not go. It is still yours, and still your job.
 
 A slot contains one `Inner*`, or nothing.
 
-- `send` takes the address from your slot.
-    - The slot is empty afterwards.
-- `receive` fills an empty slot.
+- `send` empties your slot.
+    - A refused `send` leaves the request in it.
+- `put` empties it, if the pool took the request.
+    - A closed pool refuses, and the request stays with you.
+- `release` empties it, and frees the request.
+- `receive` and `get` fill an empty slot.
     - Passing a full one is a checked error.
-- **The empty slot proves the request went somewhere else.**
 
-In plain words:
-
-- **if a pointer is in your slot, this part of the program has it right now**
-- **if the slot is empty, it does not**
+**Every one of those is a place where a request passes to someone else, and the
+slot is where you look afterwards.**
 
 ```text
    handler thread                          worker thread
@@ -728,6 +785,65 @@ Every path out of the function is covered by one line.
 
 - Nothing is freed twice.
 - Nothing is forgotten.
+
+**Why is the error not enough?**
+
+An error tells you that the call failed.
+
+- It does not tell you where the request is.
+- You would have to remember which failures took it, and which left it with you.
+
+With a slot there is nothing to remember. You look.
+
+- `release` on an empty slot does nothing.
+- `release` on a full one frees the request.
+- The same line is right on every path out, and it does not depend on a check
+  you wrote.
+
+**Cleanups also stack.**
+
+```c3
+Slot slot;
+defer REQ.release(a, &slot);                       // last resort: free it
+defer pool.put(&slot);                             // first choice: give it back
+
+pool.get(Request::typeid, AVAILABLE_OR_NEW, &slot)!;
+// ... use the request ...
+```
+
+- The `put` runs first, because deferred lines run in reverse order.
+    - It empties the slot if the pool took the request.
+- The `release` runs after it.
+    - By then the slot is empty, so it does nothing.
+- A closed pool refuses the `put`, and the slot stays full.
+    - Then the `release` frees the request.
+
+Neither line asks what happened. Both look.
+
+**One more thing about all these calls.**
+
+None of them takes the request's own address.
+
+- `create`, `release`, `send`, `receive`, `get`, `put` — every call that moves
+  one request takes a `Slot*`.
+- A slot is not the request.
+    - It is the place where the address of its inner may be, or may not.
+
+Most libraries take the pointer instead.
+
+This one makes you go through a slot, and that is deliberate.
+
+- A call that takes a pointer cannot tell you whether it took the request.
+- A call that takes your slot empties it, so the answer is in front of you.
+- Sending twice from the same slot is a checked error, and not a request that
+  went out twice.
+
+**Why this one takes a second pass.**
+
+- The inner and the outer are a fact about your struct. You learn it once.
+- The slot is about when a request passes on, and that changes at every call
+  you write.
+- Nothing else here is as easy to get wrong.
 
 
 ---
@@ -909,7 +1025,7 @@ The names, and what each one is for:
 - **Helper** — one per outer type.
     - It creates, releases and checks the type for you.
 - **Slot** — one address, or none.
-    - It shows who has a struct right now.
+    - It shows whether a struct is still yours.
     - It makes cleanup simple.
 - **Mailbox** — moves outers between threads.
     - Without copying.
